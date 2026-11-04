@@ -1,0 +1,1 @@
+fn main(){assert!(!std::path::Path::new("/work/neighbor-canary").exists());std::fs::write("/work/neighbor-canary","private").unwrap();let bytes=vec![7u8;32*1024*1024];std::hint::black_box(&bytes);std::thread::sleep(std::time::Duration::from_secs(10));std::fs::write("/work/artifacts/result.json",r#"{"neighbor_contained":true}"#).unwrap();}

@@ -1,0 +1,1 @@
+fn main(){let started=std::time::Instant::now();while started.elapsed()<std::time::Duration::from_secs(5){std::hint::black_box((0..10000u64).fold(0u64,|a,b|a.wrapping_add(b)));}std::fs::write("/work/artifacts/result.json",r#"{"cpu_probe":true}"#).unwrap();}

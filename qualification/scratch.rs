@@ -1,0 +1,1 @@
+fn main(){let bytes=vec![0u8;12*1024*1024];let mut denied=false;for i in 0..8 {if std::fs::write(format!("/work/fill-{i}"),&bytes).is_err(){denied=true;break;}}for i in 0..8{let _=std::fs::remove_file(format!("/work/fill-{i}"));}assert!(denied,"scratch cap escaped");std::fs::write("/work/artifacts/result.json",r#"{"scratch_limited":true}"#).unwrap();}
