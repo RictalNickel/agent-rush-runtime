@@ -1,0 +1,21 @@
+{
+  "schema": "agent-rush.control-smoke.v1",
+  "passed": true,
+  "cleanup_verified": true,
+  "checks": [
+    "Native runtime and SQLite writable under non-root/read-only root",
+    "Operator login and session cookie",
+    "Real queued job, owner context export, cancellation and evidence",
+    "Memory save/search/delete and logout revocation",
+    "No inference requests, worker executions or cloud resources"
+  ],
+  "image": "sha256:c5251eb43c9be47c52587cd5fbe32de9e6b93040b864c06166c2daa90b7e9495",
+  "source_revision": "d5076f2cb7d62002e25391ef69e84c46c863d4aa",
+  "user": "65532:65532",
+  "host_resource_enforcement": {
+    "MemoryLimit": false,
+    "CpuCfsQuota": false,
+    "PidsLimit": false,
+    "CgroupDriver": "none"
+  }
+}

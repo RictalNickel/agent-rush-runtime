@@ -36,7 +36,7 @@ Raw earlier local receipts and the complete failing resource-suite log are in do
 | Authenticated product UI | Implemented, Rust-served HTML/CSS and browser JS | Desktop/mobile core flow tested |
 | Durable jobs/idempotency/owner scoping | Implemented, SQLite WAL | Tested |
 | Atomic memory admission/reservation | Implemented | Concurrency/restart tests pass |
-| Memory growth | Ledger primitive | Live host update deliberately not exposed or claimed |
+| Memory growth | Atomic admission for the next sandbox attempt | Engine/ledger tests pass; live in-place updates are not exposed or claimed |
 | Private worker/token auth | Implemented | Authentication tests pass; deployed mTLS tests outstanding |
 | Fixed gVisor execution and safe artifacts | Implemented | Real local containment passed; host enforcement qualification failed |
 | Recovery/reconciliation | Implemented, conservative lease retention | Crash/transport race qualification incomplete; no production claim |
@@ -86,3 +86,5 @@ Worker startup requires a host/image-matching qualification report no older than
 One fresh review of this continuation found an Important panic from serialized JSON expansion in the context buffer. The actual-engine regression failed before fixing and now passes with both clean and unresolved worker receipts. Observation failures now follow normal finalization; receipt evidence is retained first. History shortening preserves the fixed policy/original task and records truncation counts. Full suite, denied-warning Clippy and format checks passed after fixing.
 
 The current desktop/mobile Chromium suite again passes both tests, including the added authenticated context download. No browser plugin is available, so regular Playwright and installed Chromium were used. The actual updated execution record was visually inspected. No model, sandbox or cloud execution is simulated as live by these UI checks.
+
+The native Ubuntu-based control OCI image was built and exported, then actually started with UID/GID 65532, read-only root, dropped capabilities and bounded scratch requests. Real HTTP smoke checks passed for authentication, job/context/evidence operations, memory tools and logout; no inference/worker calls were configured. Container deletion was verified. Raw evidence: docs/evidence/local/control-image-smoke.json. The host still reports unsupported resource controllers, so these requested container flags do not establish worker resource enforcement. The current progress PDF has eight pages and updated real evidence; it is not a completed contest submission.
