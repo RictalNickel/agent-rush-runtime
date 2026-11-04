@@ -1,6 +1,7 @@
 use crate::{
     auth,
     domain::{Limits, now},
+    resources::{MAX_CONCURRENT, ResourcePolicy},
     worker::{DockerRunner, SandboxSpec},
 };
 use anyhow::{Result, ensure};
@@ -29,6 +30,8 @@ pub struct NodeState {
     token: Arc<String>,
     active: Arc<Mutex<HashMap<String, ActiveLease>>>,
     capacity_mb: u32,
+    resources: ResourcePolicy,
+    qualification_expires_at: i64,
     draining: Arc<AtomicBool>,
     io_lock: Arc<Mutex<()>>,
 }
@@ -63,12 +66,15 @@ impl NodeState {
             "worker token must be at least 32 characters"
         );
         std::fs::create_dir_all(&dir)?;
+        let resources = ResourcePolicy::detect(capacity_mb)?;
         Ok(Self {
             runner,
             dir: Arc::new(dir),
             token: Arc::new(token),
             active: Arc::new(Mutex::new(HashMap::new())),
-            capacity_mb,
+            capacity_mb: resources.usable_memory_mb,
+            resources,
+            qualification_expires_at: 0,
             draining: Arc::new(AtomicBool::new(false)),
             io_lock: Arc::new(Mutex::new(())),
         })
@@ -86,6 +92,14 @@ impl NodeState {
             ));
         }
         Ok(())
+    }
+    pub fn with_qualification_expiry(mut self, expires_at: i64) -> Self {
+        self.qualification_expires_at = expires_at;
+        self
+    }
+    fn qualification_expired(&self) -> bool {
+        self.qualification_expires_at > 0
+            && chrono::Utc::now().timestamp() >= self.qualification_expires_at
     }
     fn path(&self, id: &str) -> Result<PathBuf> {
         SandboxSpec::new(id, crate::worker::IMAGE, Limits::default())?;
@@ -197,18 +211,28 @@ pub fn node_router(state: NodeState) -> Router {
 }
 async fn health(State(s): State<NodeState>, headers: HeaderMap) -> Result<Json<Value>, NodeError> {
     s.auth(&headers)?;
-    if s.draining.load(Ordering::SeqCst) {
+    if s.draining.load(Ordering::SeqCst) || s.qualification_expired() {
         return Err(NodeError(
             StatusCode::SERVICE_UNAVAILABLE,
             "Worker is draining".into(),
         ));
     }
-    Ok(Json(s.runner.health().await.map_err(|_| {
+    let mut health = s.runner.health().await.map_err(|_| {
         NodeError(
             StatusCode::SERVICE_UNAVAILABLE,
             "Sandbox runtime unavailable".into(),
         )
-    })?))
+    })?;
+    health["resource_policy"] = json!(s.resources);
+    health["reserved_memory_mb"] = json!(
+        s.active
+            .lock()
+            .unwrap()
+            .values()
+            .map(|v| v.memory_mb)
+            .sum::<u32>()
+    );
+    Ok(Json(health))
 }
 async fn submit(
     State(s): State<NodeState>,
@@ -225,7 +249,7 @@ async fn submit(
     let record;
     {
         let mut active = s.active.lock().unwrap();
-        if s.draining.load(Ordering::SeqCst) {
+        if s.draining.load(Ordering::SeqCst) || s.qualification_expired() {
             return Err(NodeError(
                 StatusCode::SERVICE_UNAVAILABLE,
                 "Worker is draining".into(),
@@ -241,7 +265,9 @@ async fn submit(
             return Ok((StatusCode::ACCEPTED, Json(json!(existing))));
         }
         let used: u32 = active.values().map(|v| v.memory_mb).sum();
-        if active.len() >= 2 || used.saturating_add(input.limits.memory_mb) > s.capacity_mb {
+        if active.len() >= MAX_CONCURRENT
+            || used.saturating_add(input.limits.memory_mb) > s.capacity_mb
+        {
             return Err(NodeError(
                 StatusCode::TOO_MANY_REQUESTS,
                 "Worker capacity exhausted".into(),

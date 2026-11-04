@@ -1,15 +1,16 @@
 use crate::{
-    agent::{AgentContext, ToolCall, parse_tool},
+    agent::AgentContext,
     api::AppState,
     domain::{Job, Limits},
+    engine::{Backend, Engine},
     inference::InferenceGateway,
 };
-use anyhow::{Context, Result, bail, ensure};
+use anyhow::{Context, Result, ensure};
 use futures_util::StreamExt;
 use serde_json::{Value, json};
 use std::{
     sync::{
-        Arc,
+        Arc, Mutex,
         atomic::{AtomicBool, Ordering},
     },
     time::{Duration, Instant},
@@ -37,13 +38,19 @@ impl NodeClient {
             token: state.settings.worker_token.clone(),
         })
     }
-    async fn ready(&self) -> bool {
-        self.client
+    async fn ready(&self) -> Option<u32> {
+        let response = self
+            .client
             .get(format!("{}/v1/health", self.base))
             .bearer_auth(&self.token)
             .send()
             .await
-            .is_ok_and(|r| r.status().is_success())
+            .ok()?;
+        let health = read_json(response).await.ok()?;
+        health["resource_policy"]["usable_memory_mb"]
+            .as_u64()
+            .and_then(|v| u32::try_from(v).ok())
+            .filter(|v| *v > 0)
     }
     async fn get(&self, id: &str) -> Result<Value> {
         read_json(
@@ -114,23 +121,20 @@ async fn read_json(response: reqwest::Response) -> Result<Value> {
     Ok(serde_json::from_slice(&bytes)?)
 }
 pub async fn run_once(state: &AppState) -> Result<usize> {
-    if !state.settings.inference_configured()
-        || state.settings.worker_url.is_none()
-        || state.ledger.active_jobs()?.len() >= 2
-    {
+    if !state.settings.inference_configured() || state.settings.worker_url.is_none() {
         return Ok(0);
     }
     let node = NodeClient::new(state)?;
-    if !node.ready().await {
+    let Some(node_capacity) = node.ready().await else {
         return Ok(0);
-    }
-    let jobs = state.ledger.queued_jobs("operator")?;
+    };
+    let jobs = state.ledger.scheduling_candidates()?;
     for job in &jobs {
-        if let Some(job) = state.ledger.claim(&job.id)? {
+        if let Some(job) = state.ledger.claim_with_capacity(&job.id, node_capacity)? {
             let state = state.clone();
             let node = node.clone();
             tokio::spawn(async move {
-                if let Err(e) = run_job(&state, &node, &job).await {
+                if let Err(e) = run_job(&state, &node, &job, node_capacity).await {
                     tracing::error!(job=%job.id,error=%e,"controller job failed");
                 }
             });
@@ -179,92 +183,78 @@ pub async fn reconcile(state: &AppState) -> Result<()> {
     }
     Ok(())
 }
-fn cancelled(state: &AppState, job: &Job) -> bool {
-    state
-        .ledger
-        .get_job(&job.owner, &job.id)
-        .ok()
-        .flatten()
-        .is_some_and(|j| j.cancel_requested)
+struct RuntimeBackend<'a> {
+    state: &'a AppState,
+    node: &'a NodeClient,
+    job: &'a Job,
+    gateway: InferenceGateway,
+    active_run: Mutex<Option<String>>,
 }
-async fn wait_cancel(state: &AppState, job: &Job) {
-    loop {
-        if cancelled(state, job) {
-            return;
+impl Backend for RuntimeBackend<'_> {
+    async fn complete(&self, context: &AgentContext) -> Result<(String, Value)> {
+        let (completion, usage) = self.gateway.complete(&context.messages).await?;
+        Ok((completion.content, usage))
+    }
+    async fn execute(&self, id: &str, code: &str, limits: Limits) -> Result<Value> {
+        *self.active_run.lock().unwrap() = Some(id.into());
+        self.node.submit(id, code, limits.clone()).await?;
+        // Account separately for bounded image creation/start/export/cleanup overhead.
+        let deadline = Instant::now() + Duration::from_secs(limits.timeout_seconds as u64 + 150);
+        loop {
+            ensure!(
+                Instant::now() < deadline,
+                "worker response deadline exceeded"
+            );
+            let value = self.node.get(id).await?;
+            if value["state"] == "finished" {
+                let receipt = value["receipt"].clone();
+                if receipt["cleanup_state"] == "verified" {
+                    *self.active_run.lock().unwrap() = None;
+                }
+                return Ok(receipt);
+            }
+            tokio::time::sleep(Duration::from_millis(250)).await;
         }
-        tokio::time::sleep(Duration::from_millis(150)).await;
+    }
+    fn cancelled(&self) -> bool {
+        self.state
+            .ledger
+            .get_job(&self.job.owner, &self.job.id)
+            .ok()
+            .flatten()
+            .is_none_or(|job| job.cancel_requested)
     }
 }
-async fn run_job(state: &AppState, node: &NodeClient, job: &Job) -> Result<()> {
-    let gateway = InferenceGateway::new(state.settings.clone(), state.ledger.clone())?;
-    let mut context = AgentContext::root(&job.id, &job.request.prompt);
-    let mut receipts = Vec::new();
-    let mut latest = None;
-    let mut node_run = None;
-    let mut delegated = false;
-    let started = Instant::now();
-    let result:Result<()>=async {
-        for turn in 0..4 {
-            ensure!(started.elapsed()<Duration::from_secs(300),"task lifetime exceeded");
-            if cancelled(state,job){bail!("cancelled");}
-            let completion=tokio::select!{result=gateway.complete(&context.messages)=>result?, _=wait_cancel(state,job)=>bail!("cancelled")};
-            receipts.push(completion.1);
-            context.messages.push(json!({"role":"assistant","content":completion.0.content}));
-            match parse_tool(&completion.0.content)? {
-                ToolCall::Response{message}=>{
-                    state.ledger.event(&job.id,"explanation",&message)?;
-                    ensure!(context.verified(),"agent stopped without verified execution");return Ok(());
-                }
-                ToolCall::Delegate{task}=>{
-                    ensure!(!delegated && turn<3,"subordinate limit reached");delegated=true;
-                    let child=context.subordinate(&task)?;
-                    let completion=tokio::select!{result=gateway.complete(&child.messages)=>result?, _=wait_cancel(state,job)=>bail!("cancelled")};
-                    receipts.push(completion.1);
-                    let tool=parse_tool(&completion.0.content)?;
-                    match tool {ToolCall::Sandbox{code,summary}=>{
-                        state.ledger.event(&job.id,"subordinate",&format!("Logical subordinate {} proposed: {}",child.agent_id,summary))?;
-                        context.messages.push(json!({"role":"user","content":format!("Subordinate proposed source; verify by executing with sandbox tool: {code}")}));
-                    },ToolCall::Response{message}=>{context.messages.push(json!({"role":"user","content":format!("Subordinate suggestion (unverified): {message}")}));},_=>bail!("nested delegation denied")}
-                }
-                ToolCall::Sandbox{code,summary}=>{
-                    let attempt=format!("{}-{turn}",job.id);node_run=Some(attempt.clone());
-                    state.ledger.event(&job.id,"executing",&summary)?;
-                    state.ledger.event(&job.id,"node_run",&attempt)?;
-                    node.submit(&attempt,&code,Limits{memory_mb:job.memory_mb,timeout_seconds:job.request.timeout_seconds,cpu_millis:1000}).await?;
-                    let deadline=Instant::now()+Duration::from_secs(job.request.timeout_seconds as u64+45);
-                    let receipt=loop {
-                        if cancelled(state,job){bail!("cancelled");}
-                        ensure!(Instant::now()<deadline,"worker response deadline exceeded");
-                        let result=node.get(&attempt).await?;
-                        if result["state"]=="finished"{break result["receipt"].clone();}
-                        tokio::time::sleep(Duration::from_millis(250)).await;
-                    };
-                    context.observe(&receipt);latest=Some(receipt);node_run=None;
-                    state.ledger.event(&job.id,"verifying",if context.verified(){"Rust process exited zero; result JSON and cleanup checks passed"}else{"Execution checks failed; agent may retry within the fixed turn limit"})?;
-                    if context.verified(){return Ok(());}
-                    ensure!(latest.as_ref().is_some_and(|r|r["cleanup_state"]=="verified"),"previous worker cleanup unresolved");
-                }
-            }
-        }
-        bail!("maximum agent turns reached")
-    }.await;
-    let clean = if let Some(id) = node_run {
+async fn run_job(state: &AppState, node: &NodeClient, job: &Job, node_capacity: u32) -> Result<()> {
+    let backend = RuntimeBackend {
+        state,
+        node,
+        job,
+        gateway: InferenceGateway::new(state.settings.clone(), state.ledger.clone())?,
+        active_run: Mutex::new(None),
+    };
+    let outcome = Engine::new(&state.ledger, job, &backend, node_capacity)
+        .run()
+        .await;
+    let active = backend.active_run.lock().unwrap().clone();
+    let clean = if let Some(id) = active {
         node.cancel(&id).await.unwrap_or(false)
     } else {
-        latest
+        outcome
+            .receipt
             .as_ref()
             .is_none_or(|r| r["cleanup_state"] == "verified")
     };
-    let mut receipt = latest.unwrap_or_else(
+    let mut receipt = outcome.receipt.unwrap_or_else(
         || json!({"exit_code":null,"checks_passed":false,"stdout":"","stderr":"","artifacts":[]}),
     );
-    if let Err(e) = result {
-        let _ = state.ledger.event(
+    if let Some(error) = outcome.error {
+        state.ledger.event(
             &job.id,
             "error",
-            &format!("Task could not complete: {}", safe_error(&e.to_string())),
-        );
-        receipt["reason"] = json!(if cancelled(state, job) {
+            &format!("Task could not complete: {error}"),
+        )?;
+        receipt["reason"] = json!(if backend.cancelled() {
             "cancelled"
         } else {
             "controller_error"
@@ -272,10 +262,9 @@ async fn run_job(state: &AppState, node: &NodeClient, job: &Job) -> Result<()> {
         receipt["checks_passed"] = json!(false);
     }
     receipt["cleanup_state"] = json!(if clean { "verified" } else { "failed" });
-    receipt["inference_calls"] = json!(receipts);
+    receipt["inference_calls"] = json!(outcome.inference_calls);
+    receipt["model_calls"] = json!(outcome.model_calls);
+    receipt["explanation"] = json!(outcome.final_message);
     state.ledger.finish(&job.id, receipt)?;
     Ok(())
-}
-fn safe_error(message: &str) -> String {
-    message.chars().take(500).collect()
 }

@@ -109,6 +109,8 @@ impl SandboxSpec {
             format!("{}m", self.limits.memory_mb),
             "--cpus".into(),
             format!("{:.3}", self.limits.cpu_millis as f64 / 1000.0),
+            "--cpu-shares".into(),
+            "512".into(),
             "--ulimit".into(),
             "nofile=128:128".into(),
             "--ulimit".into(),
@@ -270,6 +272,8 @@ impl DockerRunner {
             .await?;
         let info: Value = serde_json::from_slice(&bytes)?;
         validate_host(&info)?;
+        let identity = json!({"machine":std::fs::read_to_string("/etc/machine-id")?,"docker":info["ServerVersion"],"kernel":info["KernelVersion"],"cgroups":info["CgroupDriver"],"runsc":info["Runtimes"]["runsc"],"memory":info["MemTotal"],"cpus":info["NCPU"]});
+        let fingerprint = hex::encode(Sha256::digest(serde_json::to_vec(&identity)?));
         let image = self
             .output(
                 &[
@@ -283,7 +287,7 @@ impl DockerRunner {
             )
             .await?;
         Ok(
-            json!({"runtime":"runsc","image":self.image,"local_image_id":String::from_utf8_lossy(&image).trim(),"memory_limit_supported":info["MemoryLimit"],"cpu_quota_supported":info["CpuCfsQuota"],"security_qualified":false,"note":"Availability check only; run containment qualification before public deployment"}),
+            json!({"runtime":"runsc","image":self.image,"host_fingerprint":fingerprint,"local_image_id":String::from_utf8_lossy(&image).trim(),"memory_limit_supported":info["MemoryLimit"],"cpu_quota_supported":info["CpuCfsQuota"],"security_qualified":false,"note":"Availability check only; run containment qualification before public deployment"}),
         )
     }
     pub async fn cleanup(&self, id: &str) -> Result<bool> {
@@ -391,6 +395,7 @@ impl DockerRunner {
             .stderr(Stdio::piped())
             .spawn()?;
         let execution_clock = Instant::now();
+        let execution_started_at = now();
         let mut stdin = child.stdin.take().context("sandbox stdin")?;
         let code = code.as_bytes().to_vec();
         let input = tokio::spawn(async move {
@@ -463,6 +468,7 @@ impl DockerRunner {
             tokio::time::sleep(Duration::from_millis(30)).await;
         };
         let execution_ms = execution_clock.elapsed().as_millis();
+        let execution_finished_at = now();
         input.abort();
         let _ = stats_child.kill().await;
         let samples = tokio::time::timeout(Duration::from_secs(2), stats_task)
@@ -514,7 +520,7 @@ impl DockerRunner {
             out_complete && err_complete,
         );
         Ok(
-            json!({"reason":reason,"exit_code":exit,"execution_ms":execution_ms,"stdout":String::from_utf8_lossy(&out),"stderr":String::from_utf8_lossy(&err),"output_truncated":exceeded.load(Ordering::SeqCst),"checks":checks,"checks_passed":passed,"artifacts":artifacts,"result":result_json,"resource_samples":samples,"resource_sampling_note":"Observed Docker samples when available, not peak-memory attestation"}),
+            json!({"reason":reason,"exit_code":exit,"execution_ms":execution_ms,"execution_started_at":execution_started_at,"execution_finished_at":execution_finished_at,"stdout":String::from_utf8_lossy(&out),"stderr":String::from_utf8_lossy(&err),"output_truncated":exceeded.load(Ordering::SeqCst),"checks":checks,"checks_passed":passed,"artifacts":artifacts,"result":result_json,"resource_samples":samples,"resource_sampling_note":"Observed Docker samples when available, not peak-memory attestation"}),
         )
     }
 }

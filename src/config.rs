@@ -29,6 +29,7 @@ pub struct Settings {
     pub inference_budget_usd: f64,
     pub capacity_mb: u32,
     pub sandbox_image: String,
+    pub qualification_report: Option<PathBuf>,
 }
 impl Settings {
     pub fn local() -> Self {
@@ -49,6 +50,7 @@ impl Settings {
             inference_budget_usd: 5.0,
             capacity_mb: 2048,
             sandbox_image: String::new(),
+            qualification_report: None,
         }
     }
     pub fn from_env() -> Result<Self> {
@@ -106,6 +108,10 @@ impl Settings {
             s.capacity_mb = v.parse()?;
         }
         s.sandbox_image = env::var("AR_SANDBOX_IMAGE").unwrap_or_default();
+        s.qualification_report = env::var("AR_QUALIFICATION_REPORT")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .map(PathBuf::from);
         Ok(s)
     }
     pub fn inference_configured(&self) -> bool {

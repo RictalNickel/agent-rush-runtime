@@ -119,3 +119,33 @@ async fn draining_worker_rejects_new_admission_before_docker_access() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
 }
+
+#[tokio::test]
+async fn expired_qualification_rejects_new_work_without_destroying_evidence() {
+    let dir = tempfile::tempdir().unwrap();
+    let token = "a-long-worker-token-with-32-bytes-minimum";
+    let state = NodeState::new(
+        DockerRunner::new(IMAGE).unwrap(),
+        dir.path().into(),
+        token.into(),
+        1024,
+    )
+    .unwrap()
+    .with_qualification_expiry(chrono::Utc::now().timestamp() - 1);
+    let response = node_router(state)
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/runs")
+                .header("authorization", format!("Bearer {token}"))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"id":"expired-report","code":"fn main(){}","limits":{}}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
+}

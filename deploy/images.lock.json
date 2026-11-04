@@ -1,0 +1,13 @@
+{
+  "schema": "agent-rush.images.v1",
+  "platform": "linux/amd64",
+  "control_base": "ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852",
+  "cli_sandbox": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+  "public_ca_bundle_sha256": "714d457d580922dbf1d0be8bd35ba236a842b50b0072ae791582a19adef772a5",
+  "public_ca_source": "Debian ca-certificates 20250419, /usr/share/ca-certificates/mozilla/*.crt (sorted); session proxy roots excluded",
+  "optional_profiles": {
+    "browser": "disabled, not qualified",
+    "nested-dev": "disabled, not qualified",
+    "nested-desktop": "disabled, not qualified"
+  }
+}

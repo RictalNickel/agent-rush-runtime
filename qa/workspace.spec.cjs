@@ -19,6 +19,9 @@ test('workspace, operator login, real queued job, evidence and cancellation',asy
   const download=page.waitForEvent('download');
   await page.getByRole('link',{name:'Export evidence'}).click();
   const receipt=await download;expect(receipt.suggestedFilename()).toMatch(/^evidence-.+\.json$/);
+  const contextDownload=page.waitForEvent('download');
+  await page.getByRole('link',{name:'Agent contexts',exact:true}).click();
+  expect((await contextDownload).suggestedFilename()).toBe('agent-contexts.json');
   await page.getByRole('button',{name:'Cancel task',exact:true}).click();
   await expect(page.locator('#run-state')).toHaveText('cancelled');
   await page.screenshot({path:'/tmp/agent-rush-execution-record.png',fullPage:true});

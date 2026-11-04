@@ -89,3 +89,8 @@ Trusted setup now includes `vultr-inference-key` (reuse an existing serverless s
 The user's latest instructions require a private repository, Rust platform components, Agent Zero as reference only, a $300 ceiling and machines active only when needed. Keep at least $50 in reserve. No GPU, automatic scale-out or unattended demo is enabled. A stopped Vultr VM can still incur charges; delete newly created temporary test resources after preserving evidence and reproducible configuration.
 
 Nested Docker, browser/desktop profiles, live memory expansion on an executing container, full Agent Zero plugin compatibility, cloud provisioning/automatic billing cutoff, an independently validated public deployment and a live demo recording are not delivered or advertised as supported. See the feature matrix and remaining work in docs/VERIFICATION.md.
+
+
+Native Agent Zero behavior is mapped in [the Rust port record](docs/reference/NATIVE_PORT.md): iterative child contexts and continuation, persisted context exports, bounded owner memory, strict tools, shared call limits and admitted between-attempt RAM growth. All production model calls still use one Vultr gateway; generated code executes only on the private worker.
+
+Run `agent-rush qualify --output <new-private-report.json>` on a candidate worker before enabling it, then set `AR_QUALIFICATION_REPORT` to that report. The command runs fixed real containment/resource probes and rejects unsupported hosts before executing code. Reports are bound to the exact host/image and expire after two hours. The current managed host is refused. See [image packaging](docs/IMAGES.md) for locked image inputs and the native control image build/export.

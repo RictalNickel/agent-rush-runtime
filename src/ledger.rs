@@ -6,7 +6,7 @@ use std::{path::Path, sync::Mutex};
 use uuid::Uuid;
 
 pub struct Ledger {
-    db: Mutex<Connection>,
+    pub(crate) db: Mutex<Connection>,
     capacity_mb: u32,
 }
 
@@ -22,7 +22,12 @@ impl Ledger {
         db.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
             CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, owner TEXT NOT NULL, idem TEXT NOT NULL, request TEXT NOT NULL, data TEXT NOT NULL, leased_mb INTEGER NOT NULL DEFAULT 0, UNIQUE(owner,idem));
             CREATE TABLE IF NOT EXISTS sessions(hash TEXT PRIMARY KEY, owner TEXT NOT NULL, csrf TEXT NOT NULL, expires INTEGER NOT NULL);
-            CREATE TABLE IF NOT EXISTS spend(id TEXT PRIMARY KEY, reserved REAL NOT NULL, actual REAL, at TEXT NOT NULL);")?;
+            CREATE TABLE IF NOT EXISTS spend(id TEXT PRIMARY KEY, reserved REAL NOT NULL, actual REAL, at TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS memories(id TEXT PRIMARY KEY, owner TEXT NOT NULL, title TEXT NOT NULL, text TEXT NOT NULL, created_at TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS memories_owner ON memories(owner);
+            CREATE TABLE IF NOT EXISTS agent_contexts(agent_id TEXT PRIMARY KEY, job_id TEXT NOT NULL REFERENCES jobs(id), owner TEXT NOT NULL, data TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS scheduler_meta(id INTEGER PRIMARY KEY CHECK(id=1), last_owner TEXT NOT NULL);
+            INSERT OR IGNORE INTO scheduler_meta VALUES(1,'');")?;
         Ok(Self {
             db: Mutex::new(db),
             capacity_mb,
@@ -116,6 +121,18 @@ impl Ledger {
         )?)
     }
     pub fn claim(&self, id: &str) -> Result<Option<Job>> {
+        self.claim_with_capacity(id, self.capacity_mb)
+    }
+    pub fn scheduling_candidates(&self) -> Result<Vec<Job>> {
+        let db = self.db.lock().unwrap();
+        let mut statement = db.prepare("SELECT data FROM jobs WHERE rowid IN (SELECT MIN(rowid) FROM jobs WHERE json_extract(data,'$.state')='queued' GROUP BY owner) ORDER BY (owner=(SELECT last_owner FROM scheduler_meta WHERE id=1)) ASC,rowid ASC LIMIT 32")?;
+        let rows = statement.query_map([], |r| r.get::<_, String>(0))?;
+        rows.map(|r| Ok(serde_json::from_str(&r?)?)).collect()
+    }
+    pub fn capacity_mb(&self) -> u32 {
+        self.capacity_mb
+    }
+    pub fn claim_with_capacity(&self, id: &str, node_capacity_mb: u32) -> Result<Option<Job>> {
         let mut db = self.db.lock().unwrap();
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         let data: Option<String> = tx
@@ -126,10 +143,17 @@ impl Ledger {
         if job.state != "queued" || job.cancel_requested {
             return Ok(None);
         }
+        let slots: usize =
+            tx.query_row("SELECT COUNT(*) FROM jobs WHERE leased_mb>0", [], |r| {
+                r.get(0)
+            })?;
+        if slots >= crate::resources::MAX_CONCURRENT {
+            return Ok(None);
+        }
         let used: u32 = tx.query_row("SELECT COALESCE(SUM(leased_mb),0) FROM jobs", [], |r| {
             r.get(0)
         })?;
-        if used.saturating_add(job.memory_mb) > self.capacity_mb {
+        if used.saturating_add(job.memory_mb) > self.capacity_mb.min(node_capacity_mb) {
             return Ok(None);
         }
         job.state = "planning".into();
@@ -138,6 +162,10 @@ impl Ledger {
         tx.execute(
             "UPDATE jobs SET data=?1,leased_mb=?2 WHERE id=?3",
             params![serde_json::to_string(&job)?, job.memory_mb, id],
+        )?;
+        tx.execute(
+            "UPDATE scheduler_meta SET last_owner=?1 WHERE id=1",
+            [&job.owner],
         )?;
         tx.commit()?;
         Ok(Some(job))
@@ -186,6 +214,15 @@ impl Ledger {
         })
     }
     pub fn grow(&self, owner: &str, id: &str, target: u32) -> Result<Job> {
+        self.grow_with_capacity(owner, id, target, self.capacity_mb)
+    }
+    pub fn grow_with_capacity(
+        &self,
+        owner: &str,
+        id: &str,
+        target: u32,
+        node_capacity_mb: u32,
+    ) -> Result<Job> {
         ensure!((128..=1024).contains(&target), "memory exceeds policy");
         let mut db = self.db.lock().unwrap();
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
@@ -196,15 +233,20 @@ impl Ledger {
         )?;
         let mut job: Job = serde_json::from_str(&data)?;
         ensure!(old > 0 && target >= old, "only active leases can grow");
+        ensure!(
+            matches!(job.state.as_str(), "planning" | "verifying"),
+            "memory growth applies only between sandbox attempts"
+        );
         let used: u32 = tx.query_row("SELECT COALESCE(SUM(leased_mb),0) FROM jobs", [], |r| {
             r.get(0)
         })?;
         ensure!(
-            used - old + target <= self.capacity_mb,
+            used - old + target <= self.capacity_mb.min(node_capacity_mb),
             "insufficient capacity"
         );
         job.memory_mb = target;
         job.updated_at = now();
+        job.record_event(json!({"at":now(),"kind":"memory_granted","memory_mb":target,"message":"Atomic increase reserved for the next sandbox attempt"}));
         tx.execute(
             "UPDATE jobs SET data=?1,leased_mb=?2 WHERE id=?3",
             params![serde_json::to_string(&job)?, target, id],

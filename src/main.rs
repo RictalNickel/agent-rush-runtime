@@ -39,6 +39,11 @@ enum Commands {
         bind: String,
     },
     Doctor,
+    /// Run fixed real containment/resource probes. Refuses hosts without required enforcement.
+    Qualify {
+        #[arg(long)]
+        output: PathBuf,
+    },
     Sandbox {
         source: PathBuf,
         #[arg(long, default_value_t = 512)]
@@ -154,12 +159,32 @@ async fn main() -> Result<()> {
                 &settings.sandbox_image
             };
             let runner = DockerRunner::new(image)?;
+            let report_path=settings.qualification_report.as_ref().context("Run agent-rush qualify and configure AR_QUALIFICATION_REPORT before starting a worker")?;
+            let metadata = std::fs::symlink_metadata(report_path)?;
+            ensure!(
+                metadata.file_type().is_file() && metadata.len() <= 5 * 1024 * 1024,
+                "invalid qualification file"
+            );
+            let report: serde_json::Value = serde_json::from_slice(&std::fs::read(report_path)?)?;
+            agent_rush::qualification::validate_report(
+                &report,
+                &runner.health().await?,
+                chrono::Utc::now(),
+            )?;
+            let expires_at = chrono::DateTime::parse_from_rfc3339(
+                report["finished_at"]
+                    .as_str()
+                    .context("qualification timestamp missing")?,
+            )?
+            .timestamp()
+                + 7200;
             let node = NodeState::new(
                 runner,
                 settings.data_dir.join("node"),
                 settings.worker_token.clone(),
                 settings.capacity_mb,
-            )?;
+            )?
+            .with_qualification_expiry(expires_at);
             // Bind before recovery so two workers cannot race to destroy each other's tasks.
             let listener = tokio::net::TcpListener::bind(&bind).await?;
             node.recover().await?;
@@ -238,6 +263,42 @@ async fn main() -> Result<()> {
                 &settings.sandbox_image
             })?;
             println!("{}", serde_json::json!({"removed":runner.recover().await?}));
+        }
+        Commands::Qualify { output } => {
+            use std::io::Write;
+            let mut options = std::fs::OpenOptions::new();
+            options.create_new(true).write(true);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                options.mode(0o600);
+            }
+            let mut file = options
+                .open(&output)
+                .context("Qualification output must be a new private file")?;
+            let image = std::env::var("AR_SANDBOX_IMAGE")
+                .ok()
+                .filter(|v| !v.is_empty())
+                .unwrap_or_else(|| IMAGE.into());
+            let runner = DockerRunner::new(&image)?;
+            let cancel = Arc::new(AtomicBool::new(false));
+            let signal = cancel.clone();
+            let watcher = tokio::spawn(async move {
+                shutdown_signal().await;
+                signal.store(true, Ordering::SeqCst);
+            });
+            let report = agent_rush::qualification::run(&runner, cancel).await;
+            watcher.abort();
+            file.write_all(&serde_json::to_vec_pretty(&report)?)?;
+            file.sync_all()?;
+            println!(
+                "{}",
+                serde_json::json!({"qualified":report["qualified"],"output":output,"checks":report["checks"].as_array().map_or(0,|v|v.len())})
+            );
+            ensure!(
+                report["qualified"] == true,
+                "Worker qualification failed or was unavailable; see report. No weaker runtime is permitted"
+            );
         }
         Commands::VultrPlan {
             region,

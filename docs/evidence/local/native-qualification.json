@@ -1,0 +1,55 @@
+{
+  "checks": [
+    {
+      "name": "containment",
+      "passed": false,
+      "status": "not_run_host_rejected"
+    },
+    {
+      "name": "timeout",
+      "passed": false,
+      "status": "not_run_host_rejected"
+    },
+    {
+      "name": "output",
+      "passed": false,
+      "status": "not_run_host_rejected"
+    },
+    {
+      "name": "memory",
+      "passed": false,
+      "status": "not_run_host_rejected"
+    },
+    {
+      "name": "scratch",
+      "passed": false,
+      "status": "not_run_host_rejected"
+    },
+    {
+      "name": "pids",
+      "passed": false,
+      "status": "not_run_host_rejected"
+    },
+    {
+      "name": "cpu",
+      "passed": false,
+      "status": "not_run_host_rejected"
+    },
+    {
+      "name": "cancel",
+      "passed": false,
+      "status": "not_run_host_rejected"
+    },
+    {
+      "name": "concurrency",
+      "passed": false,
+      "status": "not_run_host_rejected"
+    }
+  ],
+  "containers_created": 0,
+  "finished_at": "2026-11-04T06:38:16.051Z",
+  "host_error": "Host cannot enforce required MemoryLimit; worker refused",
+  "qualified": false,
+  "schema": "agent-rush.qualification.v1",
+  "started_at": "2026-11-04T06:38:15.930Z"
+}

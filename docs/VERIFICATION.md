@@ -6,8 +6,8 @@ This report distinguishes the implemented local system from a deployable/qualifi
 
 | Check | Observed result |
 | --- | --- |
-| Rust unit/API/policy suites | 52 passed after configuration/deployment continuation; command `cargo test --locked -j4` |
-| Default container test selection | Six explicitly ignored; a default green suite does not qualify a host |
+| Rust unit/API/policy suites | 74 passed after native-port completion continuation; command `cargo test --locked -j4` |
+| Default container test selection | Seven explicitly ignored; a default green suite does not qualify a host |
 | Explicit real local container suite, before fail-closed preflight was added | Five passed; one failed (`real_memory_cap`) |
 | Real containment | Rust program executed, total 42, JSON artifact collected and hashed, root write/host path/socket/credential/network probes denied, cleanup verified |
 | Real timeout | Timeout observed; the last recorded 5-second deadline ended at 5007 ms execution time; total duration also includes slow vfs setup/cleanup |
@@ -76,3 +76,13 @@ The official Vultr SDK reference at ab4d9052f7bba410fd63a3f9129e06bd5e14aae1 doc
 Cleanup defaults to preview. Execution requires exact resource IDs, deployment-specific labels/tags, region and creation-time checks, then confirms absence. An authenticated account/credential hash is checked before accepting any absence response. Both independent VMs are attempted even if one is pending/errors; dependencies wait until all VMs are confirmed absent. Attached VPC/firewall resources are rejected. This is a trusted manual helper, not an independent billing cutoff or provisioning workflow.
 
 A fresh bounded review of this continuation identified two Important issues: unbound-account 404 responses and pending instance deletion delaying the second VM. Both were reproduced with failing regression tests and fixed. Added coverage also verifies that one instance lookup error does not prevent attempting the other instance, while dependency cleanup stays blocked. This review is source-level evidence, not a live cloud or independent security qualification.
+
+## Native port, orchestration and allocation continuation
+
+The current Rust suite passes 74 tests. Seven host tests are explicitly ignored by default; the added native host-qualification test requires all nine fixed real probes. New fixture coverage exercises the production engine's iterative subordinates/continuation, shared call limits, memory save/search/delete, between-attempt memory requests, failed execution/retry, cancellation and unresolved cleanup. Atomic admission now checks both slots and RAM in the same transaction, and scheduling rotates queued owners. These fixtures do not establish provider-generated task quality.
+
+Worker startup requires a host/image-matching qualification report no older than two hours. Passing flags are recomputed from their recorded receipts. Expiry blocks new admission. Actual `agent-rush qualify` on the managed host returned `qualified=false`, `containers_created=0`, and `Host cannot enforce required MemoryLimit; worker refused`; raw report is docs/evidence/local/native-qualification.json. CPU, PID and overlapping-neighbor enforcement remain unverified, as all probes were refused here.
+
+One fresh review of this continuation found an Important panic from serialized JSON expansion in the context buffer. The actual-engine regression failed before fixing and now passes with both clean and unresolved worker receipts. Observation failures now follow normal finalization; receipt evidence is retained first. History shortening preserves the fixed policy/original task and records truncation counts. Full suite, denied-warning Clippy and format checks passed after fixing.
+
+The current desktop/mobile Chromium suite again passes both tests, including the added authenticated context download. No browser plugin is available, so regular Playwright and installed Chromium were used. The actual updated execution record was visually inspected. No model, sandbox or cloud execution is simulated as live by these UI checks.

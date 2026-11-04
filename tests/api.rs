@@ -275,3 +275,139 @@ fn configured_worker_trust_cannot_be_silently_ignored() {
     settings.worker_ca_path = Some(dir.path().join("missing-ca.pem"));
     assert!(AppState::new(settings, Ledger::memory(1024).unwrap()).is_err());
 }
+
+#[tokio::test]
+async fn operator_memory_management_requires_auth_csrf_and_rejects_authority_fields() {
+    let app = app();
+    assert_eq!(
+        call(
+            app.clone(),
+            "GET",
+            "/api/memories?query=rule",
+            Value::Null,
+            "",
+            ""
+        )
+        .await
+        .0,
+        StatusCode::UNAUTHORIZED
+    );
+    let (_, session, cookie) = call(
+        app.clone(),
+        "POST",
+        "/api/login",
+        json!({"password":"test-password-long-enough"}),
+        "",
+        "",
+    )
+    .await;
+    let csrf = session["csrf"].as_str().unwrap();
+    assert_eq!(
+        call(
+            app.clone(),
+            "POST",
+            "/api/memories",
+            json!({"title":"Rule","text":"Integer cents"}),
+            &cookie,
+            ""
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    let (status, memory, _) = call(
+        app.clone(),
+        "POST",
+        "/api/memories",
+        json!({"title":"Rule","text":"Integer cents"}),
+        &cookie,
+        csrf,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(
+        call(
+            app.clone(),
+            "GET",
+            "/api/memories?query=cents",
+            Value::Null,
+            &cookie,
+            ""
+        )
+        .await
+        .1
+        .as_array()
+        .unwrap()
+        .len(),
+        1
+    );
+    assert_eq!(
+        call(
+            app.clone(),
+            "POST",
+            "/api/memories",
+            json!({"title":"Rule","text":"note","owner":"admin"}),
+            &cookie,
+            csrf
+        )
+        .await
+        .0,
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    assert_eq!(
+        call(
+            app.clone(),
+            "DELETE",
+            &format!("/api/memories/{}", memory["id"].as_str().unwrap()),
+            Value::Null,
+            &cookie,
+            csrf
+        )
+        .await
+        .0,
+        StatusCode::OK
+    );
+}
+
+#[tokio::test]
+async fn context_export_is_authenticated_and_admission_policy_is_explicit() {
+    let app = app();
+    let (_, session, cookie) = call(
+        app.clone(),
+        "POST",
+        "/api/login",
+        json!({"password":"test-password-long-enough"}),
+        "",
+        "",
+    )
+    .await;
+    let csrf = session["csrf"].as_str().unwrap();
+    let (_, job, _) = call(
+        app.clone(),
+        "POST",
+        "/api/jobs",
+        json!({"prompt":"Compute totals"}),
+        &cookie,
+        csrf,
+    )
+    .await;
+    let path = format!("/api/jobs/{}/contexts", job["id"].as_str().unwrap());
+    assert_eq!(
+        call(app.clone(), "GET", &path, Value::Null, "", "").await.0,
+        StatusCode::UNAUTHORIZED
+    );
+    assert_eq!(
+        call(app.clone(), "GET", &path, Value::Null, &cookie, "")
+            .await
+            .1["contexts"],
+        json!([])
+    );
+    let status = call(app.clone(), "GET", "/api/status", Value::Null, "", "")
+        .await
+        .1;
+    assert_eq!(status["resources"]["max_concurrent_jobs"], 2);
+    assert_eq!(
+        status["resources"]["controller_admission_capacity_mb"],
+        1024
+    );
+}

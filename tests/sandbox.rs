@@ -160,3 +160,20 @@ async fn real_cancel_cleanup() {
     assert_eq!(result["reason"], "cancelled");
     assert_eq!(result["cleanup_state"], "verified");
 }
+
+#[tokio::test]
+#[ignore = "requires a genuinely qualified Docker/runsc host; runs all nine native acceptance probes"]
+async fn full_native_host_resource_qualification() {
+    let runner = DockerRunner::new(IMAGE).unwrap();
+    let report = agent_rush::qualification::run(&runner, Arc::new(AtomicBool::new(false))).await;
+    std::fs::create_dir_all("runtime/evidence").unwrap();
+    std::fs::write(
+        "runtime/evidence/qualification.json",
+        serde_json::to_vec_pretty(&report).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        report["qualified"], true,
+        "Review runtime/evidence/qualification.json; no weaker fallback allowed"
+    );
+}

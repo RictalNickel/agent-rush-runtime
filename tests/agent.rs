@@ -30,10 +30,16 @@ fn subordinate_context_is_bounded_and_not_a_security_boundary() {
 #[test]
 fn model_output_is_not_authoritative_verification() {
     let mut context = AgentContext::root("task", "Compute totals");
-    context.observe(&json!({"exit_code":1,"checks_passed":false,"cleanup_state":"verified"}));
+    context
+        .observe(&json!({"exit_code":1,"checks_passed":false,"cleanup_state":"verified"}))
+        .unwrap();
     assert!(!context.verified());
-    context.observe(&json!({"exit_code":0,"checks_passed":true,"cleanup_state":"failed"}));
+    context
+        .observe(&json!({"exit_code":0,"checks_passed":true,"cleanup_state":"failed"}))
+        .unwrap();
     assert!(!context.verified());
-    context.observe(&json!({"exit_code":0,"checks_passed":true,"cleanup_state":"verified"}));
+    context
+        .observe(&json!({"exit_code":0,"checks_passed":true,"cleanup_state":"verified"}))
+        .unwrap();
     assert!(context.verified());
 }

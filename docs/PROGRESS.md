@@ -1,5 +1,16 @@
 # Implementation progress
 
+## Native completion continuation, November 4 UTC
+
+Plan: docs/superpowers/plans/2026-11-04-native-port-completion.md; base 849c86e.
+
+- Task 1: native owner-scoped durable memory save/search/delete, strict upstream tool-envelope translation, parent-bound persisted contexts and bounded history compaction implemented. Four new tests passed. No embedding/model call needed for retrieval or compaction.
+- Task 2: atomic two-slot/memory admission, owner rotation, worker-advertised capacity, between-attempt-only growth, physical-memory headroom and equal CPU weights implemented. Five tests passed; the old eight-way slot over-admission and running-sandbox accounting-only growth were reproduced as failures before fixing.
+- Task 3: actual production loop extracted into the Rust engine, with typed production Vultr/worker adapters. Iterative subordinate contexts, memory tools, planning, resource requests, shared twelve-call budget and interruptible cancellation implemented. Six engine tests passed, including failed execution/retry, subordinate execution, memory denial and unresolved cleanup. Current full suite after review: 74 passed, seven host tests ignored by default. Fixture providers/workers exercise the production engine but are not live Vultr acceptance.
+- Ruling: memory growth admits a new envelope for the next sandbox attempt, never changes only the ledger of a running process — this keeps accounting consistent with enforced worker limits — cost: live in-place growth is unavailable until separately implemented/qualified.
+- Ruling: port supported Agent Zero context/tool/memory behaviors into native Rust while retaining deny-by-default authority and Vultr-only model routing — unrestricted upstream shell/plugins conflict with the approved isolation boundary — cost: arbitrary upstream plugin parity is not claimed.
+- Runtime APIs still return proxy 403 after recheck through the configured proxy. No custom network hosts are applied. GitHub creation and Vultr billing/model/deployment acceptance remain blocked; authorization does not need renewal.
+
 Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
 
 - Design approved in chat; independent builder check found no material gaps.
@@ -51,3 +62,7 @@ Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
 - Current Rust checks: 52 passed, six real host tests ignored by default; Clippy with warnings denied passed. Existing two browser tests remain the latest UI evidence; no visual change in this continuation.
 - Saved updated startup instructions and added www.vultr.com for official tariff lookup in the configuration draft. Save confirmed; requires publication. Actual enforced policy still has no custom allowed hosts. No new user permission is needed, but this tool cannot publish/apply the draft.
 - Continuation review: fixed both Important findings with regression fixtures: account/credential-scope binding before absence checks, and independent VM cleanup despite another VM being pending/errors. Current full suite 52 passed; no new cloud calls.
+
+- Task 4: real nine-probe native qualification command and a two-hour host/image-bound worker startup gate implemented. Actual managed-host command rejected MemoryLimit before any probe; report records zero containers created. Worker CLI rejects absent qualification. CPU/PID/neighbor probes remain not run here, not silently passed. Official Rust sandbox and Ubuntu 24.04 runtime OCI images are downloaded locally with immutable digests; native control image recipe/build/export prepared.
+- Task 5 review: one fresh bounded source review found one Important context-overflow panic. Reproduced it through the real engine using an 8,000-quote task and heavily escaped worker output, including unresolved cleanup. Fixed serialized-size-aware truncation, fallible observation and receipt retention before processing. Regression RED→GREEN; full Rust suite 74/74 and Clippy with warnings denied passed. No second review claimed.
+- Fresh browser checks: 2/2 passed, including authenticated context JSON download; actual execution-record screenshot inspected after the new control. Temporary QA server stopped. No paid inference/cloud actions performed.

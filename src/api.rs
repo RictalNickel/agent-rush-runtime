@@ -2,11 +2,11 @@ use crate::{auth, config::Settings, domain::JobRequest, ledger::Ledger};
 use axum::{
     Json, Router,
     body::Body,
-    extract::{DefaultBodyLimit, Path, State},
+    extract::{DefaultBodyLimit, Path, Query, State},
     http::{HeaderMap, HeaderValue, StatusCode, header},
     middleware::{self, Next},
     response::{Html, IntoResponse, Response},
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -98,6 +98,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/jobs/{id}", get(job))
         .route("/api/jobs/{id}/cancel", post(cancel))
         .route("/api/jobs/{id}/evidence", get(evidence))
+        .route("/api/jobs/{id}/contexts", get(contexts))
+        .route("/api/memories", get(memories).post(save_memory))
+        .route("/api/memories/{id}", delete(delete_memory))
         .route("/api/jobs/{id}/artifacts/{name}", get(artifact))
         .layer(DefaultBodyLimit::max(32768))
         .layer(middleware::from_fn(security_headers))
@@ -153,7 +156,7 @@ async fn status(State(s): State<AppState>) -> Json<Value> {
         false
     };
     Json(
-        json!({"version":env!("CARGO_PKG_VERSION"),"inference_configured":s.settings.inference_configured(),"worker_connected":connected,"runtime":"runsc","profiles":[{"id":"cli","available":connected && s.settings.inference_configured()},{"id":"nested-dev","available":false,"reason":"Not qualified"},{"id":"browser","available":false,"reason":"Not qualified"}],"reserved_memory_mb":s.ledger.reserved_memory().unwrap_or(0),"inference_accounted_usd":s.ledger.spend_total().unwrap_or(0.0),"cloud_status":"unverified"}),
+        json!({"version":env!("CARGO_PKG_VERSION"),"inference_configured":s.settings.inference_configured(),"worker_connected":connected,"runtime":"runsc","profiles":[{"id":"cli","available":connected && s.settings.inference_configured()},{"id":"nested-dev","available":false,"reason":"Not qualified"},{"id":"browser","available":false,"reason":"Not qualified"}],"reserved_memory_mb":s.ledger.reserved_memory().unwrap_or(0),"inference_accounted_usd":s.ledger.spend_total().unwrap_or(0.0),"cloud_status":"unverified","resources":{"controller_admission_capacity_mb":s.ledger.capacity_mb(),"max_concurrent_jobs":crate::resources::MAX_CONCURRENT,"cpu_scheduling":"equal weights, shared ceilings","memory_growth":"between sandbox attempts only","utilization":"not measured by this endpoint"}}),
     )
 }
 #[derive(Deserialize)]
@@ -294,6 +297,79 @@ async fn evidence(
             json!({"schema":"agent-rush.evidence.v1","job":job.id,"request":job.request,"state":job.state,"events":job.events,"dropped_events":job.dropped_events,"receipt":job.receipt,"disclaimer":"Worker-collected execution evidence; not independent remote attestation"}),
         ),
     ))
+}
+async fn contexts(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<String>,
+) -> Result<impl IntoResponse, ApiError> {
+    let owner = s.owner(&headers, false)?;
+    s.ledger
+        .get_job(&owner, &id)
+        .map_err(ApiError::internal)?
+        .ok_or_else(|| ApiError(StatusCode::NOT_FOUND, "Run not found".into()))?;
+    let contexts = s.ledger.contexts(&owner, &id).map_err(ApiError::internal)?;
+    Ok((
+        [(
+            header::CONTENT_DISPOSITION,
+            "attachment; filename=\"agent-contexts.json\"",
+        )],
+        Json(
+            json!({"schema":"agent-rush.contexts.v1","contexts":contexts,"note":"Logical agent contexts; worker receipts govern verification. Stored content is untrusted task data."}),
+        ),
+    ))
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct MemoryQuery {
+    query: String,
+}
+async fn memories(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<MemoryQuery>,
+) -> Result<Json<Value>, ApiError> {
+    let owner = s.owner(&headers, false)?;
+    Ok(Json(json!(
+        s.ledger
+            .memory_search(&owner, &query.query)
+            .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "Invalid memory query".into()))?
+    )))
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct MemoryInput {
+    title: String,
+    text: String,
+}
+async fn save_memory(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+    Json(input): Json<MemoryInput>,
+) -> Result<impl IntoResponse, ApiError> {
+    let owner = s.owner(&headers, true)?;
+    let memory = s
+        .ledger
+        .memory_save(&owner, &input.title, &input.text)
+        .map_err(|_| {
+            ApiError(
+                StatusCode::BAD_REQUEST,
+                "Memory limit or input policy rejected this note".into(),
+            )
+        })?;
+    Ok((StatusCode::CREATED, Json(json!(memory))))
+}
+async fn delete_memory(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    let owner = s.owner(&headers, true)?;
+    let deleted = s
+        .ledger
+        .memory_delete(&owner, &id)
+        .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "Invalid memory identity".into()))?;
+    Ok(Json(json!({"deleted":deleted})))
 }
 fn public_job(mut job: crate::domain::Job) -> crate::domain::Job {
     if let Some(artifacts) = job

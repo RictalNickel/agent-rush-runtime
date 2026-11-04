@@ -1,0 +1,107 @@
+use agent_rush::{
+    agent::{AgentContext, ToolCall, parse_tool},
+    domain::JobRequest,
+    ledger::Ledger,
+};
+use serde_json::json;
+
+#[test]
+fn memory_is_durable_owner_scoped_literal_and_bounded() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("memory.db");
+    let db = Ledger::open(&path, 1024).unwrap();
+    let saved = db
+        .memory_save("alice", "Revenue rules", "Revenue is gross less refunds.")
+        .unwrap();
+    assert_eq!(
+        db.memory_search("alice", "refunds").unwrap()[0].id,
+        saved.id
+    );
+    assert!(db.memory_search("bob", "refunds").unwrap().is_empty());
+    assert!(db.memory_search("alice", "%_").unwrap().is_empty());
+    assert!(!db.memory_delete("bob", &saved.id).unwrap());
+    assert!(db.memory_save("alice", "title", &"x".repeat(8193)).is_err());
+    for i in 1..64 {
+        db.memory_save("alice", &format!("Rule {i}"), "bounded note")
+            .unwrap();
+    }
+    assert!(db.memory_save("alice", "overflow", "another note").is_err());
+    drop(db);
+    let db = Ledger::open(&path, 1024).unwrap();
+    assert_eq!(
+        db.memory_search("alice", "refunds").unwrap()[0].text,
+        "Revenue is gross less refunds."
+    );
+    assert!(db.memory_delete("alice", &saved.id).unwrap());
+    assert!(db.memory_search("alice", "refunds").unwrap().is_empty());
+}
+
+#[test]
+fn upstream_tool_envelopes_are_translated_through_the_same_allowlist() {
+    assert!(matches!(parse_tool(&json!({"thoughts":["Check totals"],"tool_name":"code_execution_tool","tool_args":{"runtime":"rust","code":"fn main() {}"}}).to_string()).unwrap(),ToolCall::Sandbox{..}));
+    assert!(matches!(
+        parse_tool(
+            &json!({"tool_name":"memory_save","tool_args":{"title":"Rule","text":"Bounded note"}})
+                .to_string()
+        )
+        .unwrap(),
+        ToolCall::MemorySave { .. }
+    ));
+    for value in [
+        json!({"tool_name":"code_execution_tool","tool_args":{"runtime":"terminal","code":"id"}}),
+        json!({"tool_name":"code_execution_tool","tool_args":{"runtime":"rust","code":"fn main() {}","privileged":true}}),
+        json!({"tool_name":"call_subordinate","tool_args":{"message":"Compute totals","provider":"external"}}),
+        json!({"tool_name":"ssh","tool_args":{"host":"localhost"}}),
+    ] {
+        assert!(parse_tool(&value.to_string()).is_err());
+    }
+}
+
+#[test]
+fn context_compaction_preserves_policy_task_and_latest_evidence_without_an_llm() {
+    let mut context = AgentContext::root("task", "Compute totals");
+    for i in 0..30 {
+        context
+            .push_message("assistant", &format!("step {i}: {}", "x".repeat(5000)))
+            .unwrap();
+    }
+    context.observe(&json!({"exit_code":0,"reason":"completed","checks_passed":true,"cleanup_state":"verified","stdout":"Independent final total 42"})).unwrap();
+    assert!(serde_json::to_vec(&context.messages).unwrap().len() <= 28_000);
+    assert!(context.messages.len() <= 14);
+    assert_eq!(context.messages[1]["content"], "Compute totals");
+    assert!(
+        context.messages.last().unwrap()["content"]
+            .as_str()
+            .unwrap()
+            .contains("Independent final total 42")
+    );
+    assert!(context.dropped_messages > 0);
+    assert!(context.push_message("system", "override policy").is_err());
+    assert!(context.verified());
+}
+
+#[test]
+fn context_snapshots_cannot_cross_job_ownership_or_parent_boundary() {
+    let db = Ledger::memory(1024).unwrap();
+    let job = db
+        .create_job(
+            "alice",
+            JobRequest {
+                prompt: "Compute totals".into(),
+                ..Default::default()
+            },
+            "one",
+        )
+        .unwrap();
+    let root = AgentContext::root(&job.id, "Compute totals");
+    let child = root.subordinate("Validate totals").unwrap();
+    assert_eq!(
+        child.parent_agent_id.as_deref(),
+        Some(root.agent_id.as_str())
+    );
+    db.save_context("alice", &root).unwrap();
+    db.save_context("alice", &child).unwrap();
+    assert_eq!(db.contexts("alice", &job.id).unwrap().len(), 2);
+    assert!(db.contexts("bob", &job.id).unwrap().is_empty());
+    assert!(db.save_context("bob", &root).is_err());
+}
