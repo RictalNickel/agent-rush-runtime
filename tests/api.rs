@@ -267,3 +267,11 @@ async fn evidence_and_job_lists_do_not_embed_artifact_bytes() {
         "hello"
     );
 }
+
+#[test]
+fn configured_worker_trust_cannot_be_silently_ignored() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut settings = Settings::local();
+    settings.worker_ca_path = Some(dir.path().join("missing-ca.pem"));
+    assert!(AppState::new(settings, Ledger::memory(1024).unwrap()).is_err());
+}

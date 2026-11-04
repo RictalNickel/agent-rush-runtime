@@ -6,7 +6,7 @@ This report distinguishes the implemented local system from a deployable/qualifi
 
 | Check | Observed result |
 | --- | --- |
-| Rust unit/API/policy suites | 24 passed at the recorded checkpoint; final run command is `cargo test --locked` |
+| Rust unit/API/policy suites | 31 passed after the final review fixes; command `cargo test --locked` |
 | Default container test selection | Six explicitly ignored; a default green suite does not qualify a host |
 | Explicit real local container suite, before fail-closed preflight was added | Five passed; one failed (`real_memory_cap`) |
 | Real containment | Rust program executed, total 42, JSON artifact collected and hashed, root write/host path/socket/credential/network probes denied, cleanup verified |
@@ -20,9 +20,11 @@ This report distinguishes the implemented local system from a deployable/qualifi
 | Browser flow | Two Playwright Chromium tests passed: desktop login, actual queued job, export, cancel; mobile login/layout |
 | Real Vultr inference | Not run; separate inference credential/model/verified pricing absent |
 | Vultr account/pricing | Blocked by proxy CONNECT 403; the infrastructure key has not been validated |
-| GitHub repository creation | Requested private creation; outcome tracked in progress report; no source push without verified private visibility |
+| GitHub repository creation | Attempt failed with API Forbidden; no repository created or source pushed |
 | Public HTTPS/mTLS deployment | Not run; service/nginx templates only |
 | Cloud spending | $0 created by this project; no VMs or inference requests |
+| Optimized Rust build | `cargo build --locked --release` passed |
+| Rust lint/format | Clippy with warnings denied and rustfmt checks passed |
 
 Raw earlier local receipts and the complete failing resource-suite log are in docs/evidence/local. They are historical bounded probes, not proof that the current host is safe. Since the preflight fix, the ordinary execution path refuses this host. Do not disable the fix to reproduce a green subset.
 
@@ -58,3 +60,9 @@ Reference: /workspace/generated_images/exec-1a96790f-a803-4167-85fd-008bdf0d7716
 Compared five areas: true-white/cool-gray/pine palette; sidebar and two-column composition; title/control typography; fine borders/radii/spacing; actual form/table/dialog interactions. Refined the sidebar width, title sizing and outline icons to match the reference. Intentional extensions: login/error dialogs, genuine queued/unavailable state, refresh/export/cancel controls, and cloud status shown as unverified rather than claiming account-wide idle state. Mobile navigation wraps so no control is clipped. Above-the-fold product copy follows the concept except these functional status additions.
 
 Screenshots and temporary QA outputs remain outside committed source under /tmp. The final UI comparison and latest test results must be refreshed after any subsequent visual change.
+
+## Final review fixes
+
+One fresh read-only whole-branch review identified five Important defects and one readiness-reporting defect. The readiness defect was promoted for fixing because it would mislead users of an mTLS deployment. Added regression coverage for idempotent repeated cancellation, bounded history with explicit dropped-event counts, queued jobs surviving more than 100 newer terminal records, rejection during worker drain, preservation of uncertain creation during cancellation, final output-overflow/capture reconciliation, and configured worker trust not being ignored. All 31 unit/API tests and both fresh-database browser tests passed after the fixes. No second review or independent security audit is claimed.
+
+Uncertain creation and crashes with an unfinished run now require operator fencing/reconciliation before worker restart. An empty inventory snapshot does not resolve possible late Docker creation. This conservative stop retains capacity and can require manual recovery; it is preferable to a false cleanup receipt. Experimental crash/transport race qualification remains outstanding.

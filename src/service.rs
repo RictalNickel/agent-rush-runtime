@@ -23,22 +23,12 @@ struct NodeClient {
 }
 impl NodeClient {
     fn new(state: &AppState) -> Result<Self> {
-        let mut builder = reqwest::Client::builder()
-            .timeout(Duration::from_secs(8))
-            .redirect(reqwest::redirect::Policy::none());
-        if let Ok(path) = std::env::var("AR_WORKER_CA_PATH") {
-            builder = builder
-                .add_root_certificate(reqwest::Certificate::from_pem(&std::fs::read(path)?)?);
-        }
-        if let Ok(path) = std::env::var("AR_WORKER_IDENTITY_PATH") {
-            builder = builder.identity(reqwest::Identity::from_pem(&std::fs::read(path)?)?);
-        }
         ensure!(
             state.settings.worker_token.len() >= 32,
             "worker credential missing"
         );
         Ok(Self {
-            client: builder.build()?,
+            client: state.http.clone(),
             base: state
                 .settings
                 .worker_url
@@ -134,8 +124,8 @@ pub async fn run_once(state: &AppState) -> Result<usize> {
     if !node.ready().await {
         return Ok(0);
     }
-    let jobs = state.ledger.list_jobs("operator")?;
-    for job in jobs.iter().rev().filter(|j| j.state == "queued") {
+    let jobs = state.ledger.queued_jobs("operator")?;
+    for job in &jobs {
         if let Some(job) = state.ledger.claim(&job.id)? {
             let state = state.clone();
             let node = node.clone();
@@ -269,11 +259,11 @@ async fn run_job(state: &AppState, node: &NodeClient, job: &Job) -> Result<()> {
         || json!({"exit_code":null,"checks_passed":false,"stdout":"","stderr":"","artifacts":[]}),
     );
     if let Err(e) = result {
-        state.ledger.event(
+        let _ = state.ledger.event(
             &job.id,
             "error",
             &format!("Task could not complete: {}", safe_error(&e.to_string())),
-        )?;
+        );
         receipt["reason"] = json!(if cancelled(state, job) {
             "cancelled"
         } else {

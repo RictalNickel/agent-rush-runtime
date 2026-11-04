@@ -47,3 +47,5 @@ Before creating each resource, record project tag, resource type/ID, region, pla
 On partial failure, immediately delete newly created resources through the verified API route. Persist pending cleanup for retry and alert the operator if deletion cannot be confirmed. Deleting containers or powering off a VM is not evidence of VM deletion or billing cessation.
 
 No cloud teardown was needed in this session because no resources were created. The local cleanup command is `agent-rush cleanup`, which removes only containers carrying this worker project's management label; it does not inspect or delete Vultr resources.
+
+The temporary owner-only infrastructure-key file used for the blocked account check was removed before environment publication. Its value was never included in source, saved setup instructions or artifacts. The user's existing authorization remains; do not ask for the same infrastructure credential again merely because the temporary file was cleaned up. Use a secure binding or temporary trusted-runner injection when the API route works.

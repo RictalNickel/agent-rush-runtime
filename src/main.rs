@@ -102,14 +102,13 @@ async fn main() -> Result<()> {
             node.runner.health().await?;
             tracing::info!(address=%bind,"private worker listening; use mTLS ingress for remote access");
             let shutdown_node = node.clone();
-            axum::serve(listener, node_router(node))
+            axum::serve(listener, node_router(node.clone()))
                 .with_graceful_shutdown(async move {
                     shutdown_signal().await;
-                    if let Err(e) = shutdown_node.shutdown().await {
-                        tracing::error!(error=%e,"worker cleanup failed");
-                    }
+                    shutdown_node.begin_drain();
                 })
                 .await?;
+            node.shutdown().await?;
         }
         Commands::Doctor => {
             let runner = DockerRunner::new(if settings.sandbox_image.is_empty() {

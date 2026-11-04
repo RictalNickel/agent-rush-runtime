@@ -473,16 +473,8 @@ impl DockerRunner {
         if reason != "completed" && reason != "execution_failed" {
             let _ = self.output(&["kill".into(), spec.name()], 4096).await;
         }
-        let out = tokio::time::timeout(Duration::from_secs(2), stdout)
-            .await
-            .ok()
-            .and_then(|r| r.ok())
-            .unwrap_or_default();
-        let err = tokio::time::timeout(Duration::from_secs(2), stderr)
-            .await
-            .ok()
-            .and_then(|r| r.ok())
-            .unwrap_or_default();
+        let (out, out_complete) = finish_capture(stdout).await;
+        let (err, err_complete) = finish_capture(stderr).await;
         let artifacts = if reason == "completed" {
             // gVisor tmpfs lives in its guest filesystem and cannot be read with Docker cp.
             // A fixed read-only tar binary exports bytes; the host never extracts paths.
@@ -505,7 +497,6 @@ impl DockerRunner {
         } else {
             Vec::new()
         };
-        let mut checks = vec![json!({"name":"process_exit_zero","passed":exit==Some(0)})];
         let result_json = artifacts
             .iter()
             .find(|a| a.name == "result.json")
@@ -515,14 +506,45 @@ impl DockerRunner {
                     .ok()
             })
             .and_then(|b| serde_json::from_slice::<Value>(&b).ok());
-        checks.push(json!({"name":"result_json_is_object","passed":result_json.as_ref().is_some_and(Value::is_object)}));
-        let passed = checks.iter().all(|c| c["passed"] == true);
+        let (reason, checks, passed) = reconcile_output(
+            exit,
+            reason,
+            exceeded.load(Ordering::SeqCst),
+            result_json.as_ref().is_some_and(Value::is_object),
+            out_complete && err_complete,
+        );
         Ok(
             json!({"reason":reason,"exit_code":exit,"execution_ms":execution_ms,"stdout":String::from_utf8_lossy(&out),"stderr":String::from_utf8_lossy(&err),"output_truncated":exceeded.load(Ordering::SeqCst),"checks":checks,"checks_passed":passed,"artifacts":artifacts,"result":result_json,"resource_samples":samples,"resource_sampling_note":"Observed Docker samples when available, not peak-memory attestation"}),
         )
     }
 }
 
+pub fn reconcile_output(
+    exit: Option<i32>,
+    reason: &str,
+    overflow: bool,
+    json_valid: bool,
+    capture_complete: bool,
+) -> (String, Vec<Value>, bool) {
+    let reason = if overflow { "output_limit" } else { reason };
+    let checks = vec![
+        json!({"name":"process_exit_zero","passed":exit==Some(0)}),
+        json!({"name":"result_json_is_object","passed":json_valid}),
+        json!({"name":"output_within_limit","passed":!overflow}),
+        json!({"name":"output_capture_complete","passed":capture_complete}),
+    ];
+    let passed = reason == "completed" && checks.iter().all(|c| c["passed"] == true);
+    (reason.into(), checks, passed)
+}
+async fn finish_capture(mut task: tokio::task::JoinHandle<Vec<u8>>) -> (Vec<u8>, bool) {
+    match tokio::time::timeout(Duration::from_secs(2), &mut task).await {
+        Ok(Ok(bytes)) => (bytes, true),
+        _ => {
+            task.abort();
+            (Vec::new(), false)
+        }
+    }
+}
 async fn capture<R: AsyncRead + Unpin>(
     mut reader: R,
     total: Arc<AtomicUsize>,

@@ -29,6 +29,8 @@ pub struct NodeState {
     token: Arc<String>,
     active: Arc<Mutex<HashMap<String, ActiveLease>>>,
     capacity_mb: u32,
+    draining: Arc<AtomicBool>,
+    io_lock: Arc<Mutex<()>>,
 }
 #[derive(Clone)]
 struct ActiveLease {
@@ -67,6 +69,8 @@ impl NodeState {
             token: Arc::new(token),
             active: Arc::new(Mutex::new(HashMap::new())),
             capacity_mb,
+            draining: Arc::new(AtomicBool::new(false)),
+            io_lock: Arc::new(Mutex::new(())),
         })
     }
     fn auth(&self, headers: &HeaderMap) -> Result<(), NodeError> {
@@ -96,6 +100,7 @@ impl NodeState {
         Ok(serde_json::from_slice(&std::fs::read(path)?)?)
     }
     fn write(&self, id: &str, record: &Record) -> Result<()> {
+        let _guard = self.io_lock.lock().unwrap();
         let path = self.path(id)?;
         let tmp = path.with_extension("tmp");
         std::fs::write(&tmp, serde_json::to_vec(record)?)?;
@@ -117,18 +122,37 @@ impl NodeState {
                 .into_owned();
             let mut record = self.read(&id)?;
             if record.state == "running" {
-                let cleaned = self.runner.cleanup(&id).await?;
                 record.state = "finished".into();
                 record.updated_at = now();
                 record.receipt = Some(
-                    json!({"job_id":id,"reason":"worker_restarted","exit_code":null,"checks_passed":false,"cleanup_state":if cleaned{"verified"}else{"failed"},"artifacts":[]}),
+                    json!({"job_id":id,"reason":"worker_restarted","exit_code":null,"checks_passed":false,"cleanup_state":"failed","creation_uncertain":true,"artifacts":[]}),
                 );
+                self.write(&id, &record)?;
+            }
+            ensure!(
+                !record
+                    .receipt
+                    .as_ref()
+                    .is_some_and(|r| r["creation_uncertain"] != false),
+                "Uncertain container creation for {id}; operator fencing/reconciliation required before worker restart"
+            );
+            if record
+                .receipt
+                .as_ref()
+                .is_some_and(|r| r["cleanup_state"] != "verified")
+            {
+                let cleaned = self.runner.cleanup(&id).await?;
+                ensure!(cleaned, "Cleanup unresolved for {id}");
+                if let Some(receipt) = record.receipt.as_mut() {
+                    receipt["cleanup_state"] = json!("verified");
+                }
                 self.write(&id, &record)?;
             }
         }
         Ok(())
     }
     pub async fn shutdown(&self) -> Result<()> {
+        self.begin_drain();
         for lease in self.active.lock().unwrap().values() {
             lease.cancel.store(true, Ordering::SeqCst);
         }
@@ -138,8 +162,19 @@ impl NodeState {
             }
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         }
+        for id in self.active.lock().unwrap().keys() {
+            let mut record = self.read(id)?;
+            record.state = "finished".into();
+            record.receipt = Some(
+                json!({"reason":"shutdown_unresolved","creation_uncertain":true,"checks_passed":false,"cleanup_state":"failed","artifacts":[]}),
+            );
+            self.write(id, &record)?;
+        }
         self.runner.recover().await?;
         Ok(())
+    }
+    pub fn begin_drain(&self) {
+        self.draining.store(true, Ordering::SeqCst);
     }
 }
 struct NodeError(StatusCode, String);
@@ -162,6 +197,12 @@ pub fn node_router(state: NodeState) -> Router {
 }
 async fn health(State(s): State<NodeState>, headers: HeaderMap) -> Result<Json<Value>, NodeError> {
     s.auth(&headers)?;
+    if s.draining.load(Ordering::SeqCst) {
+        return Err(NodeError(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Worker is draining".into(),
+        ));
+    }
     Ok(Json(s.runner.health().await.map_err(|_| {
         NodeError(
             StatusCode::SERVICE_UNAVAILABLE,
@@ -184,6 +225,12 @@ async fn submit(
     let record;
     {
         let mut active = s.active.lock().unwrap();
+        if s.draining.load(Ordering::SeqCst) {
+            return Err(NodeError(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "Worker is draining".into(),
+            ));
+        }
         if let Ok(existing) = s.read(&input.id) {
             if existing.hash != hash {
                 return Err(NodeError(
@@ -234,7 +281,7 @@ async fn submit(
                 Ok(v) => v,
                 Err(e) => {
                     tracing::warn!(error=%e,"node execution failed");
-                    json!({"reason":"node_error","checks_passed":false,"cleanup_state":"failed","artifacts":[]})
+                    json!({"reason":"preflight_rejected","creation_uncertain":false,"checks_passed":false,"cleanup_state":"verified","artifacts":[]})
                 }
             });
             if let Err(e) = state.write(&input.id, &finished) {
@@ -276,11 +323,20 @@ async fn cancel(
         lease.cancel.store(true, Ordering::SeqCst);
         return Ok(Json(json!({"cancel_requested":true})));
     }
+    let mut record = s.read(&id).map_err(err)?;
+    if record
+        .receipt
+        .as_ref()
+        .is_none_or(|r| r["creation_uncertain"] != false)
+    {
+        return Ok(Json(
+            json!({"cancel_requested":true,"cleanup_state":"failed","reason":"creation_uncertain_requires_operator_reconciliation"}),
+        ));
+    }
     let cleaned = s.runner.cleanup(&id).await.map_err(err)?;
     if cleaned {
         s.active.lock().unwrap().remove(&id);
     }
-    let mut record = s.read(&id).map_err(err)?;
     if let Some(receipt) = record.receipt.as_mut() {
         receipt["cleanup_state"] = json!(if cleaned { "verified" } else { "failed" });
     } else {

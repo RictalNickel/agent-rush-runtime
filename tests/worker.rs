@@ -88,3 +88,18 @@ fn host_without_real_resource_controllers_is_rejected() {
     valid["Runtimes"]["runsc"]["runtimeArgs"] = serde_json::json!(["--ignore-cgroups"]);
     assert!(agent_rush::worker::validate_host(&valid).is_err());
 }
+
+#[test]
+fn fast_exit_cannot_override_final_output_overflow_or_incomplete_capture() {
+    let (reason, _, passed) =
+        agent_rush::worker::reconcile_output(Some(0), "completed", true, true, true);
+    assert_eq!(reason, "output_limit");
+    assert!(!passed);
+    let (_, _, passed) =
+        agent_rush::worker::reconcile_output(Some(0), "completed", false, true, false);
+    assert!(!passed);
+    let (reason, _, passed) =
+        agent_rush::worker::reconcile_output(Some(0), "completed", false, true, true);
+    assert_eq!(reason, "completed");
+    assert!(passed);
+}

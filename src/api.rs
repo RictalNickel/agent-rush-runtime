@@ -24,14 +24,22 @@ pub struct AppState {
 }
 impl AppState {
     pub fn new(settings: Settings, ledger: Ledger) -> anyhow::Result<Self> {
+        let mut builder = reqwest::Client::builder()
+            .timeout(Duration::from_secs(8))
+            .redirect(reqwest::redirect::Policy::none());
+        if let Some(path) = &settings.worker_ca_path {
+            builder = builder
+                .add_root_certificate(reqwest::Certificate::from_pem(&std::fs::read(path)?)?);
+        }
+        if let Some(path) = &settings.worker_identity_path {
+            builder = builder.identity(reqwest::Identity::from_pem(&std::fs::read(path)?)?);
+        }
+        let http = builder.build()?;
         Ok(Self {
             settings: Arc::new(settings),
             ledger: Arc::new(ledger),
             login_attempts: Arc::new(Mutex::new(Vec::new())),
-            http: reqwest::Client::builder()
-                .timeout(Duration::from_secs(3))
-                .redirect(reqwest::redirect::Policy::none())
-                .build()?,
+            http,
         })
     }
     pub fn owner(&self, headers: &HeaderMap, mutation: bool) -> Result<String, ApiError> {
@@ -283,7 +291,7 @@ async fn evidence(
             format!("attachment; filename=\"evidence-{}.json\"", job.id),
         )],
         Json(
-            json!({"schema":"agent-rush.evidence.v1","job":job.id,"request":job.request,"state":job.state,"events":job.events,"receipt":job.receipt,"disclaimer":"Worker-collected execution evidence; not independent remote attestation"}),
+            json!({"schema":"agent-rush.evidence.v1","job":job.id,"request":job.request,"state":job.state,"events":job.events,"dropped_events":job.dropped_events,"receipt":job.receipt,"disclaimer":"Worker-collected execution evidence; not independent remote attestation"}),
         ),
     ))
 }

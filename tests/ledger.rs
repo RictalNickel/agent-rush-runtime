@@ -113,3 +113,66 @@ fn untrusted_requests_cannot_set_authority_or_unbounded_resources() {
         assert!(parsed.is_err() || parsed.unwrap().validate().is_err());
     }
 }
+
+#[test]
+fn repeated_active_cancellation_is_idempotent_and_does_not_strand_finalization() {
+    let db = Ledger::memory(1024).unwrap();
+    let j = db
+        .create_job("alice", request("Calculate totals"), "one")
+        .unwrap();
+    db.claim(&j.id).unwrap();
+    for _ in 0..300 {
+        db.cancel("alice", &j.id).unwrap();
+    }
+    assert!(db.get_job("alice", &j.id).unwrap().unwrap().events.len() < 10);
+    db.event(&j.id, "cleaning", "Cancellation acknowledged")
+        .unwrap();
+    db.finish(
+        &j.id,
+        serde_json::json!({"reason":"cancelled","cleanup_state":"verified"}),
+    )
+    .unwrap();
+    assert_eq!(db.reserved_memory().unwrap(), 0);
+}
+
+#[test]
+fn scheduler_queue_cannot_be_hidden_by_newer_terminal_history() {
+    let db = Ledger::memory(1024).unwrap();
+    let oldest = db
+        .create_job("alice", request("Old queued task"), "old")
+        .unwrap();
+    for i in 0..110 {
+        let job = db
+            .create_job("alice", request("New cancelled task"), &format!("new-{i}"))
+            .unwrap();
+        db.cancel("alice", &job.id).unwrap();
+    }
+    assert!(
+        !db.list_jobs("alice")
+            .unwrap()
+            .iter()
+            .any(|j| j.id == oldest.id)
+    );
+    assert_eq!(db.queued_jobs("alice").unwrap()[0].id, oldest.id);
+}
+
+#[test]
+fn diagnostic_history_is_bounded_without_breaking_finalization() {
+    let db = Ledger::memory(1024).unwrap();
+    let j = db
+        .create_job("alice", request("Calculate totals"), "one")
+        .unwrap();
+    db.claim(&j.id).unwrap();
+    for _ in 0..300 {
+        db.event(&j.id, "progress", "Measured checkpoint").unwrap();
+    }
+    let j = db.get_job("alice", &j.id).unwrap().unwrap();
+    assert_eq!(j.events.len(), 256);
+    assert!(j.dropped_events > 0);
+    db.finish(
+        &j.id,
+        serde_json::json!({"reason":"cancelled","cleanup_state":"verified"}),
+    )
+    .unwrap();
+    assert_eq!(db.reserved_memory().unwrap(), 0);
+}

@@ -9,6 +9,8 @@ pub struct Settings {
     pub secure_cookies: bool,
     pub worker_url: Option<String>,
     pub worker_token: String,
+    pub worker_ca_path: Option<PathBuf>,
+    pub worker_identity_path: Option<PathBuf>,
     pub inference_key: String,
     pub inference_model: String,
     pub inference_input_per_million: Option<f64>,
@@ -26,6 +28,8 @@ impl Settings {
             secure_cookies: false,
             worker_url: None,
             worker_token: String::new(),
+            worker_ca_path: None,
+            worker_identity_path: None,
             inference_key: String::new(),
             inference_model: String::new(),
             inference_input_per_million: None,
@@ -61,6 +65,8 @@ impl Settings {
             );
         }
         s.worker_token = env::var("AR_WORKER_TOKEN").unwrap_or_default();
+        s.worker_ca_path = env::var("AR_WORKER_CA_PATH").ok().map(PathBuf::from);
+        s.worker_identity_path = env::var("AR_WORKER_IDENTITY_PATH").ok().map(PathBuf::from);
         s.inference_key = env::var("VULTR_INFERENCE_API_KEY").unwrap_or_default();
         s.inference_model = env::var("AR_INFERENCE_MODEL").unwrap_or_default();
         s.inference_input_per_million = env::var("AR_INPUT_USD_PER_MILLION")

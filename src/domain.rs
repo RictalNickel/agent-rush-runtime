@@ -51,6 +51,18 @@ pub struct Job {
     pub updated_at: String,
     pub receipt: Option<Value>,
     pub events: Vec<Value>,
+    #[serde(default)]
+    pub dropped_events: u64,
+}
+impl Job {
+    pub fn record_event(&mut self, event: Value) {
+        let drop_count = (self.events.len() + 1).saturating_sub(256);
+        if drop_count > 0 {
+            self.events.drain(..drop_count);
+            self.dropped_events += drop_count as u64;
+        }
+        self.events.push(event);
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

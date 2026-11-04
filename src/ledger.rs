@@ -60,6 +60,7 @@ impl Ledger {
             created_at: now(),
             updated_at: now(),
             receipt: None,
+            dropped_events: 0,
             events: vec![
                 json!({"at":now(),"kind":"queued","message":"Task accepted under fixed CLI policy"}),
             ],
@@ -101,6 +102,12 @@ impl Ledger {
         let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
         rows.map(|r| Ok(serde_json::from_str(&r?)?)).collect()
     }
+    pub fn queued_jobs(&self, owner: &str) -> Result<Vec<Job>> {
+        let db = self.db.lock().unwrap();
+        let mut stmt=db.prepare("SELECT data FROM jobs WHERE owner=?1 AND json_extract(data,'$.state')='queued' ORDER BY rowid ASC LIMIT 32")?;
+        let rows = stmt.query_map([owner], |r| r.get::<_, String>(0))?;
+        rows.map(|r| Ok(serde_json::from_str(&r?)?)).collect()
+    }
     pub fn reserved_memory(&self) -> Result<u32> {
         Ok(self.db.lock().unwrap().query_row(
             "SELECT COALESCE(SUM(leased_mb),0) FROM jobs",
@@ -127,7 +134,7 @@ impl Ledger {
         }
         job.state = "planning".into();
         job.updated_at = now();
-        job.events.push(json!({"at":now(),"kind":"admitted","message":"Memory lease admitted atomically","memory_mb":job.memory_mb}));
+        job.record_event(json!({"at":now(),"kind":"admitted","message":"Memory lease admitted atomically","memory_mb":job.memory_mb}));
         tx.execute(
             "UPDATE jobs SET data=?1,leased_mb=?2 WHERE id=?3",
             params![serde_json::to_string(&job)?, job.memory_mb, id],
@@ -158,9 +165,7 @@ impl Ledger {
     pub fn event(&self, id: &str, kind: &str, message: &str) -> Result<Job> {
         ensure!(message.len() <= 4096, "event too large");
         self.mutate(id, |job, lease| {
-            ensure!(job.events.len() < 256, "event limit");
-            job.events
-                .push(json!({"at":now(),"kind":kind,"message":message}));
+            job.record_event(json!({"at":now(),"kind":kind,"message":message}));
             if ["executing", "verifying", "cleaning"].contains(&kind) {
                 job.state = kind.into();
             }
@@ -169,14 +174,14 @@ impl Ledger {
     }
     pub fn cancel(&self, owner: &str, id: &str) -> Result<Job> {
         ensure!(self.get_job(owner, id)?.is_some(), "not found");
-        self.mutate(id,|job,lease| { if ["succeeded","failed","cancelled"].contains(&job.state.as_str()) { return Ok(lease); } job.cancel_requested=true; if lease==0 { job.state="cancelled".into(); } job.events.push(json!({"at":now(),"kind":"cancel_requested","message":"Cancellation requested; active lease retained until cleanup"})); Ok(lease) })
+        self.mutate(id,|job,lease| { if job.cancel_requested || ["succeeded","failed","cancelled"].contains(&job.state.as_str()) { return Ok(lease); } job.cancel_requested=true; if lease==0 { job.state="cancelled".into(); } job.record_event(json!({"at":now(),"kind":"cancel_requested","message":"Cancellation requested; active lease retained until cleanup"})); Ok(lease) })
     }
     pub fn finish(&self, id: &str, receipt: Value) -> Result<Job> {
         self.mutate(id,|job,lease| {
             let clean = receipt["cleanup_state"]=="verified";
             let success = clean && receipt["reason"]=="completed" && receipt["exit_code"]==0 && receipt["checks_passed"]==true;
             job.state = if !clean {"cleaning"} else if job.cancel_requested || receipt["reason"]=="cancelled" {"cancelled"} else if success {"succeeded"} else {"failed"}.into();
-            job.events.push(json!({"at":now(),"kind":job.state,"message": if clean {"Worker cleanup verified; lease released"} else {"Cleanup unresolved; lease retained"}}));
+            job.record_event(json!({"at":now(),"kind":job.state,"message": if clean {"Worker cleanup verified; lease released"} else {"Cleanup unresolved; lease retained"}}));
             job.receipt=Some(receipt); Ok(if clean {0} else {lease})
         })
     }
