@@ -1,6 +1,6 @@
 # Agent Rush Runtime — proposed build design
 
-Status: proposed for user review; no application, deployment, security qualification or spending yet.
+Status: approved by the user in chat. Subsequent user direction supersedes language choices below: all platform components are Rust, and Agent Zero is a downloaded reference, not a fork or Python runtime dependency. Implement a restricted Rust controller inspired by its context/tool lifecycle, not a claim of full upstream parity. Rust serves the product UI; HTML/CSS and minimal browser JavaScript remain native web assets. No Vultr deployment or spending yet.
 
 ## Intent and decisions
 
