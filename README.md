@@ -42,7 +42,7 @@ cargo test --locked --test sandbox -- --ignored --nocapture --test-threads=1
 
 Run these on a properly configured Linux worker with host cgroups, Docker and runsc, and the pinned image already pulled. They are **not passing on this managed host**; the new preflight refuses its missing controllers. Never disable that preflight or switch to privileged/runc execution to make the tests green.
 
-For browser checks, start a separate local test server using `AR_DATA_DIR=runtime/qa`, `AR_SECURE_COOKIES=false`, and the synthetic QA password specified in qa/workspace.spec.cjs. Then:
+For browser checks, build the debug binary and leave port 8080 free. Playwright starts/stops its own Rust server with a fresh temporary database, a synthetic local login, and inference disabled:
 
 ```sh
 cd qa
