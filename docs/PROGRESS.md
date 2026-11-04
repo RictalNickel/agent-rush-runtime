@@ -33,3 +33,10 @@ Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
 - Deferred minor findings: none from the final review; the single readiness finding was fixed.
 - Saved install_script and start_skill plus operator/model/pricing requirement names in the environment draft. Saving confirmed; runtime application/publication and fresh-task restoration are not verified. Pending network/secrets requirements remain.
 - The optimized doctor command rejects the missing MemoryLimit capability. Temporary infrastructure credential file removed before publication after a repository-wide value scan; no source or artifact contains it.
+
+## User-selected configuration
+
+- Selected GLM 5.3 Flash for all agent roles, Vultr-only. Official model-catalog request is blocked by proxy CONNECT 403; exact API ID/prices remain unverified and unset, with paid inference disabled. No substitute model selected.
+- User delegated remaining choices, including passwords. Recorded non-secret decisions in deploy/decisions.json and docs/CONFIGURATION.md. Generated a 288-bit operator password, separate 256-bit worker token, Ed25519 SSH deployment key and P-256 private CA/service/client identities in an owner-only directory outside Git. Plaintext credential record: /workspace/.agent-rush-secrets/CREDENTIALS.md. Private keys/passwords are excluded from source and release artifacts.
+- Verified generated operator login/logout against the actual Rust server, matching token configuration, owner-only permissions, SSH key pair and TLS certificate chain/hostname/purpose. Local worker remains disconnected; inference accounted spend is zero. Stopped the local test server after verification.
+- Updated saved startup instructions with the selected model, credential locations, local configuration and spending choices; draft persistence confirmed. Runtime network/credential application and cloud publication remain outstanding.

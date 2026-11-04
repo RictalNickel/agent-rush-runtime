@@ -68,6 +68,8 @@ The worker requires a random `AR_WORKER_TOKEN` of at least 32 characters. Start 
 
 Control settings:
 
+Chosen model: **GLM 5.3 Flash**. The exact Vultr API identifier and pricing still require catalog verification; no alternative model is selected. See [configuration choices](docs/CONFIGURATION.md) and the private credential-record location listed there.
+
 - `AR_WORKER_URL`, `AR_WORKER_TOKEN`: private worker route and authentication.
 - `AR_WORKER_CA_PATH`, `AR_WORKER_IDENTITY_PATH`: server trust and combined client certificate/private key PEM for mTLS.
 - `VULTR_INFERENCE_API_KEY`, `AR_INFERENCE_MODEL`: server-only Vultr inference binding and selected model.

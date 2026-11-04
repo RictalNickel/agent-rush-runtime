@@ -1,0 +1,70 @@
+{
+  "status": "chosen_defaults_not_deployed",
+  "project": "Agent Rush",
+  "timezone": "America/Chicago",
+  "inference": {
+    "provider": "Vultr Serverless Inference",
+    "requested_model": "GLM 5.3 Flash",
+    "api_model_id": null,
+    "catalog_verification": "blocked_by_proxy_connect_403",
+    "input_usd_per_million": null,
+    "output_usd_per_million": null,
+    "max_output_tokens": 4096,
+    "temperature": 0.2,
+    "max_context_bytes": 32000,
+    "budget_usd": 5,
+    "fallback_model": null,
+    "paid_calls_enabled": false
+  },
+  "infrastructure": {
+    "preferred_region": "ord",
+    "operating_system": "Ubuntu_24.04_LTS_x86_64_subject_to_provider_availability",
+    "control_target": {"vcpus": 2, "memory_mib": 4096},
+    "worker_target": {"vcpus": 4, "memory_mib": 8192},
+    "plan_selection": "lowest_priced_available_plan_meeting_targets_after_live_price_verification",
+    "private_worker_hostname": "worker.agent-rush.internal",
+    "public_hostname": null,
+    "public_hostname_pattern": "agent-rush.<control-public-ip>.sslip.io",
+    "public_hostname_selection": "derive_from_allocated_control_IP_and_verify_DNS_and_public_TLS_before_use_no_domain_purchase",
+    "gpu": false,
+    "autoscaling": false,
+    "resources_created": []
+  },
+  "spending": {
+    "total_ceiling_usd": 300,
+    "reserve_usd": 50,
+    "combined_hourly_estimate_ceiling_usd": 0.30,
+    "temporary_test_lifetime_hours": 2,
+    "idle_action": "stop_task_containers_and_delete_new_temporary_VM_resources_after_evidence_retention",
+    "continuous_demo_enabled": false
+  },
+  "execution": {
+    "profile": "cli",
+    "language": "Rust_standard_library_only",
+    "runtime": "runsc_with_host_cgroup_enforcement",
+    "network": "none",
+    "default_memory_mib": 512,
+    "maximum_memory_mib": 1024,
+    "default_timeout_seconds": 30,
+    "maximum_timeout_seconds": 120,
+    "cpu_ceiling_millicores": 1000,
+    "pids_limit": 64,
+    "scratch_mib": 64,
+    "output_bytes": 65536,
+    "maximum_artifact_bytes": 1048576,
+    "maximum_artifact_total_bytes": 4194304,
+    "maximum_artifact_count": 8,
+    "optional_profiles_enabled": false
+  },
+  "authentication": {
+    "operator_owner": "operator",
+    "operator_password_entropy_bits": 288,
+    "worker_token_entropy_bits": 256,
+    "ssh": "Ed25519_key_only_no_server_password",
+    "private_tls": "ECDSA_P256_mTLS",
+    "private_ca_validity_days": 30,
+    "service_certificate_validity_days": 7,
+    "credential_values_in_git": false,
+    "database_password": "not_needed_SQLite_local_file"
+  }
+}
