@@ -7,6 +7,7 @@ use std::time::Duration;
 
 pub mod credentials;
 pub mod lifecycle;
+pub mod watchdog;
 
 async fn decode_response(response: reqwest::Response) -> Result<Value> {
     ensure!(

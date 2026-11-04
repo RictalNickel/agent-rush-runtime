@@ -6,7 +6,7 @@ This report distinguishes the implemented local system from a deployable/qualifi
 
 | Check | Observed result |
 | --- | --- |
-| Rust unit/API/policy suites | 74 passed after native-port completion continuation; command `cargo test --locked -j4` |
+| Rust unit/API/policy suites | 86 passed after independent-watchdog continuation; command `cargo test --locked -j4` |
 | Default container test selection | Seven explicitly ignored; a default green suite does not qualify a host |
 | Explicit real local container suite, before fail-closed preflight was added | Five passed; one failed (`real_memory_cap`) |
 | Real containment | Rust program executed, total 42, JSON artifact collected and hashed, root write/host path/socket/credential/network probes denied, cleanup verified |
@@ -42,7 +42,7 @@ Raw earlier local receipts and the complete failing resource-suite log are in do
 | Recovery/reconciliation | Implemented, conservative lease retention | Crash/transport race qualification incomplete; no production claim |
 | Vultr-only inference and cost reservations | Implemented, no alternate provider | Validation/accounting tests; live API blocked |
 | Read-only cost planning | Implemented with guarded lifetime/rate budgets | Fixture tests; actual plan query blocked |
-| Infrastructure provisioning/independent teardown | Provisioning/watchdog not implemented; guarded manual teardown implemented | Fixture tests only; live account/management route and independent cleanup required first |
+| Infrastructure provisioning/independent teardown | Provisioning disabled; native tracked-resource watchdog and manual teardown implemented | Fixture tests and denial-path CLI smoke pass; real provider deletion/runner uptime unverified |
 | Nested Docker, browser/desktop profiles | Not enabled | Not qualified |
 | Full Agent Zero port/plugin parity | Not claimed | Upstream downloaded as reference only |
 | Private repository publication | Blocked/unverified | No source published |
@@ -88,3 +88,13 @@ One fresh review of this continuation found an Important panic from serialized J
 The current desktop/mobile Chromium suite again passes both tests, including the added authenticated context download. No browser plugin is available, so regular Playwright and installed Chromium were used. The actual updated execution record was visually inspected. No model, sandbox or cloud execution is simulated as live by these UI checks.
 
 The native Ubuntu-based control OCI image was built and exported, then actually started with UID/GID 65532, read-only root, dropped capabilities and bounded scratch requests. Real HTTP smoke checks passed for authentication, job/context/evidence operations, memory tools and logout; no inference/worker calls were configured. Container deletion was verified. Raw evidence: docs/evidence/local/control-image-smoke.json. The host still reports unsupported resource controllers, so these requested container flags do not establish worker resource enforcement. The current progress PDF has eight pages and updated real evidence; it is not a completed contest submission.
+
+## Independent watchdog continuation
+
+Full Rust suite: 86 passed, seven real-host tests ignored. Added deadline/explicit-stop cleanup, scope checks, pending/error handling, private atomic heartbeat, process/freshness/one-shot guards, exclusive watcher ownership and saved partial progress. Manifest timing/scope/estimate/region and tracked identities cannot be silently changed by ordinary updates. Cleanup closes admission durably before API operations, so completion cannot race successful tracking or rearm after a failed early stop.
+
+One fresh bounded source review found an Important completion/tracking race. Both its deterministic regression and early-stop/restart regression failed before fixing, then passed with the full suite and denied-warning Clippy. Zombie PID readiness was also reproduced and rejected. Existing default polling is 15 seconds; longer permitted polling intervals can intentionally produce conservative gaps against the 30-second readiness freshness threshold.
+
+The actual continuous CLI failure-path smoke used a deliberately invalid synthetic credential. It observed API-check failure, an owner-only error heartbeat, no false arming, preserved admission closure on SIGTERM and a graceful nonzero exit. It had zero resource IDs and tested no provider deletion; raw evidence is docs/evidence/local/watchdog-denial-smoke.json. The systemd template passed user-mode `systemd-analyze verify` with the actual executable path substituted, but it was not installed or started. System-mode validation cannot write /run/systemd in this environment. Real provider cleanup, service restart and management-runner uptime still require live acceptance.
+
+No web source changed in this continuation; the previous two browser tests remain applicable. No paid Vultr resource/model call, live watcher or extra VM was started. See CLEANUP_WATCHDOG.md for operational limits and remaining provisioning-intent work.

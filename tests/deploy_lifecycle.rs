@@ -308,3 +308,33 @@ async fn an_instance_lookup_error_still_allows_other_instance_cleanup() {
     assert!(m.resources[1].deleted);
     assert!(!m.resources[2].deleted);
 }
+
+#[test]
+fn tracking_cannot_extend_or_rebind_an_existing_deployment_window() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("manifest.json");
+    let m = manifest();
+    let store = ManifestFile::create(&path, &m).unwrap();
+    for changed in ["time", "scope", "region", "price"] {
+        let mut altered = m.clone();
+        match changed {
+            "time" => {
+                altered.created_at += Duration::minutes(5);
+                altered.expires_at += Duration::minutes(5);
+            }
+            "scope" => altered.credential_scope_sha256 = "b".repeat(64),
+            "region" => altered.region = "ewr".into(),
+            _ => altered.hourly_estimate_usd = 0.25,
+        }
+        assert!(
+            store.save(&altered).is_err(),
+            "unexpected immutable update: {changed}"
+        );
+    }
+    let mut tracked = m.clone();
+    tracked
+        .track(ResourceKind::Instance, "vm-1", ResourceRole::Control)
+        .unwrap();
+    store.save(&tracked).unwrap();
+    assert_eq!(store.load().unwrap().resources.len(), 1);
+}

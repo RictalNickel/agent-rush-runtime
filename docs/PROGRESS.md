@@ -1,5 +1,15 @@
 # Implementation progress
 
+## Independent cleanup continuation, November 4 UTC
+
+Plan: docs/superpowers/plans/2026-11-04-cleanup-watchdog.md; base 63e2e64.
+
+- Standing authorization reaffirmed by the user. Local execution now has full filesystem access; actual managed sidecar network policy still has no custom API hosts, and fresh Vultr/GitHub requests still return proxy 403. Do not confuse authorization, local execution permissions and applied network policy. No cloud resources or model requests created.
+- Added a native trusted-runner watchdog with default preview, authenticated scope checks, private atomic heartbeat, PID/start-time/freshness guards, separate exclusive watcher lock, deadline cleanup/retry, progress persistence and interrupt cleanup attempt. Prepared an independent systemd service; none installed or started here.
+- Manifest saves preserve the original scope, price, region and window, and preserve tracked resource identities. Cleanup durably closes admission before API calls. Closed deployments cannot accept new IDs or be reopened by stale snapshots; failed early cleanup remains fenced after restart.
+- One fresh bounded source review found an Important completion/tracking race. Reproduced it and fixed it with deterministic completion/track and early-stop/restart regressions. Also reproduced/rejected zombie PID readiness. Full suite after fixes: 86 passed, seven real-host tests ignored; Clippy with denied warnings and formatting passed.
+- Ruling: run the watcher on a trusted management runner with independent uptime/API access, separate from application/worker processes — application survival cannot carry cleanup responsibility — cost: real provider deletion and management-runner reliability remain unqualified until access works. This covers acknowledged tracked resources, not ambiguous unrecorded cloud creation; automatic provisioning remains disabled.
+
 ## Native completion continuation, November 4 UTC
 
 Plan: docs/superpowers/plans/2026-11-04-native-port-completion.md; base 849c86e.
@@ -69,3 +79,5 @@ Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
 
 - OCI delivery: actual native control image built/exported, source revision d5076f2, image sha256:c5251eb43c9be47c52587cd5fbe32de9e6b93040b864c06166c2daa90b7e9495. Real non-root/read-only-root container HTTP smoke passed for auth, SQLite, jobs, context/evidence, cancellation and memory; zero inference spend; exact container removed and absence verified. Raw receipt saved in docs/evidence/local/control-image-smoke.json. Execution worker remains unqualified.
 - Updated the actual progress deck to eight pages with native workflows, allocation policy and current test results. Browser/PDF temporary servers stopped. All currently runnable offline native-port/image checks completed; genuine cloud/inference acceptance, qualified worker tests, GitHub publication, nested/browser/desktop implementation and a live containment recording remain outstanding.
+
+- Actual continuous CLI denial smoke passed with an explicitly synthetic invalid credential: API failure could not arm readiness; heartbeat mode0600; SIGTERM persisted the cleanup fence and exited nonzero; process stopped; no provider deletion tested and zero resource IDs. User-mode systemd unit verification passed with the actual executable substituted; no service installed. System-mode verification lacks /run/systemd write access, so no system-startup proof is claimed.

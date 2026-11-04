@@ -1,0 +1,13 @@
+{
+  "schema": "agent-rush.watchdog-denial-smoke.v1",
+  "passed": true,
+  "credential_kind": "synthetic_invalid",
+  "provider_deletion_tested": false,
+  "cloud_resource_ids": 0,
+  "error_phase_observed": true,
+  "heartbeat_owner_only": true,
+  "false_arming_observed": false,
+  "process_exit_code": 1,
+  "process_stopped": true,
+  "cleanup_intent_fenced": true
+}

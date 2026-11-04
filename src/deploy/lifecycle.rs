@@ -85,6 +85,9 @@ pub struct DeploymentManifest {
     pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
     pub hourly_estimate_usd: f64,
+    /// Monotonic admission fence. Cleanup may continue; no new resource may be tracked.
+    #[serde(default)]
+    pub closed: bool,
     pub resources: Vec<TrackedResource>,
 }
 fn validate_id(id: &str) -> Result<()> {
@@ -117,6 +120,7 @@ impl DeploymentManifest {
             created_at: at,
             expires_at: at + Duration::milliseconds((hours * 3_600_000.0) as i64),
             hourly_estimate_usd: hourly,
+            closed: false,
             resources: Vec::new(),
         };
         manifest.validate()?;
@@ -125,10 +129,27 @@ impl DeploymentManifest {
     pub fn tag(&self) -> String {
         format!("agent-rush-{}", self.deployment_id)
     }
+    /// Resource progress may change; the original scope, price and time window may not.
+    pub fn identity_sha256(&self) -> Result<String> {
+        let identity = serde_json::to_vec(&(
+            &self.schema,
+            self.deployment_id,
+            &self.credential_scope_sha256,
+            &self.region,
+            self.created_at,
+            self.expires_at,
+            self.hourly_estimate_usd,
+        ))?;
+        Ok(hex::encode(Sha256::digest(identity)))
+    }
     pub fn label(&self, role: ResourceRole) -> String {
         format!("{}-{}", self.tag(), role.name())
     }
     pub fn track(&mut self, kind: ResourceKind, id: &str, role: ResourceRole) -> Result<()> {
+        ensure!(
+            !self.closed,
+            "deployment cleanup has closed resource admission"
+        );
         validate_id(id)?;
         ensure!(self.resources.len() < 16, "resource limit");
         ensure!(
@@ -174,6 +195,7 @@ impl DeploymentManifest {
             "invalid recorded price"
         );
         let mut check = self.clone();
+        check.closed = false;
         check.resources.clear();
         for r in &self.resources {
             check.track(r.kind, &r.id, r.role)?;
@@ -264,6 +286,7 @@ pub async fn teardown<A: ResourceApi>(
     now: DateTime<Utc>,
 ) -> Result<TeardownReport> {
     m.validate()?;
+    m.closed = true;
     ensure!(
         m.created_at <= now + Duration::minutes(1),
         "deployment timestamp is in the future"
@@ -398,10 +421,26 @@ impl ManifestFile {
     }
     pub fn save(&self, m: &DeploymentManifest) -> Result<()> {
         m.validate()?;
+        let previous = self.load()?;
         ensure!(
-            self.load()?.deployment_id == m.deployment_id,
-            "refusing to replace another deployment"
+            previous.identity_sha256()? == m.identity_sha256()?,
+            "refusing to replace or extend immutable deployment identity/window"
         );
+        ensure!(
+            m.resources.len() >= previous.resources.len()
+                && previous
+                    .resources
+                    .iter()
+                    .zip(&m.resources)
+                    .all(|(a, b)| a.kind == b.kind && a.id == b.id && a.role == b.role),
+            "tracked resource identities cannot be dropped or replaced"
+        );
+        if previous.closed {
+            ensure!(
+                m.closed && m.resources.len() == previous.resources.len(),
+                "closed deployment cannot be reopened or accept tracking"
+            );
+        }
         let parent = self
             .path
             .parent()

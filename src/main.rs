@@ -14,7 +14,7 @@ use agent_rush::{
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -107,6 +107,21 @@ enum Commands {
         execute: bool,
         #[arg(long)]
         credential_file: Option<PathBuf>,
+    },
+    /// Preview by default; --execute runs independent deadline cleanup on a trusted runner.
+    VultrWatch {
+        #[arg(long)]
+        manifest: PathBuf,
+        #[arg(long)]
+        heartbeat: Option<PathBuf>,
+        #[arg(long)]
+        credential_file: Option<PathBuf>,
+        #[arg(long)]
+        execute: bool,
+        #[arg(long)]
+        once: bool,
+        #[arg(long,default_value_t=15,value_parser=clap::value_parser!(u64).range(5..=60))]
+        poll_seconds: u64,
     },
 }
 
@@ -380,6 +395,33 @@ async fn main() -> Result<()> {
             store.save(&record)?;
             println!("{}", serde_json::to_string_pretty(&record.preview()?)?);
         }
+        Commands::VultrWatch {
+            manifest,
+            heartbeat,
+            credential_file,
+            execute,
+            once,
+            poll_seconds,
+        } => {
+            if !execute {
+                let store = ManifestFile::open(&manifest)?;
+                let record = store.load()?;
+                println!(
+                    "{}",
+                    serde_json::json!({"phase":"preview","watchdog_armed":false,"expires_at":record.expires_at,"deployment_id":record.deployment_id,"tracked_resources":record.resources.len(),"note":"No watchdog armed and no API operation performed. --execute starts authenticated deadline cleanup."})
+                );
+            } else {
+                let key = match credential_file {
+                    Some(path) => std::fs::read_to_string(path)?,
+                    None => std::env::var("VULTR_API_KEY")
+                        .context("set VULTR_API_KEY or pass an owner-only --credential-file")?,
+                };
+                let client = VultrClient::new(key.trim().into())?;
+                let heartbeat =
+                    heartbeat.unwrap_or_else(|| manifest.with_extension("watchdog.json"));
+                run_cloud_watchdog(&client, &manifest, &heartbeat, once, poll_seconds).await?;
+            }
+        }
         Commands::VultrTeardown {
             manifest,
             execute,
@@ -394,6 +436,8 @@ async fn main() -> Result<()> {
                         .context("set VULTR_API_KEY or pass an owner-only --credential-file")?,
                 };
                 let client = VultrClient::new(key.trim().into())?;
+                record.closed = true;
+                store.save(&record)?;
                 let result = teardown(&client, &mut record, chrono::Utc::now()).await;
                 // Preserve confirmed removals even if a later API operation failed.
                 store.save(&record)?;
@@ -409,6 +453,46 @@ async fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+async fn run_cloud_watchdog(
+    client: &VultrClient,
+    manifest_path: &Path,
+    heartbeat_path: &Path,
+    once: bool,
+    poll_seconds: u64,
+) -> Result<()> {
+    use agent_rush::deploy::watchdog::{HeartbeatFile, WatchReport, tick_file};
+    let initial = {
+        let store = ManifestFile::open(manifest_path)?;
+        store.load()?
+    };
+    let identity = initial.identity_sha256()?;
+    let heartbeat = HeartbeatFile::open(heartbeat_path, manifest_path, &initial)?;
+    let interrupted = Arc::new(AtomicBool::new(false));
+    let stop = interrupted.clone();
+    let signal = tokio::spawn(async move {
+        shutdown_signal().await;
+        stop.store(true, Ordering::SeqCst);
+    });
+    let result:Result<()>=async {
+        loop {
+            let force_cleanup=interrupted.load(Ordering::SeqCst);
+            let at=chrono::Utc::now();
+            let report=match tick_file(client,manifest_path,&identity,at,force_cleanup,!once).await {
+                Ok(report)=>report,
+                Err(error)=>WatchReport::error(&initial,chrono::Utc::now(),!once,&error.to_string())?,
+            };
+            heartbeat.write(&report)?;
+            println!("{}",serde_json::json!({"phase":report.phase,"watchdog_armed":report.ensure_armed(&initial,chrono::Utc::now()).is_ok(),"confirmed_absent":report.confirmed_absent,"pending_count":report.pending.len(),"heartbeat":heartbeat_path}));
+            if report.phase=="complete" {return Ok(());}
+            if once {ensure!(report.phase!="error","Cloud check failed; private heartbeat records the error");return Ok(());}
+            if force_cleanup {anyhow::bail!("Watchdog interrupted; cleanup remains unresolved. Preserve heartbeat/manifest and retry teardown.");}
+            if interrupted.load(Ordering::SeqCst) {continue;}
+            tokio::time::sleep(std::time::Duration::from_secs(poll_seconds)).await;
+        }
+    }.await;
+    signal.abort();
+    result
 }
 async fn shutdown_signal() {
     #[cfg(unix)]

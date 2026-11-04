@@ -1,0 +1,25 @@
+[Unit]
+Description=Agent Rush independent temporary-resource cleanup
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=agent-rush-deploy
+Group=agent-rush-deploy
+ExecStart=/opt/agent-rush/agent-rush vultr-watch --execute --manifest /var/lib/agent-rush-deploy/deployment.json --heartbeat /var/lib/agent-rush-deploy/watchdog.json --credential-file /etc/agent-rush-deploy/vultr-api-key --poll-seconds 15
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=180
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectProc=invisible
+ReadWritePaths=/var/lib/agent-rush-deploy
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
