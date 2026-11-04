@@ -1,0 +1,45 @@
+{
+  "artifacts": [
+    {
+      "bytes": 24,
+      "data_base64": "eyJzY3JhdGNoX2xpbWl0ZWQiOnRydWV9",
+      "name": "result.json",
+      "sha256": "916cc63eea93222840769e33b20eaabae80b8056aa6abccdaf23c1909864206c"
+    }
+  ],
+  "checks": [
+    {
+      "name": "process_exit_zero",
+      "passed": true
+    },
+    {
+      "name": "result_json_is_object",
+      "passed": true
+    }
+  ],
+  "checks_passed": true,
+  "cleanup_state": "verified",
+  "creation_uncertain": false,
+  "duration_ms": 25189,
+  "execution_ms": 1094,
+  "exit_code": 0,
+  "finished_at": "2026-11-04T03:37:50.654Z",
+  "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+  "job_id": "scratch-cap-393d7124-873f-4efe-9add-ebf29ecc3687",
+  "limits": {
+    "cpu_millis": 1000,
+    "memory_mb": 512,
+    "timeout_seconds": 30
+  },
+  "output_truncated": false,
+  "reason": "completed",
+  "resource_samples": [],
+  "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+  "result": {
+    "scratch_limited": true
+  },
+  "runtime": "runsc",
+  "started_at": "2026-11-04T03:37:25.464Z",
+  "stderr": "",
+  "stdout": ""
+}

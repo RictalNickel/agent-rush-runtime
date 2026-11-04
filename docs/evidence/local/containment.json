@@ -1,0 +1,46 @@
+{
+  "artifacts": [
+    {
+      "bytes": 29,
+      "data_base64": "eyJ0b3RhbCI6NDIsImNvbnRhaW5lZCI6dHJ1ZX0=",
+      "name": "result.json",
+      "sha256": "835c75c3bf4543ddee289edfc85f35b9dfaff58e0ed7601d2cc6843180e85a52"
+    }
+  ],
+  "checks": [
+    {
+      "name": "process_exit_zero",
+      "passed": true
+    },
+    {
+      "name": "result_json_is_object",
+      "passed": true
+    }
+  ],
+  "checks_passed": true,
+  "cleanup_state": "verified",
+  "creation_uncertain": false,
+  "duration_ms": 30321,
+  "execution_ms": 1222,
+  "exit_code": 0,
+  "finished_at": "2026-11-04T03:37:25.462Z",
+  "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+  "job_id": "proof-7e07bd87-0be5-464a-aa19-bcbc2c54f59f",
+  "limits": {
+    "cpu_millis": 1000,
+    "memory_mb": 512,
+    "timeout_seconds": 60
+  },
+  "output_truncated": false,
+  "reason": "completed",
+  "resource_samples": [],
+  "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+  "result": {
+    "contained": true,
+    "total": 42
+  },
+  "runtime": "runsc",
+  "started_at": "2026-11-04T03:36:55.140Z",
+  "stderr": "",
+  "stdout": "Containment checks passed; total=42\n"
+}

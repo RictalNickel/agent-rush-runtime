@@ -1,0 +1,106 @@
+   Compiling agent-rush v0.1.0 (/workspace/Hackathon)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.37s
+     Running tests/sandbox.rs (target/debug/deps/sandbox-04f3b28f2d7a0d55)
+
+running 6 tests
+test real_cancel_cleanup ... ok
+test real_memory_cap ... 
+thread 'real_memory_cap' panicked at tests/sandbox.rs:96:5:
+memory cap was not enforced: {"artifacts":[],"checks":[{"name":"process_exit_zero","passed":true},{"name":"result_json_is_object","passed":false}],"checks_passed":false,"cleanup_state":"verified","creation_uncertain":false,"duration_ms":33770,"execution_ms":5253,"exit_code":0,"finished_at":"2026-11-04T03:36:15.495Z","image":"rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f","job_id":"memory-cap-2413afe8-18aa-4296-9bc8-76e1f2930ce5","limits":{"cpu_millis":1000,"memory_mb":256,"timeout_seconds":30},"output_truncated":false,"reason":"completed","resource_samples":[],"resource_sampling_note":"Observed Docker samples when available, not peak-memory attestation","result":null,"runtime":"runsc","started_at":"2026-11-04T03:35:41.725Z","stderr":"","stdout":"allocating\nallocation escaped\n"}
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test real_output_cap ... ok
+test real_rust_execution_artifact_containment_and_cleanup ... {
+  "artifacts": [
+    {
+      "bytes": 29,
+      "data_base64": "eyJ0b3RhbCI6NDIsImNvbnRhaW5lZCI6dHJ1ZX0=",
+      "name": "result.json",
+      "sha256": "835c75c3bf4543ddee289edfc85f35b9dfaff58e0ed7601d2cc6843180e85a52"
+    }
+  ],
+  "checks": [
+    {
+      "name": "process_exit_zero",
+      "passed": true
+    },
+    {
+      "name": "result_json_is_object",
+      "passed": true
+    }
+  ],
+  "checks_passed": true,
+  "cleanup_state": "verified",
+  "creation_uncertain": false,
+  "duration_ms": 30321,
+  "execution_ms": 1222,
+  "exit_code": 0,
+  "finished_at": "2026-11-04T03:37:25.462Z",
+  "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+  "job_id": "proof-7e07bd87-0be5-464a-aa19-bcbc2c54f59f",
+  "limits": {
+    "cpu_millis": 1000,
+    "memory_mb": 512,
+    "timeout_seconds": 60
+  },
+  "output_truncated": false,
+  "reason": "completed",
+  "resource_samples": [],
+  "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+  "result": {
+    "contained": true,
+    "total": 42
+  },
+  "runtime": "runsc",
+  "started_at": "2026-11-04T03:36:55.140Z",
+  "stderr": "",
+  "stdout": "Containment checks passed; total=42\n"
+}
+ok
+test real_scratch_cap ... ok
+test real_timeout_cleanup ... {
+  "artifacts": [],
+  "checks": [
+    {
+      "name": "process_exit_zero",
+      "passed": false
+    },
+    {
+      "name": "result_json_is_object",
+      "passed": false
+    }
+  ],
+  "checks_passed": false,
+  "cleanup_state": "verified",
+  "creation_uncertain": false,
+  "duration_ms": 31705,
+  "execution_ms": 5007,
+  "exit_code": null,
+  "finished_at": "2026-11-04T03:38:22.360Z",
+  "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+  "job_id": "timeout-a4121560-d39f-4fd1-9456-7a701b0f57e2",
+  "limits": {
+    "cpu_millis": 1000,
+    "memory_mb": 512,
+    "timeout_seconds": 5
+  },
+  "output_truncated": false,
+  "reason": "timeout",
+  "resource_samples": [],
+  "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+  "result": null,
+  "runtime": "runsc",
+  "started_at": "2026-11-04T03:37:50.655Z",
+  "stderr": "",
+  "stdout": ""
+}
+ok
+
+failures:
+
+failures:
+    real_memory_cap
+
+test result: FAILED. 5 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 189.17s
+
+error: test failed, to rerun pass `--test sandbox`

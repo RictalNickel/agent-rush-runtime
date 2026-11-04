@@ -1,0 +1,25 @@
+[Unit]
+Description=Agent Rush private Rust execution node
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=agent-rush
+Group=agent-rush
+SupplementaryGroups=docker
+EnvironmentFile=/etc/agent-rush/worker.env
+ExecStart=/opt/agent-rush/agent-rush worker --bind 127.0.0.1:8090
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/agent-rush
+UMask=0077
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

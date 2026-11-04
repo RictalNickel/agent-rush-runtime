@@ -1,0 +1,36 @@
+{
+  "artifacts": [],
+  "checks": [
+    {
+      "name": "process_exit_zero",
+      "passed": true
+    },
+    {
+      "name": "result_json_is_object",
+      "passed": false
+    }
+  ],
+  "checks_passed": false,
+  "cleanup_state": "verified",
+  "creation_uncertain": false,
+  "duration_ms": 33770,
+  "execution_ms": 5253,
+  "exit_code": 0,
+  "finished_at": "2026-11-04T03:36:15.495Z",
+  "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+  "job_id": "memory-cap-2413afe8-18aa-4296-9bc8-76e1f2930ce5",
+  "limits": {
+    "cpu_millis": 1000,
+    "memory_mb": 256,
+    "timeout_seconds": 30
+  },
+  "output_truncated": false,
+  "reason": "completed",
+  "resource_samples": [],
+  "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+  "result": null,
+  "runtime": "runsc",
+  "started_at": "2026-11-04T03:35:41.725Z",
+  "stderr": "",
+  "stdout": "allocating\nallocation escaped\n"
+}

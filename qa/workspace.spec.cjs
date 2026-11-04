@@ -1,0 +1,38 @@
+const {test,expect}=require('@playwright/test');
+test('workspace, operator login, real queued job, evidence and cancellation',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error'&&!message.text().includes('401 (Unauthorized)'))errors.push(message.text());});
+  await page.goto('/');await expect(page).toHaveTitle('Agent Rush · Workspace');
+  await expect(page.getByRole('heading',{name:'Give every agent a world.'})).toBeVisible();
+  await expect(page.locator('#empty-state')).toBeVisible();
+  await page.screenshot({path:'/tmp/agent-rush-workspace-desktop.png',fullPage:true});
+  await page.getByRole('button',{name:'Safety & limits'}).click();
+  await expect(page.getByText('Authority stays outside the agent.',{exact:false})).toBeVisible();
+  await page.getByRole('button',{name:'Close safety information'}).click();
+  await page.getByRole('button',{name:'Operator login',exact:true}).click();
+  await page.getByLabel('Operator password').fill('qa-local-password-please-ignore');
+  await page.getByRole('button',{name:'Sign in',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
+  await page.getByLabel('What should the agent do?').fill('Compute quarterly revenue totals from a CSV.');
+  await page.getByRole('button',{name:'Queue task',exact:true}).click();
+  await expect(page.locator('#run-dialog')).toBeVisible();
+  await expect(page.locator('#run-state')).toHaveText('queued');
+  const download=page.waitForEvent('download');
+  await page.getByRole('link',{name:'Export evidence'}).click();
+  const receipt=await download;expect(receipt.suggestedFilename()).toMatch(/^evidence-.+\.json$/);
+  await page.getByRole('button',{name:'Cancel task',exact:true}).click();
+  await expect(page.locator('#run-state')).toHaveText('cancelled');
+  await page.screenshot({path:'/tmp/agent-rush-execution-record.png',fullPage:true});
+  await page.getByRole('button',{name:'Close execution record'}).click();
+  await page.getByRole('button',{name:'Sign out',exact:true}).click();
+  expect((await (await page.request.get('/api/status')).json()).inference_accounted_usd).toBe(0);
+  expect(errors).toEqual([]);
+});
+test('mobile workspace has no horizontal overflow and login is usable',async({page})=>{
+  await page.setViewportSize({width:390,height:844});await page.goto('/');
+  await expect(page.getByRole('heading',{name:'Give every agent a world.'})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:'/tmp/agent-rush-workspace-mobile.png',fullPage:true});
+  await page.getByRole('button',{name:'Operator login',exact:true}).click();
+  await expect(page.getByLabel('Operator password')).toBeVisible();
+  await page.getByRole('button',{name:'Close login'}).click();
+});
