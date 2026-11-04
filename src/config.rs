@@ -1,6 +1,16 @@
 use anyhow::{Result, ensure};
 use std::{env, path::PathBuf};
 
+/// Internal provider tariff input: blank means not discovered, never an assumed zero price.
+pub fn provider_rate(raw: Option<&str>) -> Result<Option<f64>> {
+    let Some(raw) = raw.map(str::trim).filter(|v| !v.is_empty()) else {
+        return Ok(None);
+    };
+    let rate: f64 = raw.parse()?;
+    ensure!(rate.is_finite() && rate >= 0.0, "invalid provider tariff");
+    Ok(Some(rate))
+}
+
 #[derive(Clone)]
 pub struct Settings {
     pub data_dir: PathBuf,
@@ -15,6 +25,7 @@ pub struct Settings {
     pub inference_model: String,
     pub inference_input_per_million: Option<f64>,
     pub inference_output_per_million: Option<f64>,
+    pub pricing_verified: bool,
     pub inference_budget_usd: f64,
     pub capacity_mb: u32,
     pub sandbox_image: String,
@@ -34,6 +45,7 @@ impl Settings {
             inference_model: String::new(),
             inference_input_per_million: None,
             inference_output_per_million: None,
+            pricing_verified: false,
             inference_budget_usd: 5.0,
             capacity_mb: 2048,
             sandbox_image: String::new(),
@@ -69,14 +81,11 @@ impl Settings {
         s.worker_identity_path = env::var("AR_WORKER_IDENTITY_PATH").ok().map(PathBuf::from);
         s.inference_key = env::var("VULTR_INFERENCE_API_KEY").unwrap_or_default();
         s.inference_model = env::var("AR_INFERENCE_MODEL").unwrap_or_default();
-        s.inference_input_per_million = env::var("AR_INPUT_USD_PER_MILLION")
-            .ok()
-            .map(|v| v.parse())
-            .transpose()?;
-        s.inference_output_per_million = env::var("AR_OUTPUT_USD_PER_MILLION")
-            .ok()
-            .map(|v| v.parse())
-            .transpose()?;
+        s.inference_input_per_million =
+            provider_rate(env::var("AR_INPUT_USD_PER_MILLION").ok().as_deref())?;
+        s.inference_output_per_million =
+            provider_rate(env::var("AR_OUTPUT_USD_PER_MILLION").ok().as_deref())?;
+        s.pricing_verified = env::var("AR_PRICING_VERIFIED").is_ok_and(|v| v == "true");
         if let Ok(v) = env::var("AR_INFERENCE_BUDGET_USD") {
             s.inference_budget_usd = v.parse()?;
         }
@@ -104,5 +113,6 @@ impl Settings {
             && !self.inference_model.is_empty()
             && self.inference_input_per_million.is_some()
             && self.inference_output_per_million.is_some()
+            && self.pricing_verified
     }
 }

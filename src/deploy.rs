@@ -1,8 +1,30 @@
 //! Trusted infrastructure inspection. No runtime agent imports credentials or provisions resources.
 use anyhow::{Context, Result, ensure};
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::time::Duration;
+
+pub mod credentials;
+pub mod lifecycle;
+
+async fn decode_response(response: reqwest::Response) -> Result<Value> {
+    ensure!(
+        response.content_length().is_none_or(|n| n <= 4_194_304),
+        "Vultr response too large"
+    );
+    let mut bytes = Vec::new();
+    let mut stream = response.bytes_stream();
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk?;
+        ensure!(
+            bytes.len() + chunk.len() <= 4_194_304,
+            "Vultr response too large"
+        );
+        bytes.extend_from_slice(&chunk);
+    }
+    Ok(serde_json::from_slice(&bytes)?)
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeploymentBudget {
@@ -98,11 +120,7 @@ impl VultrClient {
             "Vultr API returned HTTP {}",
             response.status().as_u16()
         );
-        ensure!(
-            response.content_length().is_none_or(|n| n <= 4_194_304),
-            "Vultr response too large"
-        );
-        Ok(response.json().await?)
+        decode_response(response).await
     }
     pub async fn inspect(&self, region: &str) -> Result<Value> {
         ensure!(

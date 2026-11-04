@@ -2,6 +2,9 @@ use agent_rush::{
     api::{AppState, router},
     config::Settings,
     deploy::VultrClient,
+    deploy::lifecycle::{
+        DeploymentManifest, ManifestFile, ResourceApi, ResourceKind, ResourceRole, teardown,
+    },
     domain::Limits,
     ledger::Ledger,
     node::{NodeState, node_router},
@@ -52,6 +55,54 @@ enum Commands {
         #[arg(long)]
         credential_file: Option<PathBuf>,
     },
+    VultrInferenceKey {
+        #[arg(long)]
+        credential_file: Option<PathBuf>,
+        #[arg(long)]
+        subscription_id: Option<String>,
+        #[arg(long)]
+        output_file: PathBuf,
+    },
+    /// Discover the exact requested model from Vultr; export no guessed tariff or paid request.
+    VultrInferenceModel {
+        #[arg(long)]
+        output_file: PathBuf,
+    },
+    /// Initialize a private tracking manifest using a provider-verified estimate; creates no resources.
+    VultrManifest {
+        #[arg(long)]
+        credential_file: Option<PathBuf>,
+        #[arg(long)]
+        manifest: PathBuf,
+        #[arg(long, default_value = "ord")]
+        region: String,
+        #[arg(long)]
+        hourly_estimate: f64,
+        #[arg(long, default_value_t = 2.0)]
+        lifetime_hours: f64,
+        #[arg(long, default_value_t = 0.0)]
+        spent_before_usd: f64,
+    },
+    /// Track only an acknowledged newly created resource, never an unrelated existing resource.
+    VultrTrack {
+        #[arg(long)]
+        manifest: PathBuf,
+        #[arg(long)]
+        kind: ResourceKind,
+        #[arg(long)]
+        id: String,
+        #[arg(long)]
+        role: ResourceRole,
+    },
+    /// Preview by default. --execute verifies ownership, deletes exact tracked resources and checks absence.
+    VultrTeardown {
+        #[arg(long)]
+        manifest: PathBuf,
+        #[arg(long)]
+        execute: bool,
+        #[arg(long)]
+        credential_file: Option<PathBuf>,
+    },
 }
 
 #[tokio::main]
@@ -64,8 +115,21 @@ async fn main() -> Result<()> {
         .with_writer(std::io::stderr)
         .init();
     let cli = Cli::parse();
-    let settings = Settings::from_env()?;
-    match cli.command.unwrap_or(Commands::Serve) {
+    let command = cli.command.unwrap_or(Commands::Serve);
+    let needs_app_settings = matches!(
+        &command,
+        Commands::Serve
+            | Commands::Worker { .. }
+            | Commands::Doctor
+            | Commands::Sandbox { .. }
+            | Commands::Cleanup
+    );
+    let settings = if needs_app_settings {
+        Settings::from_env()?
+    } else {
+        Settings::local()
+    };
+    match command {
         Commands::Serve => {
             std::fs::create_dir_all(&settings.data_dir)?;
             let ledger = Ledger::open(&settings.data_dir.join("control.db"), settings.capacity_mb)?;
@@ -192,6 +256,95 @@ async fn main() -> Result<()> {
                         .await?
                 )?
             );
+        }
+        Commands::VultrInferenceKey {
+            credential_file,
+            subscription_id,
+            output_file,
+        } => {
+            let key = match credential_file {
+                Some(path) => std::fs::read_to_string(path)?,
+                None => std::env::var("VULTR_API_KEY")
+                    .context("set VULTR_API_KEY or pass an owner-only --credential-file")?,
+            };
+            let summary = VultrClient::new(key.trim().into())?
+                .export_existing_inference_key(subscription_id.as_deref(), &output_file)
+                .await?;
+            println!("{}", serde_json::to_string_pretty(&summary)?);
+        }
+        Commands::VultrInferenceModel { output_file } => {
+            let key = std::env::var("VULTR_INFERENCE_API_KEY")
+                .context("Inference credential is not configured")?;
+            let summary =
+                agent_rush::deploy::credentials::discover_model_configuration(&key, &output_file)
+                    .await?;
+            println!("{}", serde_json::to_string_pretty(&summary)?);
+        }
+        Commands::VultrManifest {
+            credential_file,
+            manifest,
+            region,
+            hourly_estimate,
+            lifetime_hours,
+            spent_before_usd,
+        } => {
+            let key = match credential_file {
+                Some(path) => std::fs::read_to_string(path)?,
+                None => std::env::var("VULTR_API_KEY")
+                    .context("set VULTR_API_KEY or pass an owner-only --credential-file")?,
+            };
+            let scope = VultrClient::new(key.trim().into())?
+                .credential_scope()
+                .await?;
+            let record = DeploymentManifest::new(
+                &region,
+                chrono::Utc::now(),
+                hourly_estimate,
+                lifetime_hours,
+                spent_before_usd,
+                scope,
+            )?;
+            let _store = ManifestFile::create(&manifest, &record)?;
+            println!("{}", serde_json::to_string_pretty(&record.preview()?)?);
+        }
+        Commands::VultrTrack {
+            manifest,
+            kind,
+            id,
+            role,
+        } => {
+            let store = ManifestFile::open(&manifest)?;
+            let mut record = store.load()?;
+            record.track(kind, &id, role)?;
+            store.save(&record)?;
+            println!("{}", serde_json::to_string_pretty(&record.preview()?)?);
+        }
+        Commands::VultrTeardown {
+            manifest,
+            execute,
+            credential_file,
+        } => {
+            let store = ManifestFile::open(&manifest)?;
+            let mut record = store.load()?;
+            if execute {
+                let key = match credential_file {
+                    Some(path) => std::fs::read_to_string(path)?,
+                    None => std::env::var("VULTR_API_KEY")
+                        .context("set VULTR_API_KEY or pass an owner-only --credential-file")?,
+                };
+                let client = VultrClient::new(key.trim().into())?;
+                let result = teardown(&client, &mut record, chrono::Utc::now()).await;
+                // Preserve confirmed removals even if a later API operation failed.
+                store.save(&record)?;
+                let report = result?;
+                println!("{}", serde_json::to_string_pretty(&report)?);
+                ensure!(
+                    report.complete,
+                    "Cloud deletion remains pending; retry and reconcile provider billing"
+                );
+            } else {
+                println!("{}", serde_json::to_string_pretty(&record.preview()?)?);
+            }
         }
     }
     Ok(())

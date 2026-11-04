@@ -2,6 +2,10 @@
 
 The user selected **GLM 5.3 Flash** and delegated remaining configuration and credential choices. Machine-readable decisions are in deploy/decisions.json. These are configuration selections, not a claim that cloud deployment or inference has been activated.
 
+`AR_OPERATOR_PASSWORD` is already chosen privately; the user should not type or publish it. `AR_INFERENCE_MODEL` is a setup-managed binding for Vultr's exact catalog identifier of GLM 5.3 Flash. `AR_INPUT_USD_PER_MILLION` and `AR_OUTPUT_USD_PER_MILLION` are internal billing metadata, not prices chosen by the user and not changes to what Vultr charges. Trusted setup must obtain the provider's actual rates for the selected model and fill them only after verification. The configurable allowance is $5; it is distinct from those provider tariffs. Blank/missing tariff fields are accepted as unconfigured and keep paid inference disabled rather than assuming a zero price. No manual price selection is required from the user.
+
+Numbers entered into those fields alone do not enable paid calls. An internal `AR_PRICING_VERIFIED` flag defaults false; trusted setup sets it true only after verifying the provider/model tariff and its units. The user need not supply this flag or choose tariff amounts.
+
 | Setting | Choice |
 | --- | --- |
 | Agent model | GLM 5.3 Flash, exclusively through Vultr Serverless Inference |
@@ -29,5 +33,7 @@ The exact operator password, worker token, environment files, SSH key and privat
 Local configuration is `/workspace/.agent-rush-secrets/local.env`; future control and worker configurations are alongside it. The local environment disconnects the worker, uses loopback-only HTTP and keeps paid inference disabled. Production configuration keeps secure cookies enabled and uses the private mTLS worker route. Certificate validation passed at creation; certificates are not a substitute for a publicly trusted web certificate, and expiration must be checked before deployment.
 
 The catalog lookup for the selected model currently fails at proxy CONNECT with 403. No inference key, verified API model identifier or prices are configured. `AR_INFERENCE_MODEL` is intentionally left unset until Vultr's exact identifier is confirmed; a display name or guessed slug must not be sent as a verified model ID. Keep missing prices unset rather than assigning zero. Verify the selected model exists and is available through Vultr; do not silently choose another provider/model if it does not.
+
+Official Vultr SDK inspection confirmed that the authorized infrastructure account API can retrieve keys for existing serverless-inference subscriptions. `vultr-inference-key` exports an unambiguous existing key to an owner-only file without printing it or creating a subscription. `vultr-inference-model` uses that inference credential to query Vultr's model catalog and export only the exact selected model ID. These steps cannot run until the saved API network rules are applied. Model lookup alone does not verify billing rates or enable paid calls; setup still has to inspect the provider tariff and its units. The password and pricing choices do not require another permission question.
 
 These choices create no VMs, API subscriptions or billable model requests. The host still fails resource-controller qualification and must refuse task execution.

@@ -14,13 +14,21 @@
     "max_context_bytes": 32000,
     "budget_usd": 5,
     "fallback_model": null,
-    "paid_calls_enabled": false
+    "paid_calls_enabled": false,
+    "tariff_owner": "Vultr_provider_model_rates_not_user_chosen",
+    "tariff_configuration": "setup_populates_only_after_official_provider_verification"
   },
   "infrastructure": {
     "preferred_region": "ord",
     "operating_system": "Ubuntu_24.04_LTS_x86_64_subject_to_provider_availability",
-    "control_target": {"vcpus": 2, "memory_mib": 4096},
-    "worker_target": {"vcpus": 4, "memory_mib": 8192},
+    "control_target": {
+      "vcpus": 2,
+      "memory_mib": 4096
+    },
+    "worker_target": {
+      "vcpus": 4,
+      "memory_mib": 8192
+    },
     "plan_selection": "lowest_priced_available_plan_meeting_targets_after_live_price_verification",
     "private_worker_hostname": "worker.agent-rush.internal",
     "public_hostname": null,
@@ -33,7 +41,7 @@
   "spending": {
     "total_ceiling_usd": 300,
     "reserve_usd": 50,
-    "combined_hourly_estimate_ceiling_usd": 0.30,
+    "combined_hourly_estimate_ceiling_usd": 0.3,
     "temporary_test_lifetime_hours": 2,
     "idle_action": "stop_task_containers_and_delete_new_temporary_VM_resources_after_evidence_retention",
     "continuous_demo_enabled": false

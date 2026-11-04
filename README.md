@@ -73,13 +73,16 @@ Chosen model: **GLM 5.3 Flash**. The exact Vultr API identifier and pricing stil
 - `AR_WORKER_URL`, `AR_WORKER_TOKEN`: private worker route and authentication.
 - `AR_WORKER_CA_PATH`, `AR_WORKER_IDENTITY_PATH`: server trust and combined client certificate/private key PEM for mTLS.
 - `VULTR_INFERENCE_API_KEY`, `AR_INFERENCE_MODEL`: server-only Vultr inference binding and selected model.
-- `AR_INPUT_USD_PER_MILLION`, `AR_OUTPUT_USD_PER_MILLION`: verified actual model pricing. Missing prices disable inference.
+- `AR_INPUT_USD_PER_MILLION`, `AR_OUTPUT_USD_PER_MILLION`: internal provider-rate metadata filled by trusted setup, not user-selected prices. Blank/missing values disable paid inference; setup obtains the actual rates for GLM 5.3 Flash.
+- `AR_PRICING_VERIFIED`: internal setup attestation, false by default. Set true only after checking the actual provider/model tariff and units; rate numbers alone do not activate calls.
 - `AR_INFERENCE_BUDGET_USD`: persisted inference budget, default $5, hard maximum $25.
 - `AR_DATA_DIR`, `AR_CAPACITY_MB`: trusted state directory and admission capacity; reserve node headroom when choosing capacity.
 
 All agent roles use the fixed `https://api.vultrinference.com/v1/chat/completions` endpoint. No alternate model provider or local-shell tool exists. Logical subordinate contexts share task identity; they are not OS sandboxes. The controller permits four main turns and at most one bounded subordinate model request. Unresolved usage keeps its conservative cost reservation.
 
 The Vultr infrastructure API key is used **only by trusted deployment tooling**, not the web server, agent contexts or worker tasks. `agent-rush vultr-plan --credential-file <owner-only-file>` performs read-only pricing/account inspection; it does not create machines. No actual prices have been verified yet.
+
+Trusted setup now includes `vultr-inference-key` (reuse an existing serverless subscription key, private export only), `vultr-inference-model` (exact catalog selection, no guessed prices), and `vultr-manifest`/`vultr-track`/`vultr-teardown` (private exact-resource tracking and dry-run-first ownership-checked cleanup). These commands remain separate from the web/agent runtime. See [deployment](docs/DEPLOYMENT.md); live API access and cloud acceptance are still blocked.
 
 ## Delivery boundaries
 

@@ -6,7 +6,7 @@ This report distinguishes the implemented local system from a deployable/qualifi
 
 | Check | Observed result |
 | --- | --- |
-| Rust unit/API/policy suites | 31 passed after the final review fixes; command `cargo test --locked` |
+| Rust unit/API/policy suites | 52 passed after configuration/deployment continuation; command `cargo test --locked -j4` |
 | Default container test selection | Six explicitly ignored; a default green suite does not qualify a host |
 | Explicit real local container suite, before fail-closed preflight was added | Five passed; one failed (`real_memory_cap`) |
 | Real containment | Rust program executed, total 42, JSON artifact collected and hashed, root write/host path/socket/credential/network probes denied, cleanup verified |
@@ -18,7 +18,7 @@ This report distinguishes the implemented local system from a deployable/qualifi
 | Actual host capability diagnosis | MemoryLimit=false, CpuCfsQuota=false, PidsLimit=false, CgroupDriver=none; runsc uses --ignore-cgroups |
 | New worker preflight | Unit tested; refuses this host before arbitrary execution |
 | Browser flow | Two Playwright Chromium tests passed: desktop login, actual queued job, export, cancel; mobile login/layout |
-| Real Vultr inference | Not run; separate inference credential/model/verified pricing absent |
+| Real Vultr inference | Not run; existing-key retrieval/catalog verification blocked by network; verified pricing absent |
 | Vultr account/pricing | Blocked by proxy CONNECT 403; the infrastructure key has not been validated |
 | GitHub repository creation | Attempt failed with API Forbidden; no repository created or source pushed |
 | Public HTTPS/mTLS deployment | Not run; service/nginx templates only |
@@ -42,7 +42,7 @@ Raw earlier local receipts and the complete failing resource-suite log are in do
 | Recovery/reconciliation | Implemented, conservative lease retention | Crash/transport race qualification incomplete; no production claim |
 | Vultr-only inference and cost reservations | Implemented, no alternate provider | Validation/accounting tests; live API blocked |
 | Read-only cost planning | Implemented with guarded lifetime/rate budgets | Fixture tests; actual plan query blocked |
-| Infrastructure provisioning/independent teardown | Not implemented/applied | Requires account/management route and verified cleanup first |
+| Infrastructure provisioning/independent teardown | Provisioning/watchdog not implemented; guarded manual teardown implemented | Fixture tests only; live account/management route and independent cleanup required first |
 | Nested Docker, browser/desktop profiles | Not enabled | Not qualified |
 | Full Agent Zero port/plugin parity | Not claimed | Upstream downloaded as reference only |
 | Private repository publication | Blocked/unverified | No source published |
@@ -66,3 +66,13 @@ Screenshots and temporary QA outputs remain outside committed source under /tmp.
 One fresh read-only whole-branch review identified five Important defects and one readiness-reporting defect. The readiness defect was promoted for fixing because it would mislead users of an mTLS deployment. Added regression coverage for idempotent repeated cancellation, bounded history with explicit dropped-event counts, queued jobs surviving more than 100 newer terminal records, rejection during worker drain, preservation of uncertain creation during cancellation, final output-overflow/capture reconciliation, and configured worker trust not being ignored. All 31 unit/API tests and both fresh-database browser tests passed after the fixes. No second review or independent security audit is claimed.
 
 Uncertain creation and crashes with an unfinished run now require operator fencing/reconciliation before worker restart. An empty inventory snapshot does not resolve possible late Docker creation. This conservative stop retains capacity and can require manual recovery; it is preferable to a false cleanup receipt. Experimental crash/transport race qualification remains outstanding.
+
+## Configuration and deployment continuation
+
+The Rust suite now has 52 passing tests, including existing-key export permissions/redaction, exact GLM 5.3 Flash catalog matching, missing-price behavior, explicit tariff-verification gating, resource ownership/TTL/budget validation, pending deletion and cleanup persistence. Clippy with warnings denied and format checks pass. These fixture checks do not establish that the provider offers the selected model or any particular tariff.
+
+The official Vultr SDK reference at ab4d9052f7bba410fd63a3f9129e06bd5e14aae1 documents retrieval of existing inference subscription keys via the account API. The new helper never creates a subscription or prints its key. Model discovery uses the separate inference credential and a fixed Vultr origin. No actual API request has succeeded, no cloud resource has been deleted, and no inferred rate has been enabled.
+
+Cleanup defaults to preview. Execution requires exact resource IDs, deployment-specific labels/tags, region and creation-time checks, then confirms absence. An authenticated account/credential hash is checked before accepting any absence response. Both independent VMs are attempted even if one is pending/errors; dependencies wait until all VMs are confirmed absent. Attached VPC/firewall resources are rejected. This is a trusted manual helper, not an independent billing cutoff or provisioning workflow.
+
+A fresh bounded review of this continuation identified two Important issues: unbound-account 404 responses and pending instance deletion delaying the second VM. Both were reproduced with failing regression tests and fixed. Added coverage also verifies that one instance lookup error does not prevent attempting the other instance, while dependency cleanup stays blocked. This review is source-level evidence, not a live cloud or independent security qualification.

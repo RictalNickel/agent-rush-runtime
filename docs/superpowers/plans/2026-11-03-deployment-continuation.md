@@ -1,0 +1,11 @@
+# Deployment continuation
+
+Approved scope: complete the existing Agent Rush design and its Task 5 under the user's renewed authorization. No new permission is needed for that scope. Runtime proxy policy still blocks the required APIs; offline implementation does not constitute a cloud acceptance test.
+
+1. Inspect Vultr's official SDK to resolve endpoint/schema questions. Source reference: vultr/govultr at ab4d9052f7bba410fd63a3f9129e06bd5e14aae1. It documents GET /v2/inference returning subscription API keys, so a working account route can retrieve an existing inference credential without asking the user for another key. Do not print subscription responses or keys.
+2. Add Rust helpers/CLI for reading an unambiguous existing inference subscription, exporting its credential to an owner-only file, and selecting exactly GLM 5.3 Flash from a real catalog without fuzzy version/fallback matches. Retain missing pricing as a blocker. No subscription creation or paid model call is implied.
+3. Add an owner-only deployment manifest with project-specific exact resource IDs/labels, creation/expiry times, validated budget and resource roles. Add dry-run-first cleanup that checks live ownership, deletes VMs before dependencies and verifies resource absence. Do not delete unrelated or reused existing inference subscriptions.
+4. Tests first: exact model matching/redacted export; resource-ID traversal, wrong owner, duplicate resources, TTL/cost bounds, expired-resource cleanup, deletion pending, repeated teardown and file permissions. Use a fixture API for destructive behavior; do not call it a Vultr deployment.
+5. Run focused/full Rust tests, Clippy and format checks. Preserve a current failure report for denied routes and missing host controllers. Refresh docs/source artifact. Only provision once actual prices, management/SSH route and independent cleanup are verified.
+
+Review amendment: authenticate and bind the journal to the exact account/credential scope before accepting any resource 404 as absence. Attempt every independent instance even if another is pending/errors; postpone dependency deletion until all instances are absent. Add regression fixtures for both cases and preserve progress on errors.
