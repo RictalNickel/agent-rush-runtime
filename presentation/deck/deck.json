@@ -1,0 +1,18 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-11-05T05:20:00Z"},
+  "lists": "css",
+  "title": "Agent Rush — Blast Radius Zero",
+  "order": ["cover", "problem", "product", "architecture", "team", "guarantees", "containment", "receipt", "load", "value", "limits", "close"],
+  "sections": {
+    "s1": {"description": "Why AI agents that run code need a blast radius of zero.", "start": "cover"},
+    "s2": {"description": "How Agent Rush plans, executes and verifies work inside disposable sandboxes.", "start": "product"},
+    "s3": {"description": "Evidence from the live two-VM deployment on Vultr.", "start": "containment"},
+    "s4": {"description": "Who it is for, what it costs, and what is still open.", "start": "value"}
+  },
+  "faces": {
+    "ibm-plex-sans": {"family": "IBM Plex Sans", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"},
+    "jetbrains-mono": {"family": "JetBrains Mono", "href": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap"}
+  },
+  "designSystems": []
+}

@@ -1,0 +1,25 @@
+<section id="load" data-transition="fade" style="background:#F3F1EA;color:#142033;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#B5561A">Under load and under pressure</p>
+<h2 style="font-size:72px;font-weight:700;line-height:1.1">Limits held when we pushed</h2>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFDF8;border:1px solid #DCD7CA;border-radius:20px;padding:40px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:72px;font-weight:700;color:#B5561A">4 / 4</p>
+<h3 style="font-size:32px;font-weight:600">Concurrent jobs succeeded</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Two ran at once and two queued (53 s, 99 s) under the two-slot admission limit. 217 s total, $0.36.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFDF8;border:1px solid #DCD7CA;border-radius:20px;padding:40px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:72px;font-weight:700;color:#B5561A">9 / 9</p>
+<h3 style="font-size:32px;font-weight:600">Qualification checks pass</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Containment, timeout, output, memory, scratch, PIDs, CPU (held at 25% of a 0.25 vCPU lease), cancel, concurrency.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FFFDF8;border:1px solid #DCD7CA;border-radius:20px;padding:40px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:72px;font-weight:700;color:#B5561A">3 × 60 s</p>
+<h3 style="font-size:32px;font-weight:600">Runaway code stopped</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">An over-ambitious program hit the time cap three times. Each sandbox was killed and cleaned up; the job ended at its 15-minute limit.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4A5568">Worker cgroups matched every lease (512 / 768 MiB, 1 vCPU). Zero containers left behind after every test.</p>
+<aside>Four jobs were submitted at the same moment. The scheduler admitted two and queued two, and all four finished with verified cleanup. The worker qualifies itself every 90 minutes against nine real checks; if any fails, it stops taking work instead of running unchecked. And in a separate job the agent wrote a program that ran too long — the sandbox killed it at sixty seconds, three times, without any effect on the host.</aside>
+</section>

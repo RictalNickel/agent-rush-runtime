@@ -1,0 +1,30 @@
+<section id="architecture" data-transition="fade" style="background:#0F1A2A;color:#EEF1F4;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F29A4A">Architecture</p>
+<h2 style="font-size:72px;font-weight:700;line-height:1.1">Two VMs, one private link, no shortcuts</h2>
+</div>
+<div style="position:relative;flex:1;display:flex;gap:96px;align-items:stretch">
+<div style="width:300px;display:flex;flex-direction:column;justify-content:center;gap:16px;background:#16263C;border:2px solid #2C4260;border-radius:20px;padding:32px">
+<h3 style="font-size:32px;font-weight:600">User</h3>
+<p style="font-size:24px;line-height:1.4;color:#A9B8C9">Browser over HTTPS (Let’s Encrypt, HSTS)</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#16263C;border:2px solid #6CB7E0;border-radius:20px;padding:36px">
+<h3 style="font-size:32px;font-weight:600;color:#6CB7E0">Control VM</h3>
+<p style="font-size:24px;line-height:1.4;color:#C9D4E0">Caddy gateway → Rust API on loopback</p>
+<p style="font-size:24px;line-height:1.4;color:#C9D4E0">Agent engine, role allowlists, spend ledger</p>
+<p style="font-size:24px;line-height:1.4;color:#C9D4E0">Login, CSRF, owner-scoped jobs (SQLite)</p>
+<p style="font-size:24px;line-height:1.4;color:#A9B8C9">Calls the inference API; never runs code</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#16263C;border:2px solid #F29A4A;border-radius:20px;padding:36px">
+<h3 style="font-size:32px;font-weight:600;color:#F29A4A">Worker VM</h3>
+<p style="font-size:24px;line-height:1.4;color:#C9D4E0">nginx mTLS ingress on the VPC address only</p>
+<p style="font-size:24px;line-height:1.4;color:#C9D4E0">Node manager owns Docker; no public ports</p>
+<p style="font-size:24px;line-height:1.4;color:#C9D4E0">One gVisor sandbox per run, then destroyed</p>
+<p style="font-size:24px;line-height:1.4;color:#A9B8C9">Requalifies itself every 90 minutes</p>
+</div>
+<x-connector x1="300" y1="50%" x2="396" y2="50%" head="end" style="color:#A9B8C9;border-width:4px"></x-connector>
+<x-connector x1="982" y1="50%" x2="1078" y2="50%" head="end" style="color:#F29A4A;border-width:4px"></x-connector>
+</div>
+<p style="font-size:24px;color:#A9B8C9">Control ↔ worker: private Vultr VPC, client certificate <b>and</b> bearer token required. Worker reachable from the internet on SSH only.</p>
+<aside>The control VM is the only thing the public can reach. It holds the web app, the agent engine and the inference key, but it never executes generated code. The worker VM has the Docker authority and runs every sandbox. The two talk over a private Vultr VPC through an nginx proxy that requires a client certificate and a token. We tested the rejection paths: no certificate returns 400, a wrong token returns 401.</aside>
+</section>
