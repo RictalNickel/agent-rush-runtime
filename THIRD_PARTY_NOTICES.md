@@ -1,6 +1,6 @@
 # Third-party notices
 
-Agent Zero, copyright 2025 Agent Zero, s.r.o, MIT license. Source reference: https://github.com/agent0ai/agent-zero at ba9b67df0f54ac78106ae85c552ef5d2458f7c9a. Its context hierarchy, bounded agent loop and tool lifecycle informed this native Rust implementation. Agent Rush is not a GitHub fork, does not embed the Python runtime, and does not claim full Agent Zero compatibility. License preserved in docs/reference/AGENT_ZERO_LICENSE.
+Agent Zero, copyright 2025 Agent Zero, s.r.o, MIT license. Source reference: https://github.com/agent0ai/agent-zero at ba9b67df0f54ac78106ae85c552ef5d2458f7c9a. It was read as a design reference for the agent loop; no Agent Zero code, prompts or tool formats are reused (see docs/reference/DESIGN_LINEAGE.md). Agent Rush is not a fork, does not embed the Python runtime and does not aim for Agent Zero compatibility. License preserved in docs/reference/AGENT_ZERO_LICENSE.
 
 Rust dependencies are pinned by Cargo.lock and their source/license notices accompany the downloaded Cargo registry packages. Axum, Tokio, serde, reqwest, rusqlite, rustls and the other crates retain their upstream licenses. Do not represent these libraries as rewritten components.
 

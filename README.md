@@ -2,7 +2,9 @@
 
 Give every agent a world: a native Rust controller, durable policy broker, private execution worker and an evidence-first web workspace.
 
-**Current status: local implementation; not a completed hackathon submission.** Unit/API tests and browser flows run locally. Earlier bounded gVisor probes demonstrated code execution, filesystem/network containment, artifacts, timeout, output/storage limits and cleanup. The host failed the memory-limit probe: its Docker daemon has no memory/CPU/PID controllers and runsc uses `--ignore-cgroups`. The worker now refuses this host. Real Vultr inference, cloud deployment, private GitHub creation and full host qualification remain blocked by access/configuration prerequisites. See [verification](docs/VERIFICATION.md).
+**Status (2026-11-05): live on Vultr.** A two-VM deployment (Caddy HTTPS control plane plus a private gVisor worker reached over mTLS) runs real agent jobs at https://144-202-59-108.sslip.io. The worker passes all nine real containment qualification checks; jobs, a four-job load test and containment probes have receipts in `docs/evidence/live/`. See [live deployment](docs/LIVE_DEPLOYMENT.md) for what is verified and what is still open.
+
+Agent Rush is an original Rust system. Its agent loop was designed with [Agent Zero](https://github.com/agent0ai/agent-zero) (MIT) as a reference; no Agent Zero code, prompts or tool envelopes are reused. See [design lineage](docs/reference/DESIGN_LINEAGE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ## Run the control UI locally
 
@@ -16,15 +18,6 @@ cargo run --locked -- serve
 ```
 
 The control server binds loopback port 8080 by default. An unconfigured instance supports login, a durable queue, cancellation and downloadable queued-job evidence. It does not fabricate model results or worker availability. Do not expose development HTTP publicly.
-
-In this prepared workspace, activate Rust first:
-
-```sh
-export CARGO_HOME=/workspace/.toolchains/cargo
-export RUSTUP_HOME=/workspace/.toolchains/rustup
-export PATH="$CARGO_HOME/bin:$PATH"
-cd /workspace/Hackathon
-```
 
 ## Tests
 
@@ -81,9 +74,9 @@ Control settings:
 
 Logical subordinate contexts share task identity; they are not OS sandboxes. Unresolved usage keeps its conservative cost reservation.
 
-The Vultr infrastructure API key is used **only by trusted deployment tooling**, not the web server, agent contexts or worker tasks. `agent-rush vultr-plan --credential-file <owner-only-file>` performs read-only pricing/account inspection; it does not create machines. No actual prices have been verified yet.
+The Vultr infrastructure API key is used **only by trusted deployment tooling**, not the web server, agent contexts or worker tasks. `agent-rush vultr-plan --credential-file <owner-only-file>` performs read-only pricing/account inspection; it does not create machines. The live VMs were provisioned and installed with `deploy/bootstrap-worker.sh`, `deploy/install-worker.sh` and `deploy/install-control.sh`.
 
-Trusted setup now includes `vultr-inference-key` (reuse an existing serverless subscription key, private export only), `vultr-inference-model` (exact catalog selection, no guessed prices), and `vultr-manifest`/`vultr-track`/`vultr-teardown` (private exact-resource tracking and dry-run-first ownership-checked cleanup). These commands remain separate from the web/agent runtime. See [deployment](docs/DEPLOYMENT.md); live API access and cloud acceptance are still blocked.
+Trusted setup now includes `vultr-inference-key` (reuse an existing serverless subscription key, private export only), `vultr-inference-model` (exact catalog selection, no guessed prices), and `vultr-manifest`/`vultr-track`/`vultr-teardown` (private exact-resource tracking and dry-run-first ownership-checked cleanup). These commands remain separate from the web/agent runtime and were not used for the live deployment. See [deployment](docs/DEPLOYMENT.md).
 
 ## Delivery boundaries
 
@@ -92,9 +85,9 @@ The user's latest instructions require a private repository, Rust platform compo
 Nested Docker, browser/desktop profiles, live memory expansion on an executing container, full Agent Zero plugin compatibility, automatic billing cutoff and a live demo recording are not delivered or advertised as supported. A live two-VM deployment is running; see [live deployment](docs/LIVE_DEPLOYMENT.md). See the feature matrix and remaining work in docs/VERIFICATION.md.
 
 
-Native Agent Zero behavior is mapped in [the Rust port record](docs/reference/NATIVE_PORT.md): iterative child contexts and continuation, persisted context exports, bounded owner memory, strict tools, shared call limits and admitted between-attempt RAM growth. All production model calls go through one trusted inference gateway; generated code executes only on the private worker.
+How the agent loop relates to Agent Zero, and where it deliberately differs, is in [design lineage](docs/reference/DESIGN_LINEAGE.md): typed team roles with enforced allowlists, a reviewer gate, receipt-gated answers, persisted context exports, bounded owner memory, shared call limits and admitted between-attempt RAM growth. All production model calls go through one trusted inference gateway; generated code executes only on the private worker.
 
-Run `agent-rush qualify --output <new-private-report.json>` on a candidate worker before enabling it, then set `AR_QUALIFICATION_REPORT` to that report. The command runs fixed real containment/resource probes and rejects unsupported hosts before executing code. Reports are bound to the exact host/image and expire after two hours; the deployed worker requalifies on a 90-minute timer. The live Vultr worker passes all nine checks. See [image packaging](docs/IMAGES.md) for locked image inputs and the native control image build/export.
+Run `agent-rush qualify --output <new-private-report.json>` on a candidate worker before enabling it, then set `AR_QUALIFICATION_REPORT` to that report. The command runs fixed real containment/resource probes and rejects unsupported hosts before executing code. Reports are bound to the exact host/image and expire after two hours; the deployed worker requalifies every 45 minutes and adopts each new passing report without a restart. The live Vultr worker passes all nine checks. See [image packaging](docs/IMAGES.md) for locked image inputs and the native control image build/export.
 
 
 Independent tracked-resource cleanup is implemented by `vultr-watch` ([operations and limits](docs/CLEANUP_WATCHDOG.md)). It previews by default; an executing watcher authenticates the account scope, watches the fixed deadline, persists progress, and closes tracking before cleanup. Run it only on an appropriate trusted management runner. It has not been qualified against live Vultr and does not implement automatic VM creation or recover unknown creation requests.

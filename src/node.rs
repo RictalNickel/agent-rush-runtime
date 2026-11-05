@@ -19,7 +19,7 @@ use std::{
     path::PathBuf,
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicI64, Ordering},
     },
 };
 
@@ -31,7 +31,7 @@ pub struct NodeState {
     active: Arc<Mutex<HashMap<String, ActiveLease>>>,
     capacity_mb: u32,
     resources: ResourcePolicy,
-    qualification_expires_at: i64,
+    qualification_expires_at: Arc<AtomicI64>,
     draining: Arc<AtomicBool>,
     io_lock: Arc<Mutex<()>>,
 }
@@ -74,7 +74,7 @@ impl NodeState {
             active: Arc::new(Mutex::new(HashMap::new())),
             capacity_mb: resources.usable_memory_mb,
             resources,
-            qualification_expires_at: 0,
+            qualification_expires_at: Arc::new(AtomicI64::new(0)),
             draining: Arc::new(AtomicBool::new(false)),
             io_lock: Arc::new(Mutex::new(())),
         })
@@ -93,13 +93,23 @@ impl NodeState {
         }
         Ok(())
     }
-    pub fn with_qualification_expiry(mut self, expires_at: i64) -> Self {
-        self.qualification_expires_at = expires_at;
+    pub fn with_qualification_expiry(self, expires_at: i64) -> Self {
+        self.qualification_expires_at
+            .store(expires_at, Ordering::SeqCst);
         self
     }
+    /// Adopt a newer passing qualification without restarting, so in-flight runs survive.
+    /// Never shortens the current expiry.
+    pub fn extend_qualification(&self, expires_at: i64) {
+        self.qualification_expires_at
+            .fetch_max(expires_at, Ordering::SeqCst);
+    }
+    pub fn qualification_expiry(&self) -> i64 {
+        self.qualification_expires_at.load(Ordering::SeqCst)
+    }
     fn qualification_expired(&self) -> bool {
-        self.qualification_expires_at > 0
-            && chrono::Utc::now().timestamp() >= self.qualification_expires_at
+        let expires_at = self.qualification_expiry();
+        expires_at > 0 && chrono::Utc::now().timestamp() >= expires_at
     }
     fn path(&self, id: &str) -> Result<PathBuf> {
         SandboxSpec::new(id, crate::worker::IMAGE, Limits::default())?;

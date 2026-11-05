@@ -83,3 +83,14 @@ Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
 - Actual continuous CLI denial smoke passed with an explicitly synthetic invalid credential: API failure could not arm readiness; heartbeat mode0600; SIGTERM persisted the cleanup fence and exited nonzero; process stopped; no provider deletion tested and zero resource IDs. User-mode systemd unit verification passed with the actual executable substituted; no service installed. System-mode verification lacks /run/systemd write access, so no system-startup proof is claimed.
 
 - Rebuilt/exported the native control image from d3f90ea, image sha256:b6ae8cbf1b909af2d9e6e9e64ba7fd838a515f02142edb82aa1af6dd2da80b09; repeated the actual image smoke against the new binary, passed and verified container removal. No web layout changed. Updated the eight-page progress PDF to 86 passing Rust tests.
+
+## 2026-11-05
+
+- Restored the source and history from the handoff bundle into the private repository `RictalNickel/agent-rush-runtime`.
+- Added a switchable inference provider (Anthropic or Vultr) and the team profile: Opus orchestrator and reviewer, Haiku coder and worker, enforced allowlists, compaction, and reserve-then-settle costing.
+- Fixed docker stats sampling, which had blocked the CPU qualification check. Refusals and API errors now settle at their actual cost.
+- Deployed two Vultr VMs (control and worker). The worker passed 9/9 qualification checks. Ran a live end-to-end job, a four-job load test and containment probes. Built the slide deck.
+- Review pass:
+  - Originality against Agent Zero: no shared text found. Removed the Agent Zero envelope decoder and aliases, and replaced `call_subordinate` with `follow_up`.
+  - Code review fixes: requalification no longer restarts the worker. Review failures are advisory. A final rejection fails the job. Reviewer prompts fit the compact budget.
+  - Stale documentation corrected.

@@ -7,7 +7,7 @@
 <div style="flex:3;display:flex;flex-direction:column;gap:28px">
 <p style="font-size:32px;line-height:1.45;color:#C9D4E0"><b style="color:#EEF1F4">Who:</b> teams that want AI agents to analyse data, test code or automate tasks on infrastructure that also holds customer data and credentials.</p>
 <p style="font-size:32px;line-height:1.45;color:#C9D4E0"><b style="color:#EEF1F4">Why they buy:</b> every run is isolated, capped and destroyed, and leaves a receipt an auditor can check — not a chat transcript.</p>
-<p style="font-size:32px;line-height:1.45;color:#C9D4E0"><b style="color:#EEF1F4">How it grows:</b> the worker advertises its capacity; adding Vultr worker VMs adds parallel sandboxes without touching the control plane.</p>
+<p style="font-size:32px;line-height:1.45;color:#C9D4E0"><b style="color:#EEF1F4">How it grows:</b> the worker advertises its capacity and admission follows it. Today one worker runs two jobs at a time; more worker VMs is the next step.</p>
 </div>
 <div style="flex:2;display:flex;flex-direction:column;gap:32px;justify-content:center">
 <div style="display:flex;flex-direction:column;gap:8px">
@@ -20,5 +20,5 @@
 </div>
 </div>
 </div>
-<aside>The value is trust. Companies want agents that act, but they cannot let model-generated code run next to production secrets. Agent Rush gives each action its own disposable box and a machine-checked receipt. Infrastructure is two small Vultr VMs at about eight cents an hour; in our runs a verified job cost between six and twenty cents in model usage. Scaling out means adding worker VMs — note that automatic scale-out is not built yet.</aside>
+<aside>The value is trust. Companies want agents that act, but they cannot let model-generated code run next to production secrets. Agent Rush gives each action its own disposable box and a machine-checked receipt. Infrastructure is two small Vultr VMs at about eight cents an hour; in our runs a verified job cost between six and twenty cents in model usage. Today a single worker admits two jobs at a time; supporting several worker VMs is the next step, and automatic scale-out is not built.</aside>
 </section>

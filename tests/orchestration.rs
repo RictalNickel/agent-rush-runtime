@@ -135,7 +135,7 @@ async fn subordinate_executes_an_iterative_workflow_using_the_same_lease_and_bud
     let (db, j) = setup();
     let f = Fixture::new(
         vec![
-            json!({"tool_name":"call_subordinate","tool_args":{"message":"Independently compute totals"}}),
+            json!({"tool":"delegate","task":"Independently compute totals"}),
             sandbox(),
             sandbox(),
             json!({"tool":"response","message":"Subordinate checked the result"}),
@@ -219,9 +219,9 @@ async fn subordinate_context_can_continue_and_advice_cannot_inherit_another_exec
     let f = Fixture::new(
         vec![
             sandbox(),
-            json!({"tool":"call_subordinate","message":"Check the strategy"}),
+            json!({"tool":"delegate","task":"Check the strategy"}),
             json!({"tool":"response","message":"An unexecuted suggestion"}),
-            json!({"tool":"call_subordinate","message":"Now independently execute the check","context_id":"@CHILD_ID@"}),
+            json!({"tool":"follow_up","context_id":"@CHILD_ID@","message":"Now independently execute the check"}),
             sandbox(),
             json!({"tool":"response","message":"Independently checked"}),
             json!({"tool":"response","message":"Worker verified result"}),

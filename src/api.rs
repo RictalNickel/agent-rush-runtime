@@ -156,7 +156,7 @@ async fn status(State(s): State<AppState>) -> Json<Value> {
         false
     };
     Json(
-        json!({"version":env!("CARGO_PKG_VERSION"),"inference_configured":s.settings.inference_configured(),"inference_provider":s.settings.inference_provider.name(),"agent_roles":if s.settings.inference_provider==crate::config::Provider::Anthropic{json!({"orchestrator":"claude-opus-5-5 (medium)","worker":"claude-haiku-5-5 (high, 5m cache)","coder":"claude-haiku-5-5 (xhigh)","reviewer":"claude-opus-5-5 (high)"})}else{json!({"all":s.settings.inference_model})},"worker_connected":connected,"runtime":"runsc","profiles":[{"id":"cli","available":connected && s.settings.inference_configured()},{"id":"nested-dev","available":false,"reason":"Not qualified"},{"id":"browser","available":false,"reason":"Not qualified"}],"reserved_memory_mb":s.ledger.reserved_memory().unwrap_or(0),"inference_accounted_usd":s.ledger.spend_total().unwrap_or(0.0),"cloud_status":"unverified","resources":{"controller_admission_capacity_mb":s.ledger.capacity_mb(),"max_concurrent_jobs":crate::resources::MAX_CONCURRENT,"cpu_scheduling":"equal weights, shared ceilings","memory_growth":"between sandbox attempts only","utilization":"not measured by this endpoint"}}),
+        json!({"version":env!("CARGO_PKG_VERSION"),"inference_configured":s.settings.inference_configured(),"inference_provider":s.settings.inference_provider.name(),"agent_roles":agent_roles(&s.settings),"worker_connected":connected,"runtime":"runsc","profiles":[{"id":"cli","available":connected && s.settings.inference_configured()},{"id":"nested-dev","available":false,"reason":"Not qualified"},{"id":"browser","available":false,"reason":"Not qualified"}],"reserved_memory_mb":s.ledger.reserved_memory().unwrap_or(0),"inference_accounted_usd":s.ledger.spend_total().unwrap_or(0.0),"cloud_status":"unverified","resources":{"controller_admission_capacity_mb":s.ledger.capacity_mb(),"max_concurrent_jobs":crate::resources::MAX_CONCURRENT,"cpu_scheduling":"equal weights, shared ceilings","memory_growth":"between sandbox attempts only","utilization":"not measured by this endpoint"}}),
     )
 }
 #[derive(Deserialize)]
@@ -430,4 +430,22 @@ async fn artifact(
         Body::from(bytes),
     )
         .into_response())
+}
+
+/// The role table shown to operators, derived from the same mapping the gateway uses.
+fn agent_roles(settings: &crate::config::Settings) -> Value {
+    use crate::agent::Role;
+    if settings.inference_provider != crate::config::Provider::Anthropic {
+        return json!({"all": settings.inference_model});
+    }
+    let describe = |role: Role| {
+        let spec = crate::inference::anthropic_role(role);
+        json!({"model": spec.model, "effort": spec.effort, "cache_ttl": spec.cache_ttl.unwrap_or("default"), "compaction": spec.compaction})
+    };
+    json!({
+        "orchestrator": describe(Role::Orchestrator),
+        "coder": describe(Role::Coder),
+        "worker": describe(Role::Worker),
+        "reviewer": describe(Role::Reviewer),
+    })
 }

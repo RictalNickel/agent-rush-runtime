@@ -1,0 +1,282 @@
+{
+  "disclaimer": "Worker-collected execution evidence; not independent remote attestation",
+  "dropped_events": 0,
+  "events": [
+    {
+      "at": "2026-11-05T05:39:30.088Z",
+      "kind": "queued",
+      "message": "Task accepted under fixed CLI policy"
+    },
+    {
+      "at": "2026-11-05T05:39:30.628Z",
+      "kind": "admitted",
+      "memory_mb": 512,
+      "message": "Memory lease admitted atomically"
+    },
+    {
+      "at": "2026-11-05T05:39:37.155Z",
+      "kind": "tool_started",
+      "message": "Agent 29725941-a349-472e-ab1b-2bbf62611804 at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T05:39:52.386Z",
+      "kind": "tool_started",
+      "message": "Agent 314957c9-dbbb-4b5a-9e74-86eff3020e58 at depth 1 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T05:39:52.387Z",
+      "kind": "executing",
+      "message": "Compile and run a std-only Rust 2024 program that computes T(30) and the sum of T(1..30) iteratively, checks them against closed forms and the expected values 465 and 4960, writes /work/artifacts/result.json, and prints the same JSON."
+    },
+    {
+      "at": "2026-11-05T05:39:52.388Z",
+      "kind": "node_run",
+      "message": "aed3fbb1-dc38-4cdf-bc13-6fddda369afb-1"
+    },
+    {
+      "at": "2026-11-05T05:39:53.657Z",
+      "kind": "verifying",
+      "message": "Worker process/result/cleanup checks passed"
+    },
+    {
+      "at": "2026-11-05T05:39:53.658Z",
+      "kind": "tool_finished",
+      "message": "Allowed tool result recorded under the fixed task policy"
+    },
+    {
+      "at": "2026-11-05T05:40:12.866Z",
+      "kind": "tool_started",
+      "message": "Agent 314957c9-dbbb-4b5a-9e74-86eff3020e58 at depth 1 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T05:40:12.868Z",
+      "kind": "subordinate",
+      "message": "Logical subordinate returned; worker evidence remains authoritative"
+    },
+    {
+      "at": "2026-11-05T05:40:21.888Z",
+      "kind": "tool_started",
+      "message": "Agent 29725941-a349-472e-ab1b-2bbf62611804 at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T05:40:30.175Z",
+      "kind": "review",
+      "message": "Reviewer approved: The values are correct: T(30) = 30\u00b731/2 = 465, and the sum of the first 30 triangular numbers is 30\u00b731\u00b732/6 = 4960. The code computes both iteratively and asserts them against the closed forms and the literal values. Exit code 0 means no assertion panicked. The worker's stdout matches the decoded result.json artifact (148 bytes), and all checks passed. The note that the file was not inspected in a separate run is cautious rather than an overclaim, since the answer also cites the worker's JSON-object check."
+    },
+    {
+      "at": "2026-11-05T05:40:30.176Z",
+      "kind": "explanation",
+      "message": "Results, verified by a sandbox run:\n\n- 30th triangular number: T(30) = 465\n- Sum of the first 30 triangular numbers: 4960\n\nThe program computes both values by iterative summation, using T(k) = T(k-1) + k with T(0) = 0, and accumulates T(1) through T(30). It then checks them against the closed forms with assertions:\n- assert_eq!(T(30), n(n+1)/2): 30\u00b731/2 = 465\n- assert_eq!(sum, n(n+1)(n+2)/6): 30\u00b731\u00b732/6 = 4960\n- It also asserts the literal values 465 and 4960.\n\nThe independent worker's evidence shows the run succeeded:\n- Exit code 0, with empty stderr, so every assertion passed.\n- result.json passed the is-a-JSON-object check.\n- Output capture was complete.\n\nThe stdout was:\n{\"n\": 30, \"triangular_n\": 465, \"sum_of_first_n_triangular\": 4960, \"closed_form_triangular\": 465, \"closed_form_sum\": 4960, \"assertions_passed\": true}\n\nThe program wrote the same JSON to /work/artifacts/result.json. A read-back assertion inside the program confirmed the file matched before it exited. The sandbox is disposable, so the file was not inspected in a separate run and may not persist afterward."
+    },
+    {
+      "at": "2026-11-05T05:40:30.177Z",
+      "kind": "succeeded",
+      "message": "Worker cleanup verified; lease released"
+    }
+  ],
+  "job": "aed3fbb1-dc38-4cdf-bc13-6fddda369afb",
+  "receipt": {
+    "artifacts": [
+      {
+        "bytes": 148,
+        "name": "result.json",
+        "sha256": "ba7852ed1afc2aba9a3c212e648329697a92612eceb61dc0eaa7252e8548b018"
+      }
+    ],
+    "checks": [
+      {
+        "name": "process_exit_zero",
+        "passed": true
+      },
+      {
+        "name": "result_json_is_object",
+        "passed": true
+      },
+      {
+        "name": "output_within_limit",
+        "passed": true
+      },
+      {
+        "name": "output_capture_complete",
+        "passed": true
+      }
+    ],
+    "checks_passed": true,
+    "cleanup_state": "verified",
+    "creation_uncertain": false,
+    "duration_ms": 1079,
+    "execution_finished_at": "2026-11-05T05:39:53.412Z",
+    "execution_ms": 717,
+    "execution_started_at": "2026-11-05T05:39:52.695Z",
+    "exit_code": 0,
+    "explanation": "Results, verified by a sandbox run:\n\n- 30th triangular number: T(30) = 465\n- Sum of the first 30 triangular numbers: 4960\n\nThe program computes both values by iterative summation, using T(k) = T(k-1) + k with T(0) = 0, and accumulates T(1) through T(30). It then checks them against the closed forms with assertions:\n- assert_eq!(T(30), n(n+1)/2): 30\u00b731/2 = 465\n- assert_eq!(sum, n(n+1)(n+2)/6): 30\u00b731\u00b732/6 = 4960\n- It also asserts the literal values 465 and 4960.\n\nThe independent worker's evidence shows the run succeeded:\n- Exit code 0, with empty stderr, so every assertion passed.\n- result.json passed the is-a-JSON-object check.\n- Output capture was complete.\n\nThe stdout was:\n{\"n\": 30, \"triangular_n\": 465, \"sum_of_first_n_triangular\": 4960, \"closed_form_triangular\": 465, \"closed_form_sum\": 4960, \"assertions_passed\": true}\n\nThe program wrote the same JSON to /work/artifacts/result.json. A read-back assertion inside the program confirmed the file matched before it exited. The sandbox is disposable, so the file was not inspected in a separate run and may not persist afterward.",
+    "finished_at": "2026-11-05T05:39:53.578Z",
+    "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+    "inference_calls": [
+      {
+        "accounted_usd": 0.015626,
+        "agent_id": "29725941-a349-472e-ab1b-2bbf62611804",
+        "at": "2026-11-05T05:39:37.154Z",
+        "cache_creation_input_tokens": 542,
+        "cache_read_input_tokens": 0,
+        "cache_ttl": "default",
+        "call_id": "3f556fff-ccf6-4c88-bd35-c05e6b223392",
+        "compacted": false,
+        "depth": 0,
+        "effort": "medium",
+        "input_tokens": 4,
+        "model": "claude-opus-5-5",
+        "origin": "https://api.anthropic.com/v1",
+        "output_tokens": 645,
+        "price_source": "anthropic list price",
+        "provider": "Anthropic",
+        "provider_request_id": "msg_011CgjF5oUiycTrgpT9C8qpW",
+        "role": "orchestrator"
+      },
+      {
+        "accounted_usd": 0.002270775,
+        "agent_id": "314957c9-dbbb-4b5a-9e74-86eff3020e58",
+        "at": "2026-11-05T05:39:52.385Z",
+        "cache_creation_input_tokens": 851,
+        "cache_read_input_tokens": 0,
+        "cache_ttl": "default",
+        "call_id": "1b0a9bac-2ad1-45e2-96e8-3eb2d9e3158d",
+        "compacted": false,
+        "depth": 1,
+        "effort": "xhigh",
+        "input_tokens": 4,
+        "model": "claude-haiku-5-5",
+        "origin": "https://api.anthropic.com/v1",
+        "output_tokens": 4328,
+        "price_source": "anthropic list price",
+        "provider": "Anthropic",
+        "provider_request_id": "msg_011CgjF6Gdcr1KBe5pfTH2ew",
+        "role": "coder"
+      },
+      {
+        "accounted_usd": 0.0026646599999999997,
+        "agent_id": "314957c9-dbbb-4b5a-9e74-86eff3020e58",
+        "at": "2026-11-05T05:40:12.865Z",
+        "cache_creation_input_tokens": 974,
+        "cache_read_input_tokens": 851,
+        "cache_ttl": "default",
+        "call_id": "2e4a542d-ca8c-4c0d-8bd2-7a8f5e27e9f2",
+        "compacted": false,
+        "depth": 1,
+        "effort": "xhigh",
+        "input_tokens": 4,
+        "model": "claude-haiku-5-5",
+        "origin": "https://api.anthropic.com/v1",
+        "output_tokens": 5068,
+        "price_source": "anthropic list price",
+        "provider": "Anthropic",
+        "provider_request_id": "msg_011CgjF7VDw2U38t7VbC3Jep",
+        "role": "coder"
+      },
+      {
+        "accounted_usd": 0.0213794,
+        "agent_id": "29725941-a349-472e-ab1b-2bbf62611804",
+        "at": "2026-11-05T05:40:21.887Z",
+        "cache_creation_input_tokens": 2071,
+        "cache_read_input_tokens": 542,
+        "cache_ttl": "default",
+        "call_id": "902d6ca6-c11e-4a35-9527-2553c1327865",
+        "compacted": false,
+        "depth": 0,
+        "effort": "medium",
+        "input_tokens": 4,
+        "model": "claude-opus-5-5",
+        "origin": "https://api.anthropic.com/v1",
+        "output_tokens": 545,
+        "price_source": "anthropic list price",
+        "provider": "Anthropic",
+        "provider_request_id": "msg_011CgjF8uQ1MZyqrQmFQBqSz",
+        "role": "orchestrator"
+      },
+      {
+        "accounted_usd": 0.025871,
+        "agent_id": "f0759011-3132-4653-83c8-052bee568491",
+        "at": "2026-11-05T05:40:30.175Z",
+        "cache_creation_input_tokens": 1827,
+        "cache_read_input_tokens": 0,
+        "cache_ttl": "default",
+        "call_id": "dacb8422-922e-4900-a010-c164207aae13",
+        "compacted": false,
+        "depth": 0,
+        "effort": "high",
+        "input_tokens": 4,
+        "model": "claude-opus-5-5",
+        "origin": "https://api.anthropic.com/v1",
+        "output_tokens": 836,
+        "price_source": "anthropic list price",
+        "provider": "Anthropic",
+        "provider_request_id": "msg_011CgjF9ZtXqz1VjnQGCmGxn",
+        "role": "reviewer"
+      }
+    ],
+    "job_id": "aed3fbb1-dc38-4cdf-bc13-6fddda369afb-1",
+    "limits": {
+      "cpu_millis": 1000,
+      "memory_mb": 512,
+      "timeout_seconds": 60
+    },
+    "model_calls": 5,
+    "output_truncated": false,
+    "reason": "completed",
+    "resource_samples": [
+      {
+        "at": "2026-11-05T05:39:53.224Z",
+        "docker_stats": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "ar-task-aed3fbb1-dc38-4cdf-bc13-6fddda369afb-1",
+          "ID": "65105f94a6ab98a32491c7e252d76e6e7ca598a3d149b9335e75f519f40cbba4",
+          "MemPerc": "1.67%",
+          "MemUsage": "8.531MiB / 512MiB",
+          "Name": "ar-task-aed3fbb1-dc38-4cdf-bc13-6fddda369afb-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "26"
+        }
+      },
+      {
+        "at": "2026-11-05T05:39:53.224Z",
+        "docker_stats": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "ar-task-aed3fbb1-dc38-4cdf-bc13-6fddda369afb-1",
+          "ID": "65105f94a6ab98a32491c7e252d76e6e7ca598a3d149b9335e75f519f40cbba4",
+          "MemPerc": "1.67%",
+          "MemUsage": "8.531MiB / 512MiB",
+          "Name": "ar-task-aed3fbb1-dc38-4cdf-bc13-6fddda369afb-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "26"
+        }
+      }
+    ],
+    "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+    "result": {
+      "assertions_passed": true,
+      "closed_form_sum": 4960,
+      "closed_form_triangular": 465,
+      "n": 30,
+      "sum_of_first_n_triangular": 4960,
+      "triangular_n": 465
+    },
+    "review": {
+      "approved": true,
+      "notes": "The values are correct: T(30) = 30\u00b731/2 = 465, and the sum of the first 30 triangular numbers is 30\u00b731\u00b732/6 = 4960. The code computes both iteratively and asserts them against the closed forms and the literal values. Exit code 0 means no assertion panicked. The worker's stdout matches the decoded result.json artifact (148 bytes), and all checks passed. The note that the file was not inspected in a separate run is cautious rather than an overclaim, since the answer also cites the worker's JSON-object check."
+    },
+    "runtime": "runsc",
+    "started_at": "2026-11-05T05:39:52.499Z",
+    "stderr": "",
+    "stdout": "{\"n\": 30, \"triangular_n\": 465, \"sum_of_first_n_triangular\": 4960, \"closed_form_triangular\": 465, \"closed_form_sum\": 4960, \"assertions_passed\": true}\n"
+  },
+  "request": {
+    "memory_mb": 512,
+    "profile": "cli",
+    "prompt": "Compute the 30th triangular number and the sum of the first 30 triangular numbers. Check both against their closed forms with assertions and write them to result.json.",
+    "timeout_seconds": 60
+  },
+  "schema": "agent-rush.evidence.v1",
+  "state": "succeeded"
+}

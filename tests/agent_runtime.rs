@@ -37,24 +37,25 @@ fn memory_is_durable_owner_scoped_literal_and_bounded() {
 }
 
 #[test]
-fn upstream_tool_envelopes_are_translated_through_the_same_allowlist() {
-    assert!(matches!(parse_tool(&json!({"thoughts":["Check totals"],"tool_name":"code_execution_tool","tool_args":{"runtime":"rust","code":"fn main() {}"}}).to_string()).unwrap(),ToolCall::Sandbox{..}));
+fn only_the_native_tool_schema_is_accepted() {
+    // Foreign envelopes and alias names are rejected; the schema is `{"tool": ...}` only.
+    for value in [
+        json!({"tool_name":"code_execution_tool","tool_args":{"runtime":"rust","code":"fn main() {}"}}),
+        json!({"tool_name":"memory_save","tool_args":{"title":"Rule","text":"Bounded note"}}),
+        json!({"tool":"memory_load","query":"notes"}),
+        json!({"tool":"call_subordinate","message":"Compute totals"}),
+        json!({"tool":"follow_up","context_id":"not-a-uuid","message":"Compute totals"}),
+    ] {
+        assert!(parse_tool(&value.to_string()).is_err(), "{value}");
+    }
     assert!(matches!(
-        parse_tool(
-            &json!({"tool_name":"memory_save","tool_args":{"title":"Rule","text":"Bounded note"}})
-                .to_string()
-        )
-        .unwrap(),
+        parse_tool(r#"{"tool":"memory_save","title":"Rule","text":"Bounded note"}"#).unwrap(),
         ToolCall::MemorySave { .. }
     ));
-    for value in [
-        json!({"tool_name":"code_execution_tool","tool_args":{"runtime":"terminal","code":"id"}}),
-        json!({"tool_name":"code_execution_tool","tool_args":{"runtime":"rust","code":"fn main() {}","privileged":true}}),
-        json!({"tool_name":"call_subordinate","tool_args":{"message":"Compute totals","provider":"external"}}),
-        json!({"tool_name":"ssh","tool_args":{"host":"localhost"}}),
-    ] {
-        assert!(parse_tool(&value.to_string()).is_err());
-    }
+    assert!(matches!(
+        parse_tool(&json!({"tool":"follow_up","context_id":uuid::Uuid::new_v4().to_string(),"message":"Check again"}).to_string()).unwrap(),
+        ToolCall::FollowUp { .. }
+    ));
 }
 
 #[test]

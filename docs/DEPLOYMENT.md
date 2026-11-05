@@ -1,6 +1,6 @@
 # Bounded Vultr deployment
 
-Status: deployment preparation only. No Vultr machines, VPCs, firewall groups, SSH keys or paid inference requests have been created by this project. The current proxy denies api.vultr.com; actual account credit, plan prices, credentials and region availability are not verified.
+Status (2026-11-05): a live two-VM deployment exists and is documented in [LIVE_DEPLOYMENT.md](LIVE_DEPLOYMENT.md). It was installed with `deploy/bootstrap-worker.sh`, `deploy/install-worker.sh` and `deploy/install-control.sh`, not with the provisioning tooling below. The rest of this file describes the original guarded deployment plan and tooling, kept for reference.
 
 Native image packaging now passes a real non-root/read-only-root control-container smoke test; see IMAGES.md. Before starting the private worker, run `agent-rush qualify --output /var/lib/agent-rush/qualification.json` on that actual worker and set `AR_QUALIFICATION_REPORT`. Startup requires all nine real checks, matching host/image and a report younger than two hours. The current managed host is refused before probes; its successful control-image smoke does not qualify task execution.
 

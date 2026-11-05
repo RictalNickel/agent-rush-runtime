@@ -174,25 +174,8 @@ async fn main() -> Result<()> {
                 &settings.sandbox_image
             };
             let runner = DockerRunner::new(image)?;
-            let report_path=settings.qualification_report.as_ref().context("Run agent-rush qualify and configure AR_QUALIFICATION_REPORT before starting a worker")?;
-            let metadata = std::fs::symlink_metadata(report_path)?;
-            ensure!(
-                metadata.file_type().is_file() && metadata.len() <= 5 * 1024 * 1024,
-                "invalid qualification file"
-            );
-            let report: serde_json::Value = serde_json::from_slice(&std::fs::read(report_path)?)?;
-            agent_rush::qualification::validate_report(
-                &report,
-                &runner.health().await?,
-                chrono::Utc::now(),
-            )?;
-            let expires_at = chrono::DateTime::parse_from_rfc3339(
-                report["finished_at"]
-                    .as_str()
-                    .context("qualification timestamp missing")?,
-            )?
-            .timestamp()
-                + 7200;
+            let report_path=settings.qualification_report.clone().context("Run agent-rush qualify and configure AR_QUALIFICATION_REPORT before starting a worker")?;
+            let expires_at = qualified_until(&report_path, &runner).await?;
             let node = NodeState::new(
                 runner,
                 settings.data_dir.join("node"),
@@ -204,6 +187,21 @@ async fn main() -> Result<()> {
             let listener = tokio::net::TcpListener::bind(&bind).await?;
             node.recover().await?;
             node.runner.health().await?;
+            // A requalification timer replaces the report; adopt it in place every minute.
+            let refresh_node = node.clone();
+            tokio::spawn(async move {
+                loop {
+                    tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    match qualified_until(&report_path, &refresh_node.runner).await {
+                        Ok(at) if at > refresh_node.qualification_expiry() => {
+                            refresh_node.extend_qualification(at);
+                            tracing::info!(expires_at = at, "adopted newer qualification report");
+                        }
+                        Ok(_) => {}
+                        Err(e) => tracing::warn!(error=%e, "qualification report not adopted"),
+                    }
+                }
+            });
             tracing::info!(address=%bind,"private worker listening; use mTLS ingress for remote access");
             let shutdown_node = node.clone();
             axum::serve(listener, node_router(node.clone()))
@@ -493,6 +491,27 @@ async fn run_cloud_watchdog(
     }.await;
     signal.abort();
     result
+}
+/// Validate the qualification report against this host and image; return when it expires.
+async fn qualified_until(report_path: &Path, runner: &DockerRunner) -> Result<i64> {
+    let metadata = std::fs::symlink_metadata(report_path)?;
+    ensure!(
+        metadata.file_type().is_file() && metadata.len() <= 5 * 1024 * 1024,
+        "invalid qualification file"
+    );
+    let report: serde_json::Value = serde_json::from_slice(&std::fs::read(report_path)?)?;
+    agent_rush::qualification::validate_report(
+        &report,
+        &runner.health().await?,
+        chrono::Utc::now(),
+    )?;
+    Ok(chrono::DateTime::parse_from_rfc3339(
+        report["finished_at"]
+            .as_str()
+            .context("qualification timestamp missing")?,
+    )?
+    .timestamp()
+        + 7200)
 }
 async fn shutdown_signal() {
     #[cfg(unix)]

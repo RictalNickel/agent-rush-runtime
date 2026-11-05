@@ -1,4 +1,4 @@
-# Native Agent Zero port and execution completion
+# Agent runtime and execution completion (historical plan, 2026-11-04)
 
 Authority: continue the approved Agent Rush design under the user's explicit instruction to finish Rust Agent Zero behavior, images, orchestration, sandbox and resource allocation. The attachments are design inputs; user language/private-repository/spending choices prevail. Base: 849c86e.
 

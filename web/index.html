@@ -3,7 +3,7 @@
 <body>
 <aside class="sidebar"><a class="brand" href="/"><span class="brand-mark"></span>Agent Rush</a><nav aria-label="Main navigation">
 <button class="nav active" data-nav="workspace"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 7 7-7 7m9 0h7"/></svg>Workspace</button><button class="nav" data-nav="history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Zm0 0v6h6M8 13h8m-8 4h6"/></svg>Run history</button><button class="nav" data-nav="evidence"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 10 6-10 6L2 9Zm-10 12 10 6 10-6M2 12l10 6 10-6"/></svg>Evidence</button><button class="nav" data-nav="safety"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 4v6c0 5-9 8-9 8S3 18 3 13V7Z"/></svg>Safety &amp; limits</button></nav>
-<div class="workspace-status">Local workspace<p><span class="dot"></span>Cloud inventory not connected</p></div></aside>
+<div class="workspace-status"><span id="deploy-label">Agent Rush</span><p><span class="dot"></span><span id="deploy-status">Checking worker…</span></p></div></aside>
 <div class="main-shell"><header class="topbar"><div>Workspace <span>/</span> <strong>New task</strong></div><button class="button secondary small" id="login-button">Operator login</button></header><main>
 <section class="intro" id="workspace"><h1>Give every agent a world.</h1><p>Real execution. Clear boundaries. Proof of cleanup.</p></section>
 <div class="workbench"><form id="task-form" class="panel task-panel"><h2><label for="prompt">What should the agent do?</label></h2><textarea id="prompt" minlength="3" maxlength="8000" required placeholder="Analyze a CSV, write a script, or test a small application…"></textarea>

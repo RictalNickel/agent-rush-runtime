@@ -1,6 +1,6 @@
 # Authority and evidence
 
-The control API owns authentication, CSRF, task identity, idempotency, memory reservations and the event ledger. The model may choose only a validated sandbox/delegate/response tool object. Unknown fields and tool names fail closed. It never receives Docker authority or infrastructure credentials.
+The control API owns authentication, CSRF, task identity, idempotency, memory reservations and the event ledger. The model may choose only a validated tool object from its role's allowlist (see AGENT_TEAM.md); only the coder role may request a sandbox run. Unknown fields and tool names fail closed. It never receives Docker authority or infrastructure credentials.
 
 The private node manager owns Docker. It launches a digest-pinned runsc container with non-root identity, no network, read-only root, no host mounts, all capabilities dropped, no-new-privileges, bounded PID/CPU/memory/output/files/scratch/time. Its Docker client uses an empty config and cleared environment so Docker cannot inject controller proxy credentials into the task. A fixed system tar binary exports bounded artifact bytes; paths are inspected, never extracted on the host.
 

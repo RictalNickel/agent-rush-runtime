@@ -367,15 +367,18 @@ impl InferenceGateway {
         // Settle from usage before decoding, so a refusal or malformed turn is still
         // charged its actual cost instead of holding the worst-case reservation.
         let body: Value = serde_json::from_slice(&bytes)?;
-        let cost = anthropic_cost(body["model"].as_str().unwrap_or(""), &body["usage"]);
+        let spec = anthropic_role(context.role);
+        // A dated snapshot ID in the response is priced as the role's configured model.
+        let cost = anthropic_cost(body["model"].as_str().unwrap_or(""), &body["usage"])
+            .or_else(|| anthropic_cost(spec.model, &body["usage"]));
         let accounted = cost.unwrap_or(reservation);
+        // Record what was actually billed even when it breaks the envelope, then stop.
+        self.ledger.settle_spend(&call_id, accounted)?;
         ensure!(
             accounted <= reservation,
             "provider usage exceeds cost reservation; stop and reconcile billing"
         );
-        self.ledger.settle_spend(&call_id, accounted)?;
         let completion = decode_anthropic(body)?;
-        let spec = anthropic_role(context.role);
         let tokens = billed_tokens(&completion.usage);
         let receipt = json!({
             "call_id": call_id,

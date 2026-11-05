@@ -1,8 +1,23 @@
 # Observed verification
 
-This report distinguishes the implemented local system from a deployable/qualified hackathon submission. Recorded UTC timestamps are preserved in raw evidence; user-facing planning dates use America/Chicago.
+## Current status (2026-11-05, live Vultr deployment)
 
-## Checks
+| Check | Observed result |
+| --- | --- |
+| Rust suites | 100 passed, 7 real-host tests ignored by default. Clippy `-D warnings` and rustfmt clean. Run on the Vultr worker |
+| Worker qualification | 9/9 real checks passed on the live worker (`evidence/live/worker-qualification-2026-11-05.json`). The earlier memory-cap failure does not reproduce on a host with enforcing cgroups |
+| Public HTTPS and worker mTLS | Deployed and tested. No client certificate: 400. Wrong or missing token: 401. Raw worker port unreachable |
+| Real inference, agent, worker roundtrip | Done with the Anthropic provider (job `2f6bd23b`). The Vultr Serverless Inference provider has not yet run live |
+| Concurrent load | 4 jobs, 2-slot admission, all succeeded with verified cleanup |
+| Containment | Probe receipt plus timeout kills recorded |
+| Private repository | Created (`RictalNickel/agent-rush-runtime`) |
+| Cloud spending | Two VMs at $0.082/h, plus measured model usage |
+
+Details: [LIVE_DEPLOYMENT.md](LIVE_DEPLOYMENT.md).
+
+## Historical checks (2026-11-04, local environment before deployment)
+
+The table below is the earlier record from a restricted local environment and is kept for provenance. Recorded UTC timestamps are preserved in raw evidence.
 
 | Check | Observed result |
 | --- | --- |
@@ -32,21 +47,21 @@ Raw earlier local receipts and the complete failing resource-suite log are in do
 
 | Capability | Implementation | Acceptance |
 | --- | --- | --- |
-| Native Rust controller/tool/context lifecycle | Implemented, bounded main/subordinate contexts | Unit tests; real provider/controller/worker roundtrip outstanding |
+| Rust agent loop, team roles, contexts | Implemented: orchestrator, coder, worker and reviewer with enforced allowlists | Unit tests; live roundtrip passed with the Anthropic provider |
 | Authenticated product UI | Implemented, Rust-served HTML/CSS and browser JS | Desktop/mobile core flow tested |
 | Durable jobs/idempotency/owner scoping | Implemented, SQLite WAL | Tested |
 | Atomic memory admission/reservation | Implemented | Concurrency/restart tests pass |
 | Memory growth | Atomic admission for the next sandbox attempt | Engine/ledger tests pass; live in-place updates are not exposed or claimed |
-| Private worker/token auth | Implemented | Authentication tests pass; deployed mTLS tests outstanding |
-| Fixed gVisor execution and safe artifacts | Implemented | Real local containment passed; host enforcement qualification failed |
+| Private worker/token auth | Implemented | Deployed mTLS and token rejection tested live |
+| Fixed gVisor execution and safe artifacts | Implemented | Live worker qualification 9/9 |
 | Recovery/reconciliation | Implemented, conservative lease retention | Crash/transport race qualification incomplete; no production claim |
-| Vultr-only inference and cost reservations | Implemented, no alternate provider | Validation/accounting tests; live API blocked |
+| Inference gateway and cost reservations | Implemented: Vultr Serverless Inference or Anthropic, selected by the operator | Anthropic live; Vultr live call not yet made |
 | Read-only cost planning | Implemented with guarded lifetime/rate budgets | Fixture tests; actual plan query blocked |
 | Infrastructure provisioning/independent teardown | Provisioning disabled; native tracked-resource watchdog and manual teardown implemented | Fixture tests and denial-path CLI smoke pass; real provider deletion/runner uptime unverified |
 | Nested Docker, browser/desktop profiles | Not enabled | Not qualified |
-| Full Agent Zero port/plugin parity | Not claimed | Upstream downloaded as reference only |
-| Private repository publication | Blocked/unverified | No source published |
-| Presentation PDF | Prepared from actual local evidence/status | Must refresh after cloud acceptance |
+| Agent Zero compatibility | Not a goal | Design reference only; see reference/DESIGN_LINEAGE.md |
+| Private repository publication | Done | Private now; public before submission |
+| Presentation | Slide deck built from live evidence (`presentation/deck/`) | PDF export pending |
 | Real live demo video/submission | Not recorded/submitted | Outstanding |
 
 ## Measurement limits

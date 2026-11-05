@@ -4,7 +4,7 @@ With `AR_INFERENCE_PROVIDER=anthropic` (and with `vultr`, where every role uses 
 
 | Role | Model | Effort | Prompt cache | Compaction | Tools it may use |
 | --- | --- | --- | --- | --- | --- |
-| Orchestrator | `claude-opus-5-5` | medium | API default (5 min) | none | plan, delegate, call_subordinate, memory, request_memory, response |
+| Orchestrator | `claude-opus-5-5` | medium | API default (5 min) | none | plan, delegate, follow_up, memory, request_memory, response |
 | Worker | `claude-haiku-5-5` | high | explicit `ttl: 5m` | at 100k input tokens | memory_save, memory_search, response |
 | Coder | `claude-haiku-5-5` | xhigh | API default (5 min) | at 100k input tokens | sandbox, request_memory, response |
 | Reviewer | `claude-opus-5-5` | high | API default (5 min) | none | review |
@@ -14,7 +14,7 @@ Every call sets `max_tokens` to 100,000. The worker and coder use server-side th
 ## Flow
 
 1. The orchestrator plans and delegates. It cannot run code: a `sandbox` call from the orchestrator is rejected and the rejection is logged.
-2. The coder writes a standard-library Rust program and runs it in the gVisor sandbox on the private worker, fixing and rerunning on failure. The orchestrator supervises it, can continue it by `context_id` with follow-up instructions, and sees the worker's evidence when the coder returns.
+2. The coder writes a standard-library Rust program and runs it in the gVisor sandbox on the private worker, fixing and rerunning on failure. The orchestrator supervises it, can send it further instructions with `follow_up` and its `context_id`, and sees the worker's evidence when the coder returns.
 3. The worker handles small, fully specified non-coding tasks such as memory lookups. It cannot execute code.
 4. When the orchestrator responds after a verified run, an independent reviewer receives the task, the code, the worker's evidence and the proposed answer. A rejection sends the reviewer's notes back to the orchestrator once; the second verdict is final and is stored on the receipt.
 

@@ -261,12 +261,16 @@ async fn run_job(state: &AppState, node: &NodeClient, job: &Job, node_capacity: 
             "error",
             &format!("Task could not complete: {error}"),
         )?;
-        receipt["reason"] = json!(if backend.cancelled() {
-            "cancelled"
+        if backend.cancelled() {
+            receipt["reason"] = json!("cancelled");
+            receipt["checks_passed"] = json!(false);
+        } else if error == crate::engine::REVIEW_REJECTED {
+            // The run itself passed its checks; the job fails because its answer did not.
+            receipt["reason"] = json!("review_rejected");
         } else {
-            "controller_error"
-        });
-        receipt["checks_passed"] = json!(false);
+            receipt["reason"] = json!("controller_error");
+            receipt["checks_passed"] = json!(false);
+        }
     }
     receipt["cleanup_state"] = json!(if clean { "verified" } else { "failed" });
     receipt["inference_calls"] = json!(outcome.inference_calls);

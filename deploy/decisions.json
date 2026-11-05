@@ -1,22 +1,23 @@
 {
-  "status": "chosen_defaults_not_deployed",
+  "status": "deployed_2026-11-05",
   "project": "Agent Rush",
   "timezone": "America/Chicago",
   "inference": {
     "provider": "Vultr Serverless Inference",
     "requested_model": "GLM 5.3 Flash",
-    "api_model_id": null,
-    "catalog_verification": "blocked_by_proxy_connect_403",
+    "api_model_id": "glm-5.3-flash",
+    "catalog_verification": "glm-5.3-flash listed in the Vultr inference catalog 2026-11-05; tariff not yet verified",
     "input_usd_per_million": null,
     "output_usd_per_million": null,
     "max_output_tokens": 4096,
     "temperature": 0.2,
     "max_context_bytes": 32000,
-    "budget_usd": 5,
+    "budget_usd": 25,
     "fallback_model": null,
     "paid_calls_enabled": false,
     "tariff_owner": "Vultr_provider_model_rates_not_user_chosen",
-    "tariff_configuration": "setup_populates_only_after_official_provider_verification"
+    "tariff_configuration": "setup_populates_only_after_official_provider_verification",
+    "live_provider": "Anthropic (owner decision 2026-11-04; switchable to Vultr)"
   },
   "infrastructure": {
     "preferred_region": "ord",
@@ -31,12 +32,45 @@
     },
     "plan_selection": "lowest_priced_available_plan_meeting_targets_after_live_price_verification",
     "private_worker_hostname": "worker.agent-rush.internal",
-    "public_hostname": null,
+    "public_hostname": "144-202-59-108.sslip.io",
     "public_hostname_pattern": "agent-rush.<control-public-ip>.sslip.io",
     "public_hostname_selection": "derive_from_allocated_control_IP_and_verify_DNS_and_public_TLS_before_use_no_domain_purchase",
     "gpu": false,
     "autoscaling": false,
-    "resources_created": []
+    "resources_created": [
+      {
+        "kind": "instance",
+        "role": "control",
+        "plan": "vc2-2c-4gb",
+        "region": "ord",
+        "usd_per_hour": 0.027
+      },
+      {
+        "kind": "instance",
+        "role": "worker",
+        "plan": "vc2-4c-8gb",
+        "region": "ord",
+        "usd_per_hour": 0.055
+      },
+      {
+        "kind": "vpc",
+        "role": "shared",
+        "region": "ord"
+      },
+      {
+        "kind": "firewall",
+        "role": "control"
+      },
+      {
+        "kind": "firewall",
+        "role": "worker"
+      },
+      {
+        "kind": "ssh-key",
+        "role": "shared"
+      }
+    ],
+    "resource_ids": "kept in the operator's private ledger outside Git"
   },
   "spending": {
     "total_ceiling_usd": 300,
@@ -44,7 +78,8 @@
     "combined_hourly_estimate_ceiling_usd": 0.3,
     "temporary_test_lifetime_hours": 2,
     "idle_action": "stop_task_containers_and_delete_new_temporary_VM_resources_after_evidence_retention",
-    "continuous_demo_enabled": false
+    "continuous_demo_enabled": true,
+    "continuous_demo_approval": "owner approved keeping both VMs up through judging (2026-11-04)"
   },
   "execution": {
     "profile": "cli",

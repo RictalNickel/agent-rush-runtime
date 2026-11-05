@@ -1,4 +1,4 @@
-//! Native equivalents of Agent Zero memory tools and persisted contexts. No embeddings/provider calls.
+//! Owner-scoped memory notes and persisted agent contexts in SQLite. No embeddings/provider calls.
 use crate::{agent::AgentContext, domain::now, ledger::Ledger};
 use anyhow::{Result, ensure};
 use rusqlite::params;

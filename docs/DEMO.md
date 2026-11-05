@@ -14,7 +14,7 @@ Agent Rush gives an AI agent a disposable Rust development environment and gives
 
 ## Current build honesty
 
-Do not record the local queue and describe it as a live model run. Do not present the earlier containment probe as a fully qualified worker: memory enforcement failed, and the current worker refuses this managed host. Do not animate invented metrics or replace absent provider receipts with fixtures. No end-to-end live demonstration video has been recorded yet.
+Record the live deployment, not the local queue. Show real receipts: a successful job, the reviewer step, and a containment moment such as the 60-second timeout kills (job `76a60e82`) or the probe receipt in `docs/evidence/live/containment/`. Say which inference provider ran. The live demo runs the Anthropic team; the track requires Vultr Serverless Inference.
 
 The sample examples/revenue.rs fixture is a reproducible offline workload, not proof that an LLM generated it. It asserts North=1600 and total=3400, writes result.json and must be executed through a qualified sandbox, never treated as a substitute for the real provider/controller flow.
 

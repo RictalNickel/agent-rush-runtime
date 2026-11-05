@@ -26,16 +26,18 @@ install -m 0600 /root/deploy-in/tls/worker.key /etc/agent-rush/tls/
 install -m 0644 /root/agent-rush/deploy/worker.service /etc/systemd/system/agent-rush-worker.service
 
 # Requalify on a timer: the worker refuses work once its report is two hours old.
-# A new report is installed, and the worker restarted, only when every check passes.
+# A new report is installed only when every check passes; the running worker adopts it
+# within a minute, so in-flight sandbox runs are never interrupted by a restart.
 cat > /opt/agent-rush/requalify.sh <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
+exec 9>/run/agent-rush-requalify.lock
+flock -n 9 || { echo "requalification already running" >&2; exit 0; }
 set -a; . /etc/agent-rush/worker.env; set +a
 out=/var/lib/agent-rush/qualification.next.json
 rm -f "$out"  # qualify never overwrites an existing report
 if runuser -u agent-rush -- /opt/agent-rush/agent-rush qualify --output "$out"; then
-  install -o agent-rush -g agent-rush -m 0600 "$out" /var/lib/agent-rush/qualification.json
-  systemctl restart agent-rush-worker
+  mv -f "$out" /var/lib/agent-rush/qualification.json
 else
   echo "qualification failed; worker keeps its current (expiring) report" >&2
   exit 1
@@ -52,10 +54,10 @@ ExecStart=/opt/agent-rush/requalify.sh
 UNIT
 cat > /etc/systemd/system/agent-rush-requalify.timer <<'UNIT'
 [Unit]
-Description=Requalify the Agent Rush worker every 90 minutes
+Description=Requalify the Agent Rush worker every 45 minutes (reports last two hours)
 [Timer]
 OnBootSec=2min
-OnUnitActiveSec=90min
+OnUnitActiveSec=45min
 [Install]
 WantedBy=timers.target
 UNIT
@@ -69,9 +71,12 @@ nginx -t
 # Only the control VM may reach the mTLS ingress, and only over the private network.
 ufw allow from "$CONTROL_IP" to "$VPC_IP" port 8443 proto tcp
 systemctl daemon-reload
-systemctl enable --now agent-rush-requalify.timer
-/opt/agent-rush/requalify.sh
+systemctl enable agent-rush-requalify.timer
+# One synchronous qualification before first start; the timer then keeps it fresh.
+systemctl start agent-rush-requalify.service
+systemctl start agent-rush-requalify.timer
 systemctl enable agent-rush-worker
+systemctl restart agent-rush-worker
 systemctl reload-or-restart nginx
 sleep 2
 systemctl --no-pager --lines=5 status agent-rush-worker | head -12

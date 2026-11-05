@@ -1,6 +1,6 @@
 # OCI images and native worker deployment
 
-`deploy/images.lock.json` records immutable linux/amd64 inputs. The official Rust 1.90.0 Bookworm image is the offline CLI compiler/execution profile; the Ubuntu 24.04 image is the native control application's minimal runtime. Both have been downloaded locally. No Agent Zero/Python image is used. The complete Agent Zero source reference is archived separately; see reference/NATIVE_PORT.md and THIRD_PARTY_NOTICES.md.
+`deploy/images.lock.json` records immutable linux/amd64 inputs. The official Rust 1.90.0 Bookworm image is the offline CLI compiler/execution profile; the Ubuntu 24.04 image is the native control application's minimal runtime. Both have been downloaded locally. No Agent Zero/Python image is used. The complete Agent Zero source reference is archived separately; see reference/DESIGN_LINEAGE.md and THIRD_PARTY_NOTICES.md.
 
 Build with `bash scripts/build-images.sh` from a trusted shell that can use local Docker. The script builds locked Rust release code, verifies the reviewed public CA bundle, creates a temporary build context from exactly the executable/public certificates/license/state directory, builds without network RUN steps and exports `/workspace/artifacts/agent-rush-control-image.tar.gz`. It never copies the checkout, credential directory, environment files, SSH keys, inference key or infrastructure key. Session proxy root certificates are excluded from the production trust bundle. Existing official image inputs are reused or pulled by digest.
 

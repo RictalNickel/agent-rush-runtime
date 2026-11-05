@@ -21,7 +21,7 @@ Total: **$0.082/hour**, about $2 per day. Resource IDs and the exact delete call
 - gVisor `runsc` release-20261102.0, registered as a non-default runtime **without** `--ignore-cgroups`.
 - Sandbox image pinned by digest: `rust:1.90.0-bookworm@sha256:3914072c…`.
 - `agent-rush-worker.service` runs as the unprivileged `agent-rush` user (docker group) bound to 127.0.0.1:8090.
-- `agent-rush-requalify.timer` reruns the nine containment checks every 90 minutes. It installs the new report and restarts the worker only if every check passes; otherwise the worker stops admitting jobs when the old report expires.
+- `agent-rush-requalify.timer` reruns the nine containment checks every 45 minutes. A passing report replaces the old one, and the running worker adopts it within a minute without a restart, so in-flight runs are not interrupted. If checks fail, the worker stops admitting jobs when the old report expires two hours after it was made.
 
 Install scripts: `deploy/bootstrap-worker.sh`, `deploy/install-worker.sh`, `deploy/install-control.sh`.
 
@@ -97,7 +97,7 @@ Finding: `--pids-limit 64` stops process creation (the qualification run was den
 ## Not yet done
 
 - The live deployment uses the `anthropic` provider. The Blast Radius Zero rules require Vultr Serverless Inference for every agent call. Switching needs verified GLM 5.3 Flash pricing (`AR_INPUT_USD_PER_MILLION`, `AR_OUTPUT_USD_PER_MILLION`, `AR_PRICING_VERIFIED=true`) and `AR_INFERENCE_PROVIDER=vultr`.
-- No recorded demo video and no slide deck yet.
+- No recorded demo video yet. The slide deck is in `presentation/deck/`; a PDF export is pending.
 - Security-flavoured tasks can be declined by the Opus classifier. Anthropic's server-side `fallbacks` option would reroute those calls to another model; it is off because it substitutes models outside the configured role table.
 - The private mTLS certificates expire 2026-11-11 04:31 UTC and must be regenerated if the demo runs past that.
 
