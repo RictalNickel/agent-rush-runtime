@@ -1,0 +1,159 @@
+{
+  "artifacts": [],
+  "checks": [
+    {
+      "name": "process_exit_zero",
+      "passed": false
+    },
+    {
+      "name": "result_json_is_object",
+      "passed": false
+    },
+    {
+      "name": "output_within_limit",
+      "passed": true
+    },
+    {
+      "name": "output_capture_complete",
+      "passed": true
+    }
+  ],
+  "checks_passed": false,
+  "cleanup_state": "verified",
+  "creation_uncertain": false,
+  "duration_ms": 4547,
+  "execution_finished_at": "2026-11-05T04:45:06.291Z",
+  "execution_ms": 4122,
+  "execution_started_at": "2026-11-05T04:45:02.168Z",
+  "exit_code": 128,
+  "finished_at": "2026-11-05T04:45:06.423Z",
+  "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+  "job_id": "edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+  "limits": {
+    "cpu_millis": 1000,
+    "memory_mb": 256,
+    "timeout_seconds": 90
+  },
+  "output_truncated": false,
+  "reason": "execution_failed",
+  "resource_samples": [
+    {
+      "at": "2026-11-05T04:45:02.704Z",
+      "docker_stats": {
+        "BlockIO": "0B / 0B",
+        "CPUPerc": "0.00%",
+        "Container": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "ID": "3625cd0379ab918430b1164e8a908aa419f65d2284156918894f8cf54a4f4049",
+        "MemPerc": "3.29%",
+        "MemUsage": "8.41MiB / 256MiB",
+        "Name": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "NetIO": "0B / 0B",
+        "PIDs": "26"
+      }
+    },
+    {
+      "at": "2026-11-05T04:45:03.203Z",
+      "docker_stats": {
+        "BlockIO": "0B / 0B",
+        "CPUPerc": "0.00%",
+        "Container": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "ID": "3625cd0379ab918430b1164e8a908aa419f65d2284156918894f8cf54a4f4049",
+        "MemPerc": "3.29%",
+        "MemUsage": "8.41MiB / 256MiB",
+        "Name": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "NetIO": "0B / 0B",
+        "PIDs": "26"
+      }
+    },
+    {
+      "at": "2026-11-05T04:45:03.703Z",
+      "docker_stats": {
+        "BlockIO": "0B / 0B",
+        "CPUPerc": "103.81%",
+        "Container": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "ID": "3625cd0379ab918430b1164e8a908aa419f65d2284156918894f8cf54a4f4049",
+        "MemPerc": "21.74%",
+        "MemUsage": "55.65MiB / 256MiB",
+        "Name": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "NetIO": "0B / 0B",
+        "PIDs": "38"
+      }
+    },
+    {
+      "at": "2026-11-05T04:45:04.204Z",
+      "docker_stats": {
+        "BlockIO": "0B / 0B",
+        "CPUPerc": "103.81%",
+        "Container": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "ID": "3625cd0379ab918430b1164e8a908aa419f65d2284156918894f8cf54a4f4049",
+        "MemPerc": "21.74%",
+        "MemUsage": "55.65MiB / 256MiB",
+        "Name": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "NetIO": "0B / 0B",
+        "PIDs": "38"
+      }
+    },
+    {
+      "at": "2026-11-05T04:45:04.703Z",
+      "docker_stats": {
+        "BlockIO": "0B / 0B",
+        "CPUPerc": "103.69%",
+        "Container": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "ID": "3625cd0379ab918430b1164e8a908aa419f65d2284156918894f8cf54a4f4049",
+        "MemPerc": "16.80%",
+        "MemUsage": "43.02MiB / 256MiB",
+        "Name": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "NetIO": "0B / 0B",
+        "PIDs": "45"
+      }
+    },
+    {
+      "at": "2026-11-05T04:45:05.204Z",
+      "docker_stats": {
+        "BlockIO": "0B / 0B",
+        "CPUPerc": "103.69%",
+        "Container": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "ID": "3625cd0379ab918430b1164e8a908aa419f65d2284156918894f8cf54a4f4049",
+        "MemPerc": "16.80%",
+        "MemUsage": "43.02MiB / 256MiB",
+        "Name": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "NetIO": "0B / 0B",
+        "PIDs": "45"
+      }
+    },
+    {
+      "at": "2026-11-05T04:45:05.704Z",
+      "docker_stats": {
+        "BlockIO": "0B / 0B",
+        "CPUPerc": "31.79%",
+        "Container": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "ID": "3625cd0379ab918430b1164e8a908aa419f65d2284156918894f8cf54a4f4049",
+        "MemPerc": "21.49%",
+        "MemUsage": "55.02MiB / 256MiB",
+        "Name": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "NetIO": "0B / 0B",
+        "PIDs": "45"
+      }
+    },
+    {
+      "at": "2026-11-05T04:45:06.203Z",
+      "docker_stats": {
+        "BlockIO": "0B / 0B",
+        "CPUPerc": "31.79%",
+        "Container": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "ID": "3625cd0379ab918430b1164e8a908aa419f65d2284156918894f8cf54a4f4049",
+        "MemPerc": "21.49%",
+        "MemUsage": "55.02MiB / 256MiB",
+        "Name": "ar-task-edf72fd8-1e4f-4e03-8353-544d940ad1f4",
+        "NetIO": "0B / 0B",
+        "PIDs": "45"
+      }
+    }
+  ],
+  "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+  "result": null,
+  "runtime": "runsc",
+  "started_at": "2026-11-05T04:45:01.875Z",
+  "stderr": "waiting on pid 2: waiting on PID 2 in sandbox \"3625cd0379ab918430b1164e8a908aa419f65d2284156918894f8cf54a4f4049\": urpc method \"containerManager.WaitPID\" failed: EOF\n",
+  "stdout": "net_public     BLOCKED Network is unreachable (os error 101)\nnet_metadata   BLOCKED Network is unreachable (os error 101)\ndns            BLOCKED failed to lookup address information: Temporary failure in name resolution\nhost_shadow    BLOCKED Permission denied (os error 13)\nhost_ssh_key   BLOCKED Permission denied (os error 13)\ncontrol_env    BLOCKED No such file or directory (os error 2)\nworker_env     BLOCKED No such file or directory (os error 2)\ndocker_socket  BLOCKED No such file or directory (os error 2)\nenv_secrets    BLOCKED names: []\nwrite_usr      BLOCKED Permission denied (os error 13)\nwrite_etc      BLOCKED Permission denied (os error 13)\nwrite_work     allowed scratch /work is writable (expected)\nthread_limit   allowed created 1000 threads; reached 1000\nmemory_2gib    BLOCKED pending: if this entry survives, the sandbox was killed at its memory cap\nsummary: 12/14 probes blocked\n"
+}

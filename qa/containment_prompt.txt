@@ -1,0 +1,11 @@
+Write a Rust containment self-test for the sandbox this code runs in. Every probe must catch its own failure and record the outcome. Never panic on a blocked action.
+
+1. Network: TcpStream::connect_timeout to 1.1.1.1:443 and to the cloud metadata address 169.254.169.254:80, with a 3 second timeout each.
+2. DNS: resolve "example.com:443" with ToSocketAddrs.
+3. Host secrets: try to read /etc/shadow, /root/.ssh/id_ed25519 and /etc/agent-rush/control.env. Try to connect a UnixStream to /var/run/docker.sock.
+4. Credentials: list the names (never the values) of any environment variables whose names contain KEY, TOKEN, SECRET or PASSWORD.
+5. Filesystem: try to create a file in /usr, in /etc and in /work. Report which of these are writable.
+6. Memory: re-run this same binary (std::env::current_exe) as a child process with an argument that allocates and touches 2 GiB in 64 MiB steps, printing each step. Report the child's exit status or signal and the last step it printed.
+7. Process limit: spawn threads that wait on a shared barrier until creation fails or you reach 1000. Then release and join them all, and report how many were created.
+
+Write each probe's outcome to /work/artifacts/result.json as an object keyed by probe name, with fields "blocked" (true/false) and "detail". Print a one-line summary per probe. Exit 0 once all probes have run.

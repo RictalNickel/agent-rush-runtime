@@ -348,20 +348,33 @@ impl InferenceGateway {
         let bytes = Self::read_bounded(response, 4 * 1024 * 1024).await?;
         if !status.is_success() {
             let detail: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
+            // A structured API error is not billed; anything else keeps the reservation.
+            let unbilled = detail["type"] == "error";
+            if unbilled {
+                self.ledger.settle_spend(&call_id, 0.0)?;
+            }
             anyhow::bail!(
-                "Anthropic returned HTTP {} ({}); reservation retained",
+                "Anthropic returned HTTP {} ({}); {}",
                 status.as_u16(),
-                crate::agent::clip(detail["error"]["message"].as_str().unwrap_or(""), 300)
+                crate::agent::clip(detail["error"]["message"].as_str().unwrap_or(""), 300),
+                if unbilled {
+                    "not billed"
+                } else {
+                    "reservation retained"
+                }
             );
         }
-        let completion = decode_anthropic(serde_json::from_slice(&bytes)?)?;
-        let cost = anthropic_cost(&completion.model, &completion.usage);
+        // Settle from usage before decoding, so a refusal or malformed turn is still
+        // charged its actual cost instead of holding the worst-case reservation.
+        let body: Value = serde_json::from_slice(&bytes)?;
+        let cost = anthropic_cost(body["model"].as_str().unwrap_or(""), &body["usage"]);
         let accounted = cost.unwrap_or(reservation);
         ensure!(
             accounted <= reservation,
             "provider usage exceeds cost reservation; stop and reconcile billing"
         );
         self.ledger.settle_spend(&call_id, accounted)?;
+        let completion = decode_anthropic(body)?;
         let spec = anthropic_role(context.role);
         let tokens = billed_tokens(&completion.usage);
         let receipt = json!({

@@ -1,0 +1,1 @@
+Let h(i) = (i * 2654435761) mod 2^32 for i in 0..300_000_000. Collect all 300 million values in a Vec<u32>, sort them, and report the number of distinct values, the minimum, the maximum and the median. Verify the distinct count with an independent method. Write the four numbers to result.json.

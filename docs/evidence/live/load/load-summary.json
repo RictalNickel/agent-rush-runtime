@@ -1,0 +1,168 @@
+{
+  "jobs": [
+    {
+      "job": "466ec99d",
+      "state": "succeeded",
+      "memory_mb": 512,
+      "queued_s": 0.8,
+      "total_s": 52.8,
+      "sandbox_ms": 901,
+      "cleanup": "verified",
+      "review": true,
+      "model_calls": 5,
+      "usd": 0.0618,
+      "result": {
+        "closed_form": "333338333350000",
+        "loop_sum": "333338333350000",
+        "match": true,
+        "n": 100000
+      }
+    },
+    {
+      "job": "f3512e2b",
+      "state": "succeeded",
+      "memory_mb": 512,
+      "queued_s": 99.0,
+      "total_s": 211.5,
+      "sandbox_ms": 962,
+      "cleanup": "verified",
+      "review": true,
+      "model_calls": 5,
+      "usd": 0.1093,
+      "result": {
+        "distinct_list": [
+          "brown",
+          "dog",
+          "fox",
+          "jumps",
+          "lazy",
+          "over",
+          "quick",
+          "sleeps",
+          "the"
+        ],
+        "distinct_words": 9,
+        "lines": 1,
+        "method_a": {
+          "distinct": 9,
+          "lines": 1,
+          "words": 12
+        },
+        "method_b": {
+          "distinct": 9,
+          "lines": 1,
+          "words": 12
+        },
+        "methods_agree": true,
+        "text": "the quick brown fox jumps over the lazy dog the dog sleeps",
+        "words": 12
+      }
+    },
+    {
+      "job": "c717cecf",
+      "state": "succeeded",
+      "memory_mb": 768,
+      "queued_s": 53.3,
+      "total_s": 154.5,
+      "sandbox_ms": 965,
+      "cleanup": "verified",
+      "review": true,
+      "model_calls": 5,
+      "usd": 0.0997,
+      "result": {
+        "assertions_passed": true,
+        "count": 127,
+        "cross_check_passed": true,
+        "first_five": [
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            8,
+            10
+          ],
+          [
+            5,
+            12,
+            13
+          ],
+          [
+            9,
+            12,
+            15
+          ],
+          [
+            8,
+            15,
+            17
+          ]
+        ],
+        "ordering": "sorted by c, then a, then b; a<b<c; includes non-primitive",
+        "primitive_count": 32
+      }
+    },
+    {
+      "job": "371334ba",
+      "state": "succeeded",
+      "memory_mb": 512,
+      "queued_s": 0.2,
+      "total_s": 98.5,
+      "sandbox_ms": 777,
+      "cleanup": "verified",
+      "review": true,
+      "model_calls": 5,
+      "usd": 0.0912,
+      "result": {
+        "agree": true,
+        "checks_passed": 91,
+        "fib_fast_doubling": "2880067194370816120",
+        "fib_iterative": "2880067194370816120",
+        "n": 90
+      }
+    }
+  ],
+  "wall_s": 217,
+  "total_usd": 0.362,
+  "status_after": {
+    "agent_roles": {
+      "coder": "claude-haiku-5-5 (xhigh)",
+      "orchestrator": "claude-opus-5-5 (medium)",
+      "reviewer": "claude-opus-5-5 (high)",
+      "worker": "claude-haiku-5-5 (high, 5m cache)"
+    },
+    "cloud_status": "unverified",
+    "inference_accounted_usd": 0.55759612,
+    "inference_configured": true,
+    "inference_provider": "anthropic",
+    "profiles": [
+      {
+        "available": true,
+        "id": "cli"
+      },
+      {
+        "available": false,
+        "id": "nested-dev",
+        "reason": "Not qualified"
+      },
+      {
+        "available": false,
+        "id": "browser",
+        "reason": "Not qualified"
+      }
+    ],
+    "reserved_memory_mb": 0,
+    "resources": {
+      "controller_admission_capacity_mb": 6144,
+      "cpu_scheduling": "equal weights, shared ceilings",
+      "max_concurrent_jobs": 2,
+      "memory_growth": "between sandbox attempts only",
+      "utilization": "not measured by this endpoint"
+    },
+    "runtime": "runsc",
+    "version": "0.1.0",
+    "worker_connected": true
+  }
+}
