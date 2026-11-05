@@ -1,6 +1,6 @@
 # Agent Rush
 
-Give every agent a world: a native Rust controller, durable policy broker, private execution worker and an evidence-first web workspace.
+Run AI-written code in a sealed box that is destroyed after every run: a native Rust controller, a durable policy broker, a private execution worker and an evidence-first web workspace.
 
 **Status (2026-11-05): live on Vultr.** A two-VM deployment (Caddy HTTPS control plane plus a private gVisor worker reached over mTLS) runs real agent jobs at https://144-202-59-108.sslip.io. The worker passes all nine real containment qualification checks; jobs, a four-job load test and containment probes have receipts in `docs/evidence/live/`. See [live deployment](docs/LIVE_DEPLOYMENT.md) for what is verified and what is still open.
 

@@ -1,19 +1,190 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agent Rush · Workspace</title><link rel="icon" href="data:,"><link rel="stylesheet" href="/assets/app.css"><script src="/assets/app.js" defer></script></head>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Agent Rush runs AI-written code in a sealed sandbox that is destroyed after every run, and gives you a receipt that proves it.">
+<title>Agent Rush</title>
+<link rel="icon" href="data:,">
+<link rel="preload" href="/assets/archivo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/app.css">
+<script src="/assets/app.js" defer></script>
+</head>
 <body>
-<aside class="sidebar"><a class="brand" href="/"><span class="brand-mark"></span>Agent Rush</a><nav aria-label="Main navigation">
-<button class="nav active" data-nav="workspace"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 7 7-7 7m9 0h7"/></svg>Workspace</button><button class="nav" data-nav="history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Zm0 0v6h6M8 13h8m-8 4h6"/></svg>Run history</button><button class="nav" data-nav="evidence"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 10 6-10 6L2 9Zm-10 12 10 6 10-6M2 12l10 6 10-6"/></svg>Evidence</button><button class="nav" data-nav="safety"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 4v6c0 5-9 8-9 8S3 18 3 13V7Z"/></svg>Safety &amp; limits</button></nav>
-<div class="workspace-status"><span id="deploy-label">Agent Rush</span><p><span class="dot"></span><span id="deploy-status">Checking worker…</span></p></div></aside>
-<div class="main-shell"><header class="topbar"><div>Workspace <span>/</span> <strong>New task</strong></div><button class="button secondary small" id="login-button">Operator login</button></header><main>
-<section class="intro" id="workspace"><h1>Give every agent a world.</h1><p>Real execution. Clear boundaries. Proof of cleanup.</p></section>
-<div class="workbench"><form id="task-form" class="panel task-panel"><h2><label for="prompt">What should the agent do?</label></h2><textarea id="prompt" minlength="3" maxlength="8000" required placeholder="Analyze a CSV, write a script, or test a small application…"></textarea>
-<div class="controls"><label>Profile<select id="profile"><option>CLI sandbox</option></select></label><label class="network"><span class="sr-only">Network policy</span><span class="fixed-control" aria-label="Network policy: disabled">Network disabled</span></label><label>Memory<select id="memory"><option value="256">256 MiB</option><option value="512" selected>512 MiB</option><option value="768">768 MiB</option><option value="1024">1024 MiB</option></select></label><label>Timeout<select id="timeout"><option value="15">15 seconds</option><option value="30" selected>30 seconds</option><option value="60">60 seconds</option><option value="120">120 seconds</option></select></label></div>
-<div class="actions"><p><span class="info">i</span><span id="readiness">Execution requires operator login and a connected worker.</span></p><button class="button primary" id="run-button" type="submit">Run in sandbox</button></div></form>
-<section class="panel boundary"><h2>Execution boundary</h2><div class="flow"><div>Rust controller</div><svg viewBox="0 0 24 32" aria-hidden="true"><path d="M12 1v27m-6-6 6 6 6-6"/></svg><div>Policy broker</div><svg viewBox="0 0 24 32" aria-hidden="true"><path d="M12 1v27m-6-6 6 6 6-6"/></svg><div class="sandbox">Disposable gVisor<br>sandbox</div></div></section></div>
-<section id="history" class="history"><div class="section-heading"><h2>Recent runs</h2><button class="text-button" id="refresh-button">Refresh</button></div><div class="run-table"><table><thead><tr><th>Task</th><th>State</th><th>Duration</th><th>Cleanup</th></tr></thead><tbody id="runs-body"></tbody></table><div class="empty" id="empty-state"><h3>Your first run starts here.</h3><p>Executed results and cleanup evidence will appear after a task runs.</p></div></div></section>
-<footer><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 7 7-7 7m9 0h7"/></svg>Isolated by default</div><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 10 6-10 6L2 9Zm-10 12 10 6 10-6"/></svg>Bounded resources</div><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H5v18h14V8Zm0 0v5h5M8 12h8m-8 4h6"/></svg>Evidence you can export</div></footer>
-</main></div><div id="toast" role="status" aria-live="polite" hidden></div>
-<dialog id="login-dialog"><div class="dialog-heading"><h2>Operator login</h2><button data-close="login-dialog" class="close" aria-label="Close login">×</button></div><p>Only operators can start tasks and access execution evidence.</p><form id="login-form"><label for="password">Operator password</label><input type="password" id="password" autocomplete="current-password" minlength="16" required><p id="login-error" class="error" role="alert"></p><button type="submit" class="button primary">Sign in</button></form></dialog>
-<dialog id="run-dialog"><div class="dialog-heading"><div><span class="muted">Execution record</span><h2 id="run-title">Task</h2></div><button data-close="run-dialog" class="close" aria-label="Close execution record">×</button></div><div class="toolbar"><span id="run-state"></span><button id="cancel-button" class="button secondary small">Cancel task</button><a id="contexts-link" class="button secondary small" download>Agent contexts</a><a id="evidence-link" class="button primary small" download>Export evidence</a></div><div id="run-facts" class="muted"></div><h3>Execution timeline</h3><ol id="run-events" class="timeline"></ol><section id="output-section" hidden><h3>Process output</h3><pre id="run-output"></pre><h3>Verified artifacts</h3><div id="artifact-list"></div><p class="muted">Checks validate process exit, result JSON, artifact hashes and cleanup. They do not prove every semantic claim made by the model.</p></section></dialog>
-<dialog id="safety-dialog"><div class="dialog-heading"><h2>Safety &amp; limits</h2><button data-close="safety-dialog" class="close" aria-label="Close safety information">×</button></div><p>Authority stays outside the agent. Only the trusted worker creates and destroys environments.</p><dl><dt>Isolation</dt><dd>gVisor, non-root, read-only root, no host mounts or Docker socket.</dd><dt>Network</dt><dd>Disabled. Cloud and inference credentials never enter tasks.</dd><dt>Resources</dt><dd>1 vCPU ceiling, up to 1024 MiB memory, 64 PIDs, 64 MiB scratch, 64 KiB output, at most 120 seconds execution.</dd><dt>Artifacts</dt><dd>Regular files only. 1 MiB per file, 4 MiB total, eight files maximum.</dd><dt>Cleanup</dt><dd>Containers are destroyed. Leases remain reserved until cleanup is verified.</dd><dt>Optional profiles</dt><dd>Nested Docker, browser and desktop are unavailable until separately qualified.</dd><dt>Evidence</dt><dd>Worker-collected records, not independent remote attestation or a security audit.</dd></dl></dialog>
-</body></html>
+<a class="skip" href="#prompt">Skip to the task form</a>
+
+<header class="masthead">
+  <a class="wordmark" href="/">Agent Rush</a>
+  <p class="system" aria-live="polite">
+    <span class="signal" id="worker-signal" aria-hidden="true"></span>
+    <span id="deploy-status">Checking the worker</span>
+    <span class="system-sep" aria-hidden="true"></span>
+    <span id="deploy-label">Inference not reported</span>
+  </p>
+  <nav class="masthead-actions" aria-label="Account and information">
+    <button class="link" id="safety-button" type="button">Safety and limits</button>
+    <button class="button quiet" id="login-button" type="button">Operator sign in</button>
+  </nav>
+</header>
+
+<main>
+  <section class="lead">
+    <h1>Run AI-written code in a sealed box that is destroyed after every run.</h1>
+    <p>An agent team plans your task, writes Rust and runs it with no network and fixed limits. You get the answer, the files it made, and a receipt showing the box was cleaned up.</p>
+  </section>
+
+  <div class="bench">
+    <form id="task-form" class="intake" novalidate>
+      <label class="field-title" for="prompt">What should the agent do?</label>
+      <textarea id="prompt" minlength="3" maxlength="8000" required rows="6" placeholder="Describe a computation, a data task or a small program to test."></textarea>
+      <div class="examples" role="group" aria-labelledby="examples-title">
+        <span id="examples-title">Try</span>
+        <button type="button" class="chip" data-example="revenue">Revenue by quarter</button>
+        <button type="button" class="chip" data-example="primes">Primes two ways</button>
+        <button type="button" class="chip" data-example="runaway">A program that never stops</button>
+      </div>
+      <div class="limits">
+        <fieldset class="segmented" id="memory-set">
+          <legend>Memory</legend>
+          <label><input type="radio" name="memory" value="256"><span>256 MiB</span></label>
+          <label><input type="radio" name="memory" value="512" checked><span>512 MiB</span></label>
+          <label><input type="radio" name="memory" value="768"><span>768 MiB</span></label>
+          <label><input type="radio" name="memory" value="1024"><span>1 GiB</span></label>
+        </fieldset>
+        <fieldset class="segmented" id="timeout-set">
+          <legend>Time limit per run</legend>
+          <label><input type="radio" name="timeout" value="15"><span>15 s</span></label>
+          <label><input type="radio" name="timeout" value="30" checked><span>30 s</span></label>
+          <label><input type="radio" name="timeout" value="60"><span>60 s</span></label>
+          <label><input type="radio" name="timeout" value="120"><span>2 min</span></label>
+        </fieldset>
+      </div>
+      <div class="submit-row">
+        <p id="readiness">Sign in as the operator to run tasks.</p>
+        <button class="button primary" id="run-button" type="submit">Run in sandbox</button>
+      </div>
+    </form>
+
+    <aside class="sandbox" aria-labelledby="sandbox-title">
+      <div class="tape" aria-hidden="true"></div>
+      <h2 id="sandbox-title">Sealed sandbox</h2>
+      <dl class="spec">
+        <div><dt>Memory</dt><dd id="spec-memory">512 MiB</dd></div>
+        <div><dt>Time limit</dt><dd id="spec-timeout">30 seconds per run</dd></div>
+        <div><dt>CPU</dt><dd>1 vCPU at most</dd></div>
+        <div><dt>Network</dt><dd>None</dd></div>
+        <div><dt>Processes</dt><dd>64 at most</dd></div>
+        <div><dt>Files</dt><dd>Read-only system, 64 MiB scratch</dd></div>
+        <div><dt>Secrets</dt><dd>None inside the box</dd></div>
+      </dl>
+      <p class="sandbox-foot">Runs under <span id="spec-runtime">gVisor</span> on a separate worker machine. After every run the box is destroyed and the cleanup is checked.</p>
+    </aside>
+  </div>
+
+  <section class="team" aria-labelledby="team-title">
+    <div class="section-head">
+      <h2 id="team-title">The agent team</h2>
+      <p id="team-model">Each role sees only the tools it needs.</p>
+    </div>
+    <ul class="roles">
+      <li data-role="orchestrator"><h3>Orchestrator</h3><p>Plans the task and hands the coding to the coder. Never runs code itself.</p><span class="effort"></span></li>
+      <li data-role="coder"><h3>Coder</h3><p>Writes Rust, runs it in the sandbox, reads the result and fixes what failed.</p><span class="effort"></span></li>
+      <li data-role="worker"><h3>Worker</h3><p>Takes small, well-defined side tasks. Cannot run code.</p><span class="effort"></span></li>
+      <li data-role="reviewer"><h3>Reviewer</h3><p>Checks the answer against the sandbox evidence before you see it.</p><span class="effort"></span></li>
+    </ul>
+  </section>
+
+  <section class="runs" id="history" aria-labelledby="runs-title">
+    <div class="section-head">
+      <h2 id="runs-title">Runs</h2>
+      <button class="link" id="refresh-button" type="button">Refresh</button>
+    </div>
+    <table class="ledger">
+      <thead><tr><th scope="col">Task</th><th scope="col">State</th><th scope="col">Time</th><th scope="col">Model cost</th><th scope="col">Cleanup</th></tr></thead>
+      <tbody id="runs-body"></tbody>
+    </table>
+    <div class="empty" id="empty-state">
+      <p id="empty-text">Sign in as the operator to run tasks and see their receipts.</p>
+      <button class="button quiet" id="empty-login" type="button">Operator sign in</button>
+    </div>
+  </section>
+</main>
+
+<footer class="colophon">
+  <p>Agent Rush runs on two Vultr machines. Generated code never runs on the machine that serves this page.</p>
+</footer>
+
+<div id="toast" role="status" aria-live="polite" popover="manual"></div>
+
+<dialog id="login-dialog" class="sheet narrow" aria-labelledby="login-title">
+  <div class="sheet-head">
+    <h2 id="login-title">Operator sign in</h2>
+    <button data-close="login-dialog" class="close" type="button" aria-label="Close sign in">×</button>
+  </div>
+  <p>Only the operator can start tasks and read their receipts.</p>
+  <form id="login-form">
+    <label for="password">Operator password</label>
+    <input type="password" id="password" autocomplete="current-password" minlength="16" required>
+    <p id="login-error" class="error" role="alert"></p>
+    <button type="submit" class="button primary">Sign in</button>
+  </form>
+</dialog>
+
+<dialog id="run-dialog" class="sheet record" aria-labelledby="run-title">
+  <div class="sheet-head">
+    <div>
+      <p class="record-id" id="run-id">Run</p>
+      <h2 id="run-title">Task</h2>
+    </div>
+    <button data-close="run-dialog" class="close" type="button" aria-label="Close run record">×</button>
+  </div>
+  <div class="record-bar">
+    <span id="run-state" class="state"></span>
+    <div class="record-actions">
+      <button id="cancel-button" class="button quiet small" type="button">Cancel task</button>
+      <a id="contexts-link" class="button quiet small" download>Agent contexts</a>
+      <a id="evidence-link" class="button primary small" download>Export evidence</a>
+    </div>
+  </div>
+  <div class="record-top">
+    <dl class="facts" id="run-facts"></dl>
+    <div class="stamp" id="run-stamp" hidden>
+      <strong>Destroyed</strong>
+      <span id="stamp-detail">Sandbox cleanup verified</span>
+    </div>
+  </div>
+  <div class="record-body">
+    <section class="record-col">
+      <h3>Timeline</h3>
+      <ol id="run-events" class="timeline"></ol>
+    </section>
+    <section class="record-col" id="output-section" hidden>
+      <h3>Answer</h3>
+      <p id="run-explanation" class="answer"></p>
+      <h3>Program output</h3>
+      <pre id="run-output"></pre>
+      <h3>Files the run produced</h3>
+      <div id="artifact-list"></div>
+      <p class="note">The worker checks the exit code, the result file, each file's hash and the cleanup. It cannot prove every claim the model makes in its answer.</p>
+    </section>
+  </div>
+</dialog>
+
+<dialog id="safety-dialog" class="sheet" aria-labelledby="safety-title">
+  <div class="sheet-head">
+    <h2 id="safety-title">Safety and limits</h2>
+    <button data-close="safety-dialog" class="close" type="button" aria-label="Close safety information">×</button>
+  </div>
+  <p>Authority stays outside the agent. Only the trusted worker creates and destroys sandboxes, and the agent can only ask.</p>
+  <dl class="rules">
+    <div><dt>Isolation</dt><dd>gVisor, a non-root user and a read-only root filesystem. No host folders and no Docker socket inside.</dd></div>
+    <div><dt>Network</dt><dd>Off. Cloud and inference keys never enter a sandbox.</dd></div>
+    <div><dt>Resources</dt><dd>1 vCPU, up to 1 GiB of memory, 64 processes, 64 MiB of scratch space, 64 KiB of output and 2 minutes per run.</dd></div>
+    <div><dt>Files out</dt><dd>Regular files only: 1 MiB each, 4 MiB in total, eight at most.</dd></div>
+    <div><dt>Cleanup</dt><dd>Every sandbox is destroyed. Its memory stays reserved until the cleanup is confirmed.</dd></div>
+    <div><dt>Not offered</dt><dd>Nested Docker, browser and desktop sandboxes stay off until they pass their own qualification.</dd></div>
+    <div><dt>Evidence</dt><dd>Records collected by the worker. They are not an independent attestation or a security audit.</dd></div>
+  </dl>
+</dialog>
+</body>
+</html>

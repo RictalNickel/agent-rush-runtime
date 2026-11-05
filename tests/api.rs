@@ -212,12 +212,32 @@ async fn web_has_security_headers_and_server_rendered_workspace() {
             .unwrap()
             .contains("default-src 'self'")
     );
+    assert_eq!(response.headers()["cache-control"], "no-store");
     let body = response.into_body().collect().await.unwrap().to_bytes();
     assert!(
         String::from_utf8(body.to_vec())
             .unwrap()
-            .contains("Give every agent a world.")
+            .contains("Run AI-written code in a sealed box")
     );
+}
+
+#[tokio::test]
+async fn self_hosted_font_is_the_only_cacheable_asset() {
+    let response = app()
+        .oneshot(
+            Request::builder()
+                .uri("/assets/archivo.woff2")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()["content-type"], "font/woff2");
+    assert_eq!(response.headers()["cache-control"], "public, max-age=86400");
+    assert!(response.headers().contains_key("content-security-policy"));
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(&body[..4], b"wOF2");
 }
 
 #[tokio::test]

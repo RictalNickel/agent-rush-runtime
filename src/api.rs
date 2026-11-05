@@ -88,6 +88,7 @@ pub fn router(state: AppState) -> Router {
         .route("/", get(index))
         .route("/assets/app.css", get(css))
         .route("/assets/app.js", get(js))
+        .route("/assets/archivo.woff2", get(font))
         .route(
             "/healthz",
             get(|| async {
@@ -126,6 +127,10 @@ async fn security_headers(req: axum::extract::Request, next: Next) -> Response {
         ),
         ("x-frame-options", "DENY"),
     ] {
+        // A handler may opt into caching (the font); every other response stays no-store.
+        if name == "cache-control" && response.headers().contains_key(header::CACHE_CONTROL) {
+            continue;
+        }
         response
             .headers_mut()
             .insert(name, HeaderValue::from_static(value));
@@ -145,6 +150,17 @@ async fn js() -> impl IntoResponse {
     (
         [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
         include_str!("../web/app.js"),
+    )
+}
+/// Archivo (SIL OFL 1.1, web/fonts/OFL.txt), self-hosted because the CSP allows no
+/// third-party origins. It is the only cacheable response.
+async fn font() -> impl IntoResponse {
+    (
+        [
+            (header::CONTENT_TYPE, "font/woff2"),
+            (header::CACHE_CONTROL, "public, max-age=86400"),
+        ],
+        include_bytes!("../web/fonts/archivo.woff2").as_slice(),
     )
 }
 impl AppState {
