@@ -191,7 +191,7 @@ impl AppState {
 async fn status(State(s): State<AppState>) -> Json<Value> {
     let connected = s.worker_connected().await;
     Json(
-        json!({"version":env!("CARGO_PKG_VERSION"),"inference_configured":s.settings.inference_configured(),"inference_provider":s.settings.inference_provider.name(),"agent_roles":agent_roles(&s.settings),"worker_connected":connected,"runtime":"runsc","profiles":[{"id":"cli","available":connected && s.settings.inference_configured()},{"id":"nested-dev","available":false,"reason":"Not qualified"},{"id":"browser","available":false,"reason":"Not qualified"}],"reserved_memory_mb":s.ledger.reserved_memory().unwrap_or(0),"inference_accounted_usd":s.ledger.spend_total().unwrap_or(0.0),"cloud_status":"unverified","resources":{"controller_admission_capacity_mb":s.ledger.capacity_mb(),"max_concurrent_jobs":crate::resources::MAX_CONCURRENT,"cpu_scheduling":"equal weights, shared ceilings","memory_growth":"between sandbox attempts only","utilization":"not measured by this endpoint"}}),
+        json!({"version":env!("CARGO_PKG_VERSION"),"inference_configured":s.settings.inference_configured(),"inference_provider":s.settings.inference_provider.name(),"agent_roles":agent_roles(&s.settings),"worker_connected":connected,"runtime":"runsc","profiles":[{"id":"cli","available":connected && s.settings.inference_configured()},{"id":"nested-dev","available":false,"reason":"Not qualified"},{"id":"browser","available":false,"reason":"Not qualified"}],"reserved_memory_mb":s.ledger.reserved_memory().unwrap_or(0),"inference_accounted_usd":s.ledger.spend_total().unwrap_or(0.0),"cloud_status":"unverified","resources":{"controller_admission_capacity_mb":s.ledger.capacity_mb(),"max_concurrent_jobs":crate::resources::MAX_CONCURRENT,"cpu_scheduling":"equal weights, shared ceilings","memory_growth":"live within each run, from 256 MiB up to the orchestrator's ceiling","hard_maximum":{"memory_mb":crate::domain::MAX_MEMORY_MB,"cpu_millis":crate::engine::CPU_CEILING_MILLIS,"time_seconds":crate::domain::MAX_TIMEOUT_SECONDS},"utilization":"not measured by this endpoint"}}),
     )
 }
 #[derive(Deserialize)]
@@ -276,6 +276,16 @@ async fn create_job(
     input
         .validate()
         .map_err(|e| ApiError(StatusCode::UNPROCESSABLE_ENTITY, e))?;
+    // A lease larger than the deployment can ever admit would wait in the queue forever.
+    if input.memory_mb > s.ledger.capacity_mb() {
+        return Err(ApiError(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            format!(
+                "This deployment admits at most {} MiB per task",
+                s.ledger.capacity_mb()
+            ),
+        ));
+    }
     let key = headers
         .get("idempotency-key")
         .and_then(|v| v.to_str().ok())

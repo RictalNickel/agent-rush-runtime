@@ -1,90 +1,83 @@
 const {test,expect}=require('@playwright/test');
-test('workspace, operator login, real queued job, evidence and cancellation',async({page})=>{
+test('chat workspace: sign in, send a task, see it queued, open evidence, stop it',async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error'&&!message.text().includes('401 (Unauthorized)'))errors.push(message.text());});
   await page.goto('/');await expect(page).toHaveTitle('Agent Rush');
   await expect(page.getByRole('heading',{level:1})).toHaveText('Run AI-written code in a sealed box that is destroyed after every run.');
-  await expect(page.locator('#empty-state')).toBeVisible();
-  // The masthead reports the configured provider and live worker reachability (none in QA).
+  // Dark theme, live status in the bar (no worker in QA), and no resource controls anywhere.
+  expect(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor)).toBe('rgb(18, 22, 27)');
   await expect(page.locator('#deploy-label')).toHaveText('Vultr Serverless Inference');
   await expect(page.locator('#deploy-status')).toHaveText('Worker unavailable');
   await expect(page.locator('#worker-signal')).toHaveClass(/offline/);
-  // The team section shows each role's reasoning effort from /api/status.
-  await expect(page.locator('[data-role="coder"] .effort')).toHaveText('Reasoning effort: xhigh');
-  // The self-hosted font loads under the CSP.
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.locator('select')).toHaveCount(0);
+  await expect(page.getByLabel('Message the agent')).toBeDisabled();
   expect(await page.evaluate(async()=>{await document.fonts.ready;return document.fonts.check('16px Archivo');})).toBe(true);
-  // Limits in the sandbox panel follow the form, and examples fill the task.
-  await page.getByRole('radio',{name:'1 GiB'}).check();
-  await expect(page.locator('#spec-memory')).toHaveText('1 GiB');
-  await page.getByRole('button',{name:'A program that never stops'}).click();
-  await expect(page.locator('#prompt')).toHaveValue(/never stops/);
-  await expect(page.locator('#spec-timeout')).toHaveText('15 seconds per run');
-  await page.getByRole('radio',{name:'512 MiB'}).check();
-  await page.screenshot({path:'/tmp/agent-rush-workspace-desktop.png',fullPage:true});
-  await page.getByRole('button',{name:'Safety and limits'}).click();
+  await page.getByRole('button',{name:'Safety'}).click();
   await expect(page.getByText('Authority stays outside the agent.',{exact:false})).toBeVisible();
   await page.getByRole('button',{name:'Close safety information'}).click();
-  await page.getByRole('button',{name:'Operator sign in'}).first().click();
+  await page.getByRole('button',{name:'Sign in to start'}).click();
   await page.getByLabel('Operator password').fill('qa-local-password-please-ignore');
-  await page.getByRole('button',{name:'Sign in',exact:true}).click();
+  await page.locator('#login-form').getByRole('button',{name:'Sign in'}).click();
   await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
-  await expect(page.locator('#empty-text')).toHaveText('No runs yet. Describe a task above and run it.');
-  await page.getByLabel('What should the agent do?').fill('Compute quarterly revenue totals from a CSV.');
-  await page.getByRole('button',{name:'Queue task',exact:true}).click();
-  await expect(page.locator('#run-dialog')).toBeVisible();
-  await expect(page.locator('#run-state')).toHaveText('Queued');
-  await expect(page.locator('#run-events li').first()).toContainText('Queued');
+  await expect(page.getByRole('heading',{level:1})).toHaveText('What should the agent run?');
+  await page.getByRole('button',{name:'Sort 20 million numbers'}).click();
+  await expect(page.getByLabel('Message the agent')).toHaveValue(/20 million/);
+  await page.getByLabel('Message the agent').fill('Compute quarterly revenue totals from a CSV.');
+  await page.getByLabel('Message the agent').press('Enter');
+  const turn=page.locator('.turn').first();
+  await expect(turn.locator('.you')).toHaveText('Compute quarterly revenue totals from a CSV.');
+  await expect(turn.locator('.state')).toHaveText('Queued');
+  await expect(turn.locator('.now')).toHaveText('Waiting for a free sandbox');
+  await expect(page.getByLabel('Message the agent')).toHaveValue('');
+  await page.screenshot({path:'/tmp/agent-rush-chat-desktop.png'});
+  await turn.getByText('Run details and evidence').click();
   const download=page.waitForEvent('download');
-  await page.getByRole('link',{name:'Export evidence'}).click();
-  const receipt=await download;expect(receipt.suggestedFilename()).toMatch(/^evidence-.+\.json$/);
+  await turn.getByRole('link',{name:'Export evidence'}).click();
+  expect((await download).suggestedFilename()).toMatch(/^evidence-.+\.json$/);
   const contextDownload=page.waitForEvent('download');
-  await page.getByRole('link',{name:'Agent contexts',exact:true}).click();
+  await turn.getByRole('link',{name:'Agent contexts'}).click();
   expect((await contextDownload).suggestedFilename()).toBe('agent-contexts.json');
-  await page.getByRole('button',{name:'Cancel task',exact:true}).click();
-  await expect(page.locator('#run-state')).toHaveText('Cancelled');
-  await page.screenshot({path:'/tmp/agent-rush-execution-record.png',fullPage:true});
-  await page.getByRole('button',{name:'Close run record'}).click();
-  await expect(page.locator('#runs-body tr')).toHaveCount(1);
-  await expect(page.locator('#runs-body tr').first()).toContainText('Cancelled');
+  await turn.getByRole('button',{name:'Stop'}).click();
+  await expect(turn.locator('.state')).toHaveText('Cancelled');
+  // The details panel survives the polling re-render.
+  await expect(turn.locator('details.more')).toHaveAttribute('open','');
   await page.getByRole('button',{name:'Sign out',exact:true}).click();
-  await expect(page.locator('#runs-body tr')).toHaveCount(0);
+  await expect(page.locator('.turn')).toHaveCount(0);
   expect((await (await page.request.get('/api/status')).json()).inference_accounted_usd).toBe(0);
   expect(errors).toEqual([]);
 });
-test('mobile workspace has no horizontal overflow and login is usable',async({page})=>{
+test('mobile chat has no horizontal overflow and sign-in is usable',async({page})=>{
   await page.setViewportSize({width:390,height:844});await page.goto('/');
   await expect(page.getByRole('heading',{level:1})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-  await page.screenshot({path:'/tmp/agent-rush-workspace-mobile.png',fullPage:true});
-  await page.getByRole('button',{name:'Operator sign in'}).first().click();
+  await expect(page.locator('.composer')).toBeInViewport();
+  await page.screenshot({path:'/tmp/agent-rush-chat-mobile.png'});
+  await page.getByRole('button',{name:'Sign in',exact:true}).click();
   await expect(page.getByLabel('Operator password')).toBeVisible();
   await page.getByRole('button',{name:'Close sign in'}).click();
 });
-test('run record renders a real verified receipt with the cleanup stamp',async({page})=>{
-  // Real job 7d466fa9 from the live Vultr deployment (docs/evidence/live/vultr-public), served in place of the API.
-  const job=require('./fixtures/vultr-job-7d466fa9.json');
+const fixture='./fixtures/scaled-job.json';
+test('a real scaled run renders its answer, memory meter, stamp and evidence',async({page})=>{
+  // A real job from the live Vultr deployment, served in place of the API.
+  const job=require(fixture);
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.route('**/api/session',route=>route.fulfill({json:{csrf:'fixture'}}));
   await page.route('**/api/jobs',route=>route.fulfill({json:[job]}));
-  await page.route(`**/api/jobs/${job.id}`,route=>route.fulfill({json:job}));
   await page.goto('/');
-  const row=page.locator('#runs-body tr').first();
-  await expect(row).toContainText('Succeeded');
-  await expect(row).toContainText('$0.0058');
-  await expect(row).toContainText('Verified');
-  await row.getByRole('button').click();
-  await expect(page.locator('#run-stamp')).toBeVisible();
-  await expect(page.locator('#run-stamp')).toContainText('Destroyed');
-  await expect(page.locator('#run-facts')).toContainText('Approved');
-  await expect(page.locator('#run-facts')).toContainText('Exit code0');
-  await expect(page.locator('#run-events li')).toHaveCount(job.events.length);
-  await expect(page.locator('#run-events')).toContainText('The orchestrator used one of its tools.');
-  await expect(page.locator('#run-events')).not.toContainText('at depth');
-  await expect(page.locator('#artifact-list')).toContainText(job.receipt.artifacts[0].sha256);
-  await expect(page.locator('#run-output')).toContainText('grand_total=5013559.38');
-  await page.waitForTimeout(500);
-  await page.screenshot({path:'/tmp/agent-rush-verified-record.png'});
+  const turn=page.locator('.turn').first();
+  await expect(turn.locator('.state')).toHaveText('Succeeded');
+  const s=job.receipt.scaling;
+  await expect(turn.locator('.meter-text')).toContainText(`of a ${s.ceiling.memory_mb>=1024?s.ceiling.memory_mb/1024+' GiB':s.ceiling.memory_mb+' MiB'} ceiling`);
+  await expect(turn.locator('.destroyed')).toContainText('Destroyed');
+  await expect(turn.locator('.facts')).toContainText('Approved');
+  await turn.getByText('Run details and evidence').click();
+  await expect(turn.locator('.timeline li')).toHaveCount(job.events.length);
+  await expect(turn.locator('.timeline')).toContainText('Ceiling set');
+  await expect(turn.locator('.timeline')).not.toContainText('at depth');
+  await expect(turn.locator('.file code').first()).toContainText(job.receipt.artifacts[0].sha256);
+  await page.screenshot({path:'/tmp/agent-rush-chat-scaled.png'});
   await page.setViewportSize({width:390,height:844});
-  expect(await page.evaluate(()=>document.querySelector('#run-dialog').scrollWidth<=document.querySelector('#run-dialog').clientWidth)).toBe(true);
-  await page.screenshot({path:'/tmp/agent-rush-verified-record-mobile.png'});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:'/tmp/agent-rush-chat-scaled-mobile.png'});
   expect(errors).toEqual([]);
 });

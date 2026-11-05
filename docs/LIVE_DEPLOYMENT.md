@@ -21,7 +21,7 @@ Total: **$0.082/hour**, about $2 per day. Resource IDs and the exact delete call
 - gVisor `runsc` release-20261102.0, registered as a non-default runtime **without** `--ignore-cgroups`.
 - Sandbox image pinned by digest: `rust:1.90.0-bookworm@sha256:3914072c…`.
 - `agent-rush-worker.service` runs as the unprivileged `agent-rush` user (docker group) bound to 127.0.0.1:8090.
-- `agent-rush-requalify.timer` reruns the nine containment checks every 45 minutes. A passing report replaces the old one, and the running worker adopts it within a minute without a restart, so in-flight runs are not interrupted. If checks fail, the worker stops admitting jobs when the old report expires two hours after it was made.
+- `agent-rush-requalify.timer` reruns the ten containment checks every 45 minutes. A passing report replaces the old one, and the running worker adopts it within a minute without a restart, so in-flight runs are not interrupted. If checks fail, the worker stops admitting jobs when the old report expires two hours after it was made.
 
 Install scripts: `deploy/bootstrap-worker.sh`, `deploy/install-worker.sh`, `deploy/install-control.sh`.
 
@@ -30,7 +30,7 @@ Install scripts: `deploy/bootstrap-worker.sh`, `deploy/install-worker.sh`, `depl
 | Check | Result |
 | --- | --- |
 | Rust suite on the worker | 96 passed, 7 real-host tests ignored. Clippy `-D warnings` and rustfmt clean |
-| Real qualification on the worker | 9/9 passed: containment, timeout, output, memory, scratch, pids, cpu, cancel, concurrency (`evidence/live/worker-qualification-2026-11-05.json`) |
+| Real qualification on the worker | 9/9 at first deploy (`evidence/live/worker-qualification-2026-11-05.json`); 10/10 since the `scaling` check was added (see Live resource scaling) |
 | CPU cap | Samples held at about 25% for a 0.25 vCPU request. Host cgroup `cpu.max` = `25000 100000` |
 | Memory cap | Over-cap allocation was killed (the handoff's 384 MiB escape no longer reproduces with enforced cgroups) |
 | Leftover containers after qualification | 0 |
@@ -143,6 +143,26 @@ The same task then succeeded through the public URL:
 | Model cost | $0.0058 over 5 calls (the coder's first call was 12,234 tokens) |
 
 Raw evidence: `evidence/live/vultr-public/`.
+
+### Live resource scaling
+
+Users no longer pick memory or time. The orchestrator sets a ceiling with `set_limits`, and every run starts at 256 MiB and 0.5 vCPU. The worker polls the sandbox's cgroup every 100 ms and raises its limits through `docker update` when use crosses 70% of memory or 85% of CPU, up to the ceiling.
+
+Before relying on it, I checked directly on the worker that a running gVisor sandbox can be resized. A container started at 256 MiB and raised to 1 GiB mid-run could allocate 300 MiB.
+
+Requalified on the worker, 10 of 10 checks, through the real requalify service. The new `scaling` check started at 256 MiB with a 512 MiB ceiling:
+- The worker raised the limit when the program reached 202 MiB.
+- The program held 480 MiB.
+- It was killed at 512 MiB (peak exactly 512) and never printed "allocation escaped".
+
+The first service run of that check failed for a real reason. gVisor ends the whole sandbox on a memory kill, and Docker removed the cgroup before the final read. The scaler now keeps the last values it polled and falls back to Docker's OOMKilled record.
+
+Two public jobs on Vultr inference, raw evidence in `evidence/live/scaling*/`:
+
+| Job | Orchestrator ceiling | Growth | Peak | Outcome |
+| --- | --- | --- | --- | --- |
+| `a4ccbba6` (sort 20M u32) | 512 MiB, 60 s | CPU 0.5 → 1 vCPU; memory stayed at 256 MiB | 94 MiB | succeeded, approved, $0.0065 |
+| `37853f20` (30M u64, two copies) | 768 MiB, 120 s | CPU 0.5 → 1; memory 256 → 512 → 768 MiB | 478 MiB | succeeded, approved, $0.0049 |
 
 ### Overlapping sandboxes
 

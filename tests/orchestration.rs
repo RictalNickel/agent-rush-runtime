@@ -99,14 +99,14 @@ fn sandbox() -> Value {
     json!({"tool":"sandbox","code":"fn main() {}","summary":"Compute totals"})
 }
 #[tokio::test]
-async fn actual_engine_plans_uses_memory_grows_then_retries_and_explains() {
+async fn actual_engine_plans_sets_limits_then_retries_and_explains() {
     let (db, j) = setup();
     let f = Fixture::new(
         vec![
             json!({"tool":"plan","steps":["Compute","Verify"]}),
             json!({"tool":"memory_save","title":"Totals","text":"Use integer cents"}),
             json!({"tool":"memory_search","query":"cents"}),
-            json!({"tool":"request_memory","memory_mb":768}),
+            json!({"tool":"set_limits","memory_mb":768,"timeout_seconds":30}),
             sandbox(),
             sandbox(),
             json!({"tool":"response","message":"Verified total from worker evidence"}),
@@ -122,9 +122,16 @@ async fn actual_engine_plans_uses_memory_grows_then_retries_and_explains() {
             .lock()
             .unwrap()
             .iter()
-            .map(|l| l.memory_mb)
+            .map(|l| (
+                l.memory_mb,
+                l.memory_ceiling_mb,
+                l.timeout_seconds,
+                l.cpu_millis
+            ))
             .collect::<Vec<_>>(),
-        vec![768, 768]
+        // Every run starts small and may grow to the orchestrator's ceiling. A program
+        // failure (not a memory kill) does not change where the next attempt starts.
+        vec![(256, 768, 30, 500), (256, 768, 30, 500)]
     );
     assert_eq!(db.contexts("operator", &j.id).unwrap().len(), 1);
     assert_eq!(db.memory_search("operator", "cents").unwrap().len(), 1);
@@ -177,11 +184,11 @@ async fn all_contexts_share_a_finite_call_budget_and_cannot_recursively_spawn() 
     assert!(f.executions.lock().unwrap().is_empty());
 }
 #[tokio::test]
-async fn denied_memory_increase_is_feedback_and_does_not_overcommit_the_node() {
+async fn ceiling_is_clamped_to_the_lease_the_node_and_the_operator_time_limit() {
     let (db, j) = setup();
     let f = Fixture::new(
         vec![
-            json!({"tool":"request_memory","memory_mb":1024}),
+            json!({"tool":"set_limits","memory_mb":1024,"timeout_seconds":120}),
             sandbox(),
             json!({"tool":"response","message":"Used admitted resources"}),
         ],
@@ -189,8 +196,55 @@ async fn denied_memory_increase_is_feedback_and_does_not_overcommit_the_node() {
     );
     let out = Engine::new(&db, &j, &f, 512).run().await;
     assert!(out.error.is_none(), "{:?}", out.error);
-    assert_eq!(f.executions.lock().unwrap()[0].memory_mb, 512);
-    assert_eq!(db.reserved_memory().unwrap(), 512);
+    let run = f.executions.lock().unwrap()[0].clone();
+    assert_eq!(
+        (run.memory_mb, run.memory_ceiling_mb, run.timeout_seconds),
+        (256, 512, 120)
+    );
+    assert!(run.validate().is_ok());
+}
+#[tokio::test]
+async fn default_ceiling_applies_until_the_orchestrator_sets_one() {
+    let (db, j) = setup();
+    let f = Fixture::new(
+        vec![sandbox(), json!({"tool":"response","message":"Done"})],
+        vec![receipt(true, true)],
+    );
+    Engine::new(&db, &j, &f, 2048).run().await;
+    let run = f.executions.lock().unwrap()[0].clone();
+    assert_eq!(
+        (
+            run.memory_mb,
+            run.memory_ceiling_mb,
+            run.timeout_seconds,
+            run.cpu_ceiling_millis
+        ),
+        (256, 512, 60, 1000)
+    );
+}
+#[tokio::test]
+async fn a_memory_kill_below_the_ceiling_restarts_the_next_attempt_at_the_ceiling() {
+    let (db, j) = setup();
+    let killed = json!({"reason":"memory_limit","exit_code":137,"checks_passed":false,"cleanup_state":"verified","stdout":"","artifacts":[],"scaling":{"final":{"memory_mb":384}}});
+    let f = Fixture::new(
+        vec![
+            json!({"tool":"set_limits","memory_mb":768,"timeout_seconds":30}),
+            sandbox(),
+            sandbox(),
+            json!({"tool":"response","message":"Second attempt succeeded"}),
+        ],
+        vec![killed, receipt(true, true)],
+    );
+    let out = Engine::new(&db, &j, &f, 2048).run().await;
+    assert!(out.error.is_none(), "{:?}", out.error);
+    let starts: Vec<u32> = f
+        .executions
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|l| l.memory_mb)
+        .collect();
+    assert_eq!(starts, vec![256, 768]);
 }
 #[tokio::test]
 async fn cancellation_interrupts_a_waiting_model_without_starting_execution() {

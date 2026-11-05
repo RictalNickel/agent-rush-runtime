@@ -13,6 +13,14 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use std::{collections::HashMap, future::Future, time::Duration};
 
+/// Every sandbox run starts here and grows live toward its ceiling.
+pub const START_MEMORY_MB: u32 = 256;
+pub const START_CPU_MILLIS: u32 = 500;
+pub const CPU_CEILING_MILLIS: u32 = 1000;
+/// Ceiling used until the orchestrator sets one.
+pub const DEFAULT_MEMORY_CEILING_MB: u32 = 512;
+pub const DEFAULT_TIME_LIMIT_SECONDS: u32 = 60;
+
 /// Agent topology and limits for one job. Chosen by trusted backend code.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Profile {
@@ -139,6 +147,14 @@ impl<'a, B: Backend> Engine<'a, B> {
         }];
         let mut children: HashMap<String, AgentContext> = HashMap::new();
         let mut executions = 0;
+        // The run ceiling: chosen by the orchestrator, always within the job's admitted
+        // lease, its time limit and the node's capacity.
+        let lease = self.job.memory_mb.min(self.node_capacity_mb);
+        let mut ceiling = (
+            DEFAULT_MEMORY_CEILING_MB.min(lease),
+            DEFAULT_TIME_LIMIT_SECONDS.min(self.job.request.timeout_seconds),
+        );
+        let mut start_at_ceiling = false;
         while let Some(mut frame) = stack.pop() {
             ensure!(!self.backend.cancelled(), "cancelled");
             if frame.turns >= if frame.context.depth == 0 { 8 } else { 4 } {
@@ -310,9 +326,15 @@ impl<'a, B: Backend> Engine<'a, B> {
                         .get_job(&self.job.owner, &self.job.id)?
                         .ok_or_else(|| anyhow::anyhow!("job missing"))?;
                     let limits = Limits {
-                        memory_mb: job.memory_mb,
-                        timeout_seconds: job.request.timeout_seconds,
-                        cpu_millis: 1000,
+                        memory_mb: if start_at_ceiling {
+                            ceiling.0
+                        } else {
+                            START_MEMORY_MB.min(ceiling.0)
+                        },
+                        timeout_seconds: ceiling.1,
+                        cpu_millis: START_CPU_MILLIS,
+                        memory_ceiling_mb: ceiling.0,
+                        cpu_ceiling_millis: CPU_CEILING_MILLIS,
                     };
                     self.ledger.event(&job.id, "executing", &summary)?;
                     self.ledger.event(&job.id, "node_run", &id)?;
@@ -333,6 +355,11 @@ impl<'a, B: Backend> Engine<'a, B> {
                             "Worker checks failed; bounded retry permitted after verified cleanup"
                         },
                     )?;
+                    // Killed for memory below the ceiling: the scaler could not keep up with
+                    // a sudden allocation, so the next attempt starts at the ceiling.
+                    start_at_ceiling = receipt["reason"] == "memory_limit"
+                        && receipt["scaling"]["final"]["memory_mb"].as_u64()
+                            < Some(ceiling.0 as u64);
                     let clean = receipt["cleanup_state"] == "verified";
                     out.receipt = Some(receipt);
                     ensure!(
@@ -365,9 +392,26 @@ impl<'a, B: Backend> Engine<'a, B> {
                         .map(|deleted| json!({"deleted":deleted}));
                     self.feedback(&mut frame.context, tool_result(result))?;
                 }
-                ToolCall::RequestMemory { memory_mb } => {
-                    let result=self.ledger.grow_with_capacity(&self.job.owner,&self.job.id,memory_mb,self.node_capacity_mb).map(|job|json!({"granted_memory_mb":job.memory_mb,"applies_to":"next sandbox attempt"}));
-                    self.feedback(&mut frame.context, tool_result(result))?;
+                ToolCall::SetLimits {
+                    memory_mb,
+                    timeout_seconds,
+                } => {
+                    ceiling = (
+                        memory_mb.min(lease),
+                        timeout_seconds.min(self.job.request.timeout_seconds),
+                    );
+                    self.ledger.event(
+                        &self.job.id,
+                        "limits",
+                        &format!(
+                            "Ceiling set to {} MiB and {} s per run",
+                            ceiling.0, ceiling.1
+                        ),
+                    )?;
+                    self.feedback(
+                        &mut frame.context,
+                        json!({"memory_ceiling_mb":ceiling.0,"time_limit_seconds":ceiling.1,"note":"Each run starts small and grows to this ceiling only as it needs."}),
+                    )?;
                 }
             }
             self.ledger.event(

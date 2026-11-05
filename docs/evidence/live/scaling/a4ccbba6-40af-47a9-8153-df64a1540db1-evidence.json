@@ -1,0 +1,2043 @@
+{
+  "disclaimer": "Worker-collected execution evidence; not independent remote attestation",
+  "dropped_events": 0,
+  "events": [
+    {
+      "at": "2026-11-05T17:12:34.960Z",
+      "kind": "queued",
+      "message": "Task accepted under fixed CLI policy"
+    },
+    {
+      "at": "2026-11-05T17:12:35.091Z",
+      "kind": "admitted",
+      "memory_mb": 1024,
+      "message": "Memory lease admitted atomically"
+    },
+    {
+      "at": "2026-11-05T17:12:38.964Z",
+      "kind": "tool_started",
+      "message": "Agent ed38ae54-a6f5-4401-b061-63bd214f3257 at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T17:12:38.965Z",
+      "kind": "limits",
+      "message": "Ceiling set to 512 MiB and 60 s per run"
+    },
+    {
+      "at": "2026-11-05T17:12:38.966Z",
+      "kind": "tool_finished",
+      "message": "Allowed tool result recorded under the fixed task policy"
+    },
+    {
+      "at": "2026-11-05T17:12:44.099Z",
+      "kind": "tool_started",
+      "message": "Agent ed38ae54-a6f5-4401-b061-63bd214f3257 at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T17:13:09.824Z",
+      "kind": "tool_rejected",
+      "message": "Tool failed strict registry/argument validation"
+    },
+    {
+      "at": "2026-11-05T17:13:14.977Z",
+      "kind": "tool_started",
+      "message": "Agent 396244fc-fbbf-41ef-a29c-a17280fb8ad7 at depth 1 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T17:13:14.978Z",
+      "kind": "executing",
+      "message": "Run Rust program: generate 20M u32s, sort, verify, write result.json"
+    },
+    {
+      "at": "2026-11-05T17:13:14.979Z",
+      "kind": "node_run",
+      "message": "a4ccbba6-40af-47a9-8153-df64a1540db1-1"
+    },
+    {
+      "at": "2026-11-05T17:13:46.861Z",
+      "kind": "verifying",
+      "message": "Worker process/result/cleanup checks passed"
+    },
+    {
+      "at": "2026-11-05T17:13:46.862Z",
+      "kind": "tool_finished",
+      "message": "Allowed tool result recorded under the fixed task policy"
+    },
+    {
+      "at": "2026-11-05T17:13:51.021Z",
+      "kind": "tool_started",
+      "message": "Agent 396244fc-fbbf-41ef-a29c-a17280fb8ad7 at depth 1 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T17:13:51.023Z",
+      "kind": "subordinate",
+      "message": "Logical subordinate returned; worker evidence remains authoritative"
+    },
+    {
+      "at": "2026-11-05T17:13:52.067Z",
+      "kind": "tool_started",
+      "message": "Agent ed38ae54-a6f5-4401-b061-63bd214f3257 at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T17:14:01.011Z",
+      "kind": "review",
+      "message": "Reviewer approved: Artifact verified: base64 decodes to {count:20000000, min:607, max:4294967188, median:2147988673, checksum:42953511367921416, fnv1a:15018828664684277860, seed:2611923443488327891}, and the seed decimal matches the code's constant 0x243F6A8885A308D3. Worker evidence shows exit code 0, all checks passed, and stderr confirms generation/sorting of 20M values with byte-for-byte artifact verification. Statistical plausibility holds: min near 0, max near u32::MAX, median near 2^31, and checksum within ~0.07\u03c3 of the expected 20M \u00d7 mean(u32) \u2248 4.29497e16. The visible code defines the seeded SplitMix64 generator, pre-sort order-independent checksums (wrapping sum, XOR fold), FNV-1a, and a sortedness check, consistent with the reported assertions; the code listing is truncated mid-sort but the completed run and artifact corroborate the reported results. No unsupported claims found."
+    },
+    {
+      "at": "2026-11-05T17:14:01.013Z",
+      "kind": "explanation",
+      "message": "Verified sandbox run completed (exit code 0, all worker checks passed). The Rust 2024 program generated 20,000,000 pseudo-random u32 values with a seeded SplitMix64 generator (seed 0x243F6A8885A308D3), sorted them, and wrote /work/artifacts/result.json. In-program assertions confirmed: count == 20,000,000, full sortedness, min <= median <= max, and checksums recomputed after sorting matched pre-sort values. Results: min = 607, max = 4294967188, median = 2147988673 (average of the two middle elements as u64), checksum (wrapping u64 sum) = 42953511367921416, plus an FNV-1a hash of 15018828664684277860. The values are statistically plausible for uniform u32 samples (min near 0, max near u32::MAX, median near 2^31, sum near 20M \u00d7 2^31)."
+    },
+    {
+      "at": "2026-11-05T17:14:01.014Z",
+      "kind": "succeeded",
+      "message": "Worker cleanup verified; lease released"
+    }
+  ],
+  "job": "a4ccbba6-40af-47a9-8153-df64a1540db1",
+  "receipt": {
+    "artifacts": [
+      {
+        "bytes": 150,
+        "name": "result.json",
+        "sha256": "d33cbd5770e38e7d6660a1ee84a494fc76737350e9e552dc3aee364b2343fe74"
+      }
+    ],
+    "checks": [
+      {
+        "name": "process_exit_zero",
+        "passed": true
+      },
+      {
+        "name": "result_json_is_object",
+        "passed": true
+      },
+      {
+        "name": "output_within_limit",
+        "passed": true
+      },
+      {
+        "name": "output_capture_complete",
+        "passed": true
+      }
+    ],
+    "checks_passed": true,
+    "cleanup_state": "verified",
+    "creation_uncertain": false,
+    "duration_ms": 31562,
+    "execution_finished_at": "2026-11-05T17:13:46.443Z",
+    "execution_ms": 31133,
+    "execution_started_at": "2026-11-05T17:13:15.310Z",
+    "exit_code": 0,
+    "explanation": "Verified sandbox run completed (exit code 0, all worker checks passed). The Rust 2024 program generated 20,000,000 pseudo-random u32 values with a seeded SplitMix64 generator (seed 0x243F6A8885A308D3), sorted them, and wrote /work/artifacts/result.json. In-program assertions confirmed: count == 20,000,000, full sortedness, min <= median <= max, and checksums recomputed after sorting matched pre-sort values. Results: min = 607, max = 4294967188, median = 2147988673 (average of the two middle elements as u64), checksum (wrapping u64 sum) = 42953511367921416, plus an FNV-1a hash of 15018828664684277860. The values are statistically plausible for uniform u32 samples (min near 0, max near u32::MAX, median near 2^31, sum near 20M \u00d7 2^31).",
+    "finished_at": "2026-11-05T17:13:46.663Z",
+    "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+    "inference_calls": [
+      {
+        "accounted_usd": 4.84e-05,
+        "agent_id": "ed38ae54-a6f5-4401-b061-63bd214f3257",
+        "at": "2026-11-05T17:12:38.963Z",
+        "call_id": "4352d04a-2559-4f97-a6a7-71b82b6a14cc",
+        "depth": 0,
+        "effort": "medium",
+        "input_tokens": 407,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 22,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-0149abd6-d540-42ee-b8cd-8ca96c833f72",
+        "role": "orchestrator"
+      },
+      {
+        "accounted_usd": 0.00013785,
+        "agent_id": "ed38ae54-a6f5-4401-b061-63bd214f3257",
+        "at": "2026-11-05T17:12:44.098Z",
+        "call_id": "3cac8147-babd-4cf0-8fcd-7d631dfeacca",
+        "depth": 0,
+        "effort": "medium",
+        "input_tokens": 472,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 259,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-c5e1e06f-3dc5-4f19-bc23-a925f126813f",
+        "role": "orchestrator"
+      },
+      {
+        "accounted_usd": 0.00352575,
+        "agent_id": "396244fc-fbbf-41ef-a29c-a17280fb8ad7",
+        "at": "2026-11-05T17:13:09.823Z",
+        "call_id": "25120ba0-04c3-4ae2-a961-d462cad0ef70",
+        "depth": 1,
+        "effort": "xhigh",
+        "input_tokens": 415,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 9955,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-8d0256bb-9878-46b5-abc2-4ddb66e86066",
+        "role": "coder"
+      },
+      {
+        "accounted_usd": 0.0008371499999999999,
+        "agent_id": "396244fc-fbbf-41ef-a29c-a17280fb8ad7",
+        "at": "2026-11-05T17:13:14.976Z",
+        "call_id": "9d3d2bb4-1935-48a5-a8c4-330e643f1c98",
+        "depth": 1,
+        "effort": "xhigh",
+        "input_tokens": 2201,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 1763,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-40d2938b-1019-4669-8bed-f6b08949c96d",
+        "role": "coder"
+      },
+      {
+        "accounted_usd": 0.00095795,
+        "agent_id": "396244fc-fbbf-41ef-a29c-a17280fb8ad7",
+        "at": "2026-11-05T17:13:51.019Z",
+        "call_id": "2c525f02-f801-4774-bcf6-bfcdedc28a5d",
+        "depth": 1,
+        "effort": "xhigh",
+        "input_tokens": 3990,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 1597,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-60ff4e75-c9e3-4ca1-87ce-b003f600b52d",
+        "role": "coder"
+      },
+      {
+        "accounted_usd": 0.00022295,
+        "agent_id": "ed38ae54-a6f5-4401-b061-63bd214f3257",
+        "at": "2026-11-05T17:13:52.066Z",
+        "call_id": "d1bd255f-bcbc-4c4b-8f93-4d0deb3a22f6",
+        "depth": 0,
+        "effort": "medium",
+        "input_tokens": 1386,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 241,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-b62d4fd3-811e-4ae3-a203-7234fae38db1",
+        "role": "orchestrator"
+      },
+      {
+        "accounted_usd": 0.0008098,
+        "agent_id": "c0484f97-f8f5-4396-aad5-518ab5adb09d",
+        "at": "2026-11-05T17:14:01.011Z",
+        "call_id": "2cd80ee8-0e0b-47e0-8d99-c8b01aea392e",
+        "depth": 0,
+        "effort": "high",
+        "input_tokens": 1616,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 1852,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-b4039893-9bdb-4f19-ba8a-b7bd333679e1",
+        "role": "reviewer"
+      }
+    ],
+    "job_id": "a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+    "limits": {
+      "cpu_ceiling_millis": 1000,
+      "cpu_millis": 500,
+      "memory_ceiling_mb": 512,
+      "memory_mb": 256,
+      "timeout_seconds": 60
+    },
+    "model_calls": 7,
+    "output_truncated": false,
+    "reason": "completed",
+    "resource_samples": [
+      {
+        "at": "2026-11-05T17:13:15.838Z",
+        "docker_stats": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "3.30%",
+          "MemUsage": "8.438MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "26"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:15.838Z",
+        "docker_stats": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "3.30%",
+          "MemUsage": "8.438MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "26"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:16.338Z",
+        "docker_stats": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "3.30%",
+          "MemUsage": "8.438MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "26"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:16.338Z",
+        "docker_stats": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "3.30%",
+          "MemUsage": "8.438MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "26"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:16.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "80.50%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "23.81%",
+          "MemUsage": "60.95MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:16.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "80.50%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "23.81%",
+          "MemUsage": "60.95MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:17.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "80.50%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "23.81%",
+          "MemUsage": "60.95MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:17.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "80.50%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "23.81%",
+          "MemUsage": "60.95MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:17.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "98.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "34.71%",
+          "MemUsage": "88.86MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:17.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "98.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "34.71%",
+          "MemUsage": "88.86MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:18.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "98.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "34.71%",
+          "MemUsage": "88.86MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:18.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "98.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "34.71%",
+          "MemUsage": "88.86MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:18.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "101.00%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:18.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "101.00%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:19.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "101.00%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:19.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "101.00%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:19.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.43%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:19.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.43%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:20.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.43%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:20.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.43%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:20.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.31%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:20.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.31%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:21.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.31%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:21.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.31%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:21.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.91%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:21.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.91%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:22.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.91%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:22.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.91%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:22.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.45%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:22.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.45%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:23.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.45%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:23.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.45%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.6MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:23.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.06%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:23.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.06%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:24.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.06%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:24.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.06%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:24.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.58%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:24.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.58%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:25.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.58%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:25.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.58%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:25.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.06%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:25.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.06%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:26.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.06%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:26.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.06%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.56%",
+          "MemUsage": "93.61MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:26.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.30%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:26.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.30%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:27.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.30%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:27.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.30%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:27.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.94%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:27.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.94%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:28.339Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.94%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:28.339Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.94%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:28.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.46%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:28.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.46%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:29.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.46%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:29.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.46%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:29.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.71%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:29.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.71%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:30.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.71%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:30.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.71%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:30.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.41%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:30.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.41%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:31.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.41%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:31.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.41%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:31.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:31.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:32.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:32.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:32.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.60%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:32.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.60%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:33.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.60%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:33.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.60%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:33.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.51%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.63%",
+          "MemUsage": "93.76MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:33.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.51%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.63%",
+          "MemUsage": "93.76MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:34.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.51%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.63%",
+          "MemUsage": "93.76MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:34.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.51%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.63%",
+          "MemUsage": "93.76MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:34.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.04%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:34.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.04%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:35.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.04%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:35.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.04%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.51MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:35.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.35%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:35.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.35%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:36.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.35%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:36.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.35%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:36.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.11%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:36.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.11%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:37.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.11%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:37.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.11%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:37.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:37.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:38.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:38.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "99.89%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:38.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.50%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.63%",
+          "MemUsage": "93.77MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:38.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.50%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.63%",
+          "MemUsage": "93.77MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:39.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.50%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.63%",
+          "MemUsage": "93.77MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:39.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.50%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.63%",
+          "MemUsage": "93.77MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:39.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.18%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:39.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.18%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:40.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.18%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:40.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.18%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:40.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.51%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:40.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.51%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:41.339Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.51%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:41.339Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.51%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:41.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.02%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:41.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.02%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:42.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.02%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:42.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.02%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:42.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.39%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:42.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.39%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:43.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.39%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:43.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.39%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:43.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.49%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:43.839Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.49%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:44.339Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.49%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:44.339Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.49%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:44.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.14%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:44.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.14%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:45.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.14%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:45.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.14%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:45.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.62%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:45.838Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.62%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:46.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.62%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      },
+      {
+        "at": "2026-11-05T17:13:46.338Z",
+        "docker_stats": {
+          "BlockIO": "131kB / 0B",
+          "CPUPerc": "100.62%",
+          "Container": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "ID": "c1e552020cc36c345ffd157901df4f8263f4f3314fa83adfc35ad635f5ba2cf5",
+          "MemPerc": "36.53%",
+          "MemUsage": "93.52MiB / 256MiB",
+          "Name": "ar-task-a4ccbba6-40af-47a9-8153-df64a1540db1-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "42"
+        }
+      }
+    ],
+    "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+    "result": {
+      "checksum": 42953511367921416,
+      "count": 20000000,
+      "fnv1a": 15018828664684277860,
+      "max": 4294967188,
+      "median": 2147988673,
+      "min": 607,
+      "seed": 2611923443488327891
+    },
+    "review": {
+      "approved": true,
+      "notes": "Artifact verified: base64 decodes to {count:20000000, min:607, max:4294967188, median:2147988673, checksum:42953511367921416, fnv1a:15018828664684277860, seed:2611923443488327891}, and the seed decimal matches the code's constant 0x243F6A8885A308D3. Worker evidence shows exit code 0, all checks passed, and stderr confirms generation/sorting of 20M values with byte-for-byte artifact verification. Statistical plausibility holds: min near 0, max near u32::MAX, median near 2^31, and checksum within ~0.07\u03c3 of the expected 20M \u00d7 mean(u32) \u2248 4.29497e16. The visible code defines the seeded SplitMix64 generator, pre-sort order-independent checksums (wrapping sum, XOR fold), FNV-1a, and a sortedness check, consistent with the reported assertions; the code listing is truncated mid-sort but the completed run and artifact corroborate the reported results. No unsupported claims found."
+    },
+    "runtime": "runsc",
+    "scaling": {
+      "available": true,
+      "ceiling": {
+        "cpu_millis": 1000,
+        "memory_mb": 512
+      },
+      "events": [
+        {
+          "at": "2026-11-05T17:13:15.868Z",
+          "cpu_millis": 1000,
+          "memory_mb": 256,
+          "trigger": "CPU saturated at 500 millicores"
+        }
+      ],
+      "final": {
+        "cpu_millis": 1000,
+        "memory_mb": 256
+      },
+      "oom_kills": 0,
+      "peak_memory_mb": 94,
+      "start": {
+        "cpu_millis": 500,
+        "memory_mb": 256
+      }
+    },
+    "started_at": "2026-11-05T17:13:15.101Z",
+    "stderr": "OK: generated and sorted 20000000 u32 values (seed=0x243f6a8885a308d3); result.json written and verified byte-for-byte\n",
+    "stdout": "{\"count\":20000000,\"min\":607,\"max\":4294967188,\"median\":2147988673,\"checksum\":42953511367921416,\"fnv1a\":15018828664684277860,\"seed\":2611923443488327891}\n"
+  },
+  "request": {
+    "memory_mb": 1024,
+    "profile": "cli",
+    "prompt": "Generate 20 million pseudo-random u32 values with a seeded generator, sort them, and report the minimum, maximum, median and a checksum of the sorted values in /work/artifacts/result.json.",
+    "timeout_seconds": 120
+  },
+  "schema": "agent-rush.evidence.v1",
+  "state": "succeeded"
+}

@@ -114,7 +114,7 @@ async fn real_output_cap() {
 #[tokio::test]
 #[ignore = "requires host-enforced memory cgroups"]
 async fn real_memory_cap() {
-    let result=case("memory-cap",r#"use std::io::Write; fn main(){println!("allocating");std::io::stdout().flush().unwrap();let mut bytes=vec![7u8;384*1024*1024];for b in &mut bytes{*b=std::hint::black_box(*b+1);}std::hint::black_box(&bytes);println!("allocation escaped");}"#,Limits{memory_mb:256,timeout_seconds:30,cpu_millis:1000}).await;
+    let result=case("memory-cap",r#"use std::io::Write; fn main(){println!("allocating");std::io::stdout().flush().unwrap();let mut bytes=vec![7u8;384*1024*1024];for b in &mut bytes{*b=std::hint::black_box(*b+1);}std::hint::black_box(&bytes);println!("allocation escaped");}"#,Limits{memory_mb:256,timeout_seconds:30,cpu_millis:1000,..Limits::default()}).await;
     assert!(
         result["stdout"].as_str().unwrap().contains("allocating"),
         "allocator workload did not start: {result}"

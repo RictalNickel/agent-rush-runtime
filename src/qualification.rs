@@ -15,11 +15,12 @@ use std::{
     time::Duration,
 };
 
-pub const CHECKS: [&str; 9] = [
+pub const CHECKS: [&str; 10] = [
     "containment",
     "timeout",
     "output",
     "memory",
+    "scaling",
     "scratch",
     "pids",
     "cpu",
@@ -74,11 +75,29 @@ pub fn assess(name: &str, r: &Value) -> Result<bool> {
                     <= 65536
         }
         "memory" => {
-            r["reason"] == "execution_failed"
-                && r["exit_code"].as_i64().is_some_and(|v| v != 0)
+            matches!(
+                r["reason"].as_str(),
+                Some("execution_failed" | "memory_limit")
+            ) && r["exit_code"].as_i64().is_some_and(|v| v != 0)
                 && r["stdout"]
                     .as_str()
                     .is_some_and(|s| s.contains("allocating") && !s.contains("allocation escaped"))
+        }
+        // Grew live past its 256 MiB start, then died at its 512 MiB ceiling, never above it.
+        "scaling" => {
+            let stdout = r["stdout"].as_str().unwrap_or("");
+            let scaling = &r["scaling"];
+            r["reason"] == "memory_limit"
+                && scaling["available"] == true
+                && scaling["start"]["memory_mb"] == 256
+                && scaling["ceiling"]["memory_mb"] == 512
+                && scaling["final"]["memory_mb"] == 512
+                && scaling["events"].as_array().is_some_and(|e| !e.is_empty())
+                && scaling["peak_memory_mb"]
+                    .as_u64()
+                    .is_some_and(|p| p > 256 && p <= 512)
+                && stdout.contains("holding 288 MiB")
+                && !stdout.contains("allocation escaped")
         }
         "scratch" => success(r) && r["result"]["scratch_limited"] == true,
         "pids" => {
@@ -186,19 +205,22 @@ pub async fn run(runner: &DockerRunner, cancel: Arc<AtomicBool>) -> Value {
             "timeout" | "cancel" => "fn main(){loop{std::hint::spin_loop();}}",
             "output" => "fn main(){loop{println!(\"{}\",\"x\".repeat(4096));}}",
             "memory" => include_str!("../qualification/memory.rs"),
+            "scaling" => include_str!("../qualification/scaling.rs"),
             "scratch" => include_str!("../qualification/scratch.rs"),
             "pids" => include_str!("../qualification/pids.rs"),
             "cpu" => include_str!("../qualification/cpu.rs"),
             _ => include_str!("../qualification/neighbor.rs"),
         };
         let limits = Limits {
-            memory_mb: if name == "memory" || name == "concurrency" {
+            memory_mb: if matches!(name, "memory" | "concurrency" | "scaling") {
                 256
             } else {
                 512
             },
             timeout_seconds: if name == "timeout" { 5 } else { 60 },
             cpu_millis: if name == "cpu" { 250 } else { 1000 },
+            memory_ceiling_mb: if name == "scaling" { 512 } else { 0 },
+            cpu_ceiling_millis: 0,
         };
         let result = if name == "concurrency" {
             let first_id = format!("{id}-a");

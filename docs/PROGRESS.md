@@ -104,3 +104,11 @@ Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
   - Reasoning is capped at 8,192 of 16,384 output tokens after the xhigh coder spent its whole budget reasoning (`510a429a`).
   - Usage is settled before decoding, so failed calls are charged their actual cost.
   - Public job `7d466fa9`: 58 s, $0.006, reviewer approved. `/api/status` shows each role's reasoning effort.
+- Live scaling and chat UI (user request):
+  - Users no longer choose resources. The orchestrator sets the ceiling with `set_limits`, and trusted code clamps it.
+  - Runs start at 256 MiB and 0.5 vCPU. The worker grows them live from cgroup readings, up to the ceiling.
+  - Memory kills are reported as `memory_limit`, and the next attempt starts at the ceiling.
+  - New 10th qualification check `scaling`; the live worker passes 10/10.
+  - Live job `37853f20` grew 256 → 512 → 768 MiB.
+  - The UI is now a dark chat with a per-run memory meter; the agent team is no longer shown.
+  - 110 Rust tests and 3 Playwright tests pass.

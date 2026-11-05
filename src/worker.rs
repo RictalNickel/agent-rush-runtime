@@ -188,6 +188,53 @@ pub fn read_artifacts(bytes: &[u8]) -> Result<Vec<Artifact>> {
     Ok(result)
 }
 
+/// Raise a run's memory when it uses at least 70% of its current limit: double it, or
+/// give twice the current use if that is more, rounded up to 64 MiB, capped at the ceiling.
+pub fn next_memory_mb(limit_mb: u32, used_bytes: u64, ceiling_mb: u32) -> Option<u32> {
+    if limit_mb >= ceiling_mb {
+        return None;
+    }
+    let used_mb = (used_bytes / 1_048_576) as u32;
+    if used_mb.saturating_mul(100) < limit_mb.saturating_mul(70) {
+        return None;
+    }
+    let wanted = limit_mb
+        .saturating_mul(2)
+        .max(used_mb.saturating_mul(2).div_ceil(64) * 64);
+    Some(wanted.min(ceiling_mb))
+}
+/// Raise CPU straight to the ceiling once a run uses at least 85% of its current quota.
+pub fn next_cpu_millis(limit: u32, used_usec: u64, window_usec: u64, ceiling: u32) -> Option<u32> {
+    if limit >= ceiling || window_usec == 0 {
+        return None;
+    }
+    let used_millis = used_usec.saturating_mul(1000) / window_usec;
+    (used_millis.saturating_mul(100) >= limit as u64 * 85).then_some(ceiling)
+}
+fn cgroup_value(dir: &std::path::Path, file: &str, key: Option<&str>) -> Option<u64> {
+    let text = std::fs::read_to_string(dir.join(file)).ok()?;
+    match key {
+        None => text.trim().parse().ok(),
+        Some(key) => text.lines().find_map(|line| {
+            let (name, value) = line.split_once(' ')?;
+            (name == key).then(|| value.trim().parse().ok()).flatten()
+        }),
+    }
+}
+/// The sandbox's cgroup v2 directory under either Docker cgroup driver.
+fn cgroup_dir(container_id: &str) -> Option<std::path::PathBuf> {
+    if container_id.len() != 64 || !container_id.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    [
+        format!("/sys/fs/cgroup/system.slice/docker-{container_id}.scope"),
+        format!("/sys/fs/cgroup/docker/{container_id}"),
+    ]
+    .into_iter()
+    .map(std::path::PathBuf::from)
+    .find(|dir| dir.join("memory.current").exists())
+}
+
 #[derive(Clone)]
 pub struct DockerRunner {
     image: String,
@@ -383,9 +430,11 @@ impl DockerRunner {
         cancel: Arc<AtomicBool>,
         creation_acknowledged: &mut bool,
     ) -> Result<Value> {
-        self.output(&spec.create_args(), 4096).await?;
+        let created = self.output(&spec.create_args(), 4096).await?;
         *creation_acknowledged = true;
+        let container_id = String::from_utf8_lossy(&created).trim().to_string();
         self.output(&["start".into(), spec.name()], 4096).await?;
+        let scaler = Scaler::start(self.clone(), spec, &container_id).await;
         let args=vec!["exec".into(),"-i".into(),spec.name(),"/bin/sh".into(),"-c".into(),"umask 077; mkdir -p /work/artifacts; cat > /work/task.rs; rustc --edition=2024 -C debuginfo=0 /work/task.rs -o /work/task && exec /work/task".into()];
         let mut child = self
             .command()
@@ -476,15 +525,24 @@ impl DockerRunner {
         let execution_ms = execution_clock.elapsed().as_millis();
         let execution_finished_at = now();
         input.abort();
+        // Killing the local exec client leaves the program running inside the sandbox, so a
+        // timed-out or cancelled run is stopped before any scaler bookkeeping can delay it.
+        if reason != "completed" && reason != "execution_failed" {
+            let _ = self.output(&["kill".into(), spec.name()], 4096).await;
+        }
+        let scaling = scaler.finish().await;
+        // A run the kernel killed for memory is reported as such, not as a program bug.
+        let reason = if reason == "execution_failed" && scaling["oom_kills"].as_u64() > Some(0) {
+            "memory_limit"
+        } else {
+            reason
+        };
         let _ = stats_child.kill().await;
         let samples = tokio::time::timeout(Duration::from_secs(2), stats_task)
             .await
             .ok()
             .and_then(|r| r.ok())
             .unwrap_or_default();
-        if reason != "completed" && reason != "execution_failed" {
-            let _ = self.output(&["kill".into(), spec.name()], 4096).await;
-        }
         let (out, out_complete) = finish_capture(stdout).await;
         let (err, err_complete) = finish_capture(stderr).await;
         let artifacts = if reason == "completed" {
@@ -526,7 +584,7 @@ impl DockerRunner {
             out_complete && err_complete,
         );
         Ok(
-            json!({"reason":reason,"exit_code":exit,"execution_ms":execution_ms,"execution_started_at":execution_started_at,"execution_finished_at":execution_finished_at,"stdout":String::from_utf8_lossy(&out),"stderr":String::from_utf8_lossy(&err),"output_truncated":exceeded.load(Ordering::SeqCst),"checks":checks,"checks_passed":passed,"artifacts":artifacts,"result":result_json,"resource_samples":samples,"resource_sampling_note":"Observed Docker samples when available, not peak-memory attestation"}),
+            json!({"reason":reason,"exit_code":exit,"execution_ms":execution_ms,"execution_started_at":execution_started_at,"execution_finished_at":execution_finished_at,"stdout":String::from_utf8_lossy(&out),"stderr":String::from_utf8_lossy(&err),"output_truncated":exceeded.load(Ordering::SeqCst),"checks":checks,"checks_passed":passed,"artifacts":artifacts,"result":result_json,"resource_samples":samples,"scaling":scaling,"resource_sampling_note":"Observed Docker samples when available, not peak-memory attestation"}),
         )
     }
 }
@@ -579,4 +637,141 @@ async fn capture<R: AsyncRead + Unpin>(
         }
     }
     result
+}
+
+/// Docker's own record of a memory kill, kept until the container is removed.
+async fn docker_oom_killed(runner: &DockerRunner, name: &str) -> Option<u64> {
+    let out = runner
+        .output(
+            &[
+                "inspect".into(),
+                "-f".into(),
+                "{{.State.OOMKilled}}".into(),
+                name.into(),
+            ],
+            4096,
+        )
+        .await
+        .ok()?;
+    Some(u64::from(String::from_utf8_lossy(&out).trim() == "true"))
+}
+/// Live scaler for one sandbox. Polls the cgroup every 100 ms and raises limits through
+/// `docker update` under pressure, up to the run's ceilings and never above them.
+struct Scaler {
+    stop: Arc<AtomicBool>,
+    task: tokio::task::JoinHandle<Value>,
+}
+impl Scaler {
+    async fn start(runner: DockerRunner, spec: &SandboxSpec, container_id: &str) -> Self {
+        let stop = Arc::new(AtomicBool::new(false));
+        let flag = stop.clone();
+        let name = spec.name();
+        let limits = spec.limits.clone();
+        let dir = cgroup_dir(container_id);
+        let task = tokio::spawn(async move {
+            let (memory_ceiling, cpu_ceiling) = (limits.memory_ceiling(), limits.cpu_ceiling());
+            let (mut memory, mut cpu) = (limits.memory_mb, limits.cpu_millis);
+            let mut events = Vec::new();
+            let update = |memory: u32, cpu: u32| {
+                let runner = runner.clone();
+                let name = name.clone();
+                async move {
+                    runner
+                        .output(
+                            &[
+                                "update".into(),
+                                "--memory".into(),
+                                format!("{memory}m"),
+                                "--memory-swap".into(),
+                                format!("{memory}m"),
+                                "--cpus".into(),
+                                format!("{:.3}", cpu as f64 / 1000.0),
+                                name,
+                            ],
+                            4096,
+                        )
+                        .await
+                }
+            };
+            let Some(dir) = dir else {
+                // Without cgroup visibility the run cannot be watched, so it gets its
+                // ceilings at once rather than failing below them.
+                if (memory, cpu) != (memory_ceiling, cpu_ceiling)
+                    && update(memory_ceiling, cpu_ceiling).await.is_ok()
+                {
+                    events.push(json!({"at":now(),"memory_mb":memory_ceiling,"cpu_millis":cpu_ceiling,"trigger":"cgroup not visible; set to ceiling"}));
+                    (memory, cpu) = (memory_ceiling, cpu_ceiling);
+                }
+                while !flag.load(Ordering::SeqCst) {
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+                let oom_kills = docker_oom_killed(&runner, &name).await;
+                return json!({"available":false,"start":{"memory_mb":limits.memory_mb,"cpu_millis":limits.cpu_millis},"ceiling":{"memory_mb":memory_ceiling,"cpu_millis":cpu_ceiling},"final":{"memory_mb":memory,"cpu_millis":cpu},"events":events,"peak_memory_mb":null,"oom_kills":oom_kills});
+            };
+            let mut window = (
+                Instant::now(),
+                cgroup_value(&dir, "cpu.stat", Some("usage_usec")),
+            );
+            // A memory kill ends the whole gVisor sandbox and Docker removes its cgroup at
+            // once, so the last values seen while polling are kept for the receipt.
+            let (mut peak, mut oom_kills) = (None, None);
+            while !flag.load(Ordering::SeqCst) {
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                peak = cgroup_value(&dir, "memory.peak", None).or(peak);
+                oom_kills = cgroup_value(&dir, "memory.events", Some("oom_kill")).or(oom_kills);
+                let mut target = (memory, cpu, String::new());
+                if let Some(used) = cgroup_value(&dir, "memory.current", None)
+                    && let Some(next) = next_memory_mb(memory, used, memory_ceiling)
+                {
+                    target.0 = next;
+                    target.2 = format!("memory at {} of {memory} MiB", used / 1_048_576);
+                }
+                if window.0.elapsed() >= Duration::from_millis(500) {
+                    let usage = cgroup_value(&dir, "cpu.stat", Some("usage_usec"));
+                    if let (Some(before), Some(after)) = (window.1, usage) {
+                        let elapsed = window.0.elapsed().as_micros() as u64;
+                        if let Some(next) =
+                            next_cpu_millis(cpu, after.saturating_sub(before), elapsed, cpu_ceiling)
+                        {
+                            target.1 = next;
+                            if target.2.is_empty() {
+                                target.2 = format!("CPU saturated at {cpu} millicores");
+                            }
+                        }
+                    }
+                    window = (Instant::now(), usage);
+                }
+                if (target.0, target.1) != (memory, cpu) && update(target.0, target.1).await.is_ok()
+                {
+                    (memory, cpu) = (target.0, target.1);
+                    if events.len() < 16 {
+                        events.push(json!({"at":now(),"memory_mb":memory,"cpu_millis":cpu,"trigger":target.2}));
+                    }
+                }
+            }
+            peak = cgroup_value(&dir, "memory.peak", None).or(peak);
+            oom_kills = cgroup_value(&dir, "memory.events", Some("oom_kill")).or(oom_kills);
+            // Docker keeps its own record of a memory kill until the container is removed.
+            if oom_kills.is_none_or(|n| n == 0) {
+                oom_kills = docker_oom_killed(&runner, &name).await.max(oom_kills);
+            }
+            json!({"available":true,"start":{"memory_mb":limits.memory_mb,"cpu_millis":limits.cpu_millis},"ceiling":{"memory_mb":memory_ceiling,"cpu_millis":cpu_ceiling},"final":{"memory_mb":memory,"cpu_millis":cpu},"events":events,"peak_memory_mb":peak.map(|b| b / 1_048_576),"oom_kills":oom_kills})
+        });
+        Self { stop, task }
+    }
+    async fn finish(mut self) -> Value {
+        self.stop.store(true, Ordering::SeqCst);
+        tokio::time::timeout(Duration::from_secs(12), &mut self.task)
+            .await
+            .ok()
+            .and_then(|r| r.ok())
+            .unwrap_or_else(|| json!({"available":false,"error":"scaler did not report"}))
+    }
+}
+/// A run that fails before `finish` must not leave its scaler polling forever.
+impl Drop for Scaler {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::SeqCst);
+        self.task.abort();
+    }
 }

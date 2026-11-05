@@ -18,7 +18,7 @@ def call(method, path, body=None, headers=None):
 
 
 csrf = call("POST", "/api/login", {"password": os.environ["AR_OPERATOR_PASSWORD"]})["csrf"]
-job = {"id": os.environ["JOB_ID"]} if os.environ.get("JOB_ID") else call("POST", "/api/jobs", {"prompt": prompt, "profile": "cli", "memory_mb": 512, "timeout_seconds": 60},
+job = {"id": os.environ["JOB_ID"]} if os.environ.get("JOB_ID") else call("POST", "/api/jobs", {"prompt": prompt, "profile": "cli"},
            {"x-csrf-token": csrf, "idempotency-key": str(uuid.uuid4())})
 print("job", job["id"], flush=True)
 seen, started = 0, time.time()

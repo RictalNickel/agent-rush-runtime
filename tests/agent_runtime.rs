@@ -1,5 +1,5 @@
 use agent_rush::{
-    agent::{AgentContext, ToolCall, parse_tool},
+    agent::{AgentContext, Role, ToolCall, parse_tool},
     domain::JobRequest,
     ledger::Ledger,
 };
@@ -105,4 +105,24 @@ fn context_snapshots_cannot_cross_job_ownership_or_parent_boundary() {
     assert_eq!(db.contexts("alice", &job.id).unwrap().len(), 2);
     assert!(db.contexts("bob", &job.id).unwrap().is_empty());
     assert!(db.save_context("bob", &root).is_err());
+}
+
+#[test]
+fn only_the_orchestrator_sets_resource_ceilings_and_only_within_policy() {
+    let ok = parse_tool(r#"{"tool":"set_limits","memory_mb":768,"timeout_seconds":45}"#).unwrap();
+    assert!(Role::Orchestrator.allows(&ok));
+    assert!(Role::Solo.allows(&ok));
+    // The agent that writes code never chooses its own resources.
+    assert!(!Role::Coder.allows(&ok));
+    assert!(!Role::Worker.allows(&ok));
+    for bad in [
+        r#"{"tool":"set_limits","memory_mb":2048,"timeout_seconds":45}"#,
+        r#"{"tool":"set_limits","memory_mb":128,"timeout_seconds":45}"#,
+        r#"{"tool":"set_limits","memory_mb":512,"timeout_seconds":600}"#,
+        r#"{"tool":"set_limits","memory_mb":512,"timeout_seconds":1}"#,
+        r#"{"tool":"set_limits","memory_mb":512}"#,
+        r#"{"tool":"request_memory","memory_mb":768}"#,
+    ] {
+        assert!(parse_tool(bad).is_err(), "{bad}");
+    }
 }

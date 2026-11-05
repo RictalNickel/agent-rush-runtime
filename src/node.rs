@@ -292,7 +292,8 @@ async fn submit(
         }
         let used: u32 = active.values().map(|v| v.memory_mb).sum();
         if active.len() >= MAX_CONCURRENT
-            || used.saturating_add(input.limits.memory_mb) > s.capacity_mb
+            // Runs grow live up to their ceiling, so admission reserves the ceiling.
+            || used.saturating_add(input.limits.memory_ceiling()) > s.capacity_mb
         {
             return Err(NodeError(
                 StatusCode::TOO_MANY_REQUESTS,
@@ -316,7 +317,7 @@ async fn submit(
         active.insert(
             input.id.clone(),
             ActiveLease {
-                memory_mb: input.limits.memory_mb,
+                memory_mb: input.limits.memory_ceiling(),
                 cancel: cancel.clone(),
             },
         );

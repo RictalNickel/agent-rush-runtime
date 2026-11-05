@@ -1,8 +1,9 @@
 use agent_rush::{domain::JobRequest, ledger::Ledger};
 use std::sync::Arc;
 
+/// These tests exercise admission arithmetic with a 512 MiB lease, not the request default.
 fn request(prompt: &str) -> JobRequest {
-    serde_json::from_value(serde_json::json!({"prompt": prompt})).unwrap()
+    serde_json::from_value(serde_json::json!({"prompt": prompt, "memory_mb": 512})).unwrap()
 }
 
 #[test]

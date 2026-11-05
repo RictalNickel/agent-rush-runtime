@@ -251,6 +251,7 @@ async fn main() -> Result<()> {
                         memory_mb,
                         timeout_seconds: timeout,
                         cpu_millis: 1000,
+                        ..Limits::default()
                     },
                     cancelled,
                 )

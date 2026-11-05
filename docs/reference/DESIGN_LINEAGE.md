@@ -19,7 +19,7 @@ An originality review on 2026-11-05 compared every 7-word sequence in this repos
 ## Only in Agent Rush
 
 - **Separate machines.** A control VM never runs generated code. A worker VM is reachable only over a private network with mutual TLS and a bearer token.
-- **Qualification.** The worker refuses to admit work unless a report of nine real containment probes, bound to its host and image, is less than two hours old.
+- **Qualification.** The worker refuses to admit work unless a report of ten real containment probes, bound to its host and image, is less than two hours old.
 - **Receipts.** Every run returns its exit code, structural checks, artifact SHA-256 hashes, resource samples and a cleanup state.
 - **Reviewer gate.** An independent model checks the final answer against the evidence.
 - **Spend ledger.** Reservations are made before each call and settled after, with a hard budget.

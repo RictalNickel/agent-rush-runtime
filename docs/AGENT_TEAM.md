@@ -4,14 +4,24 @@ With `AR_INFERENCE_PROVIDER=anthropic` (and with `vultr`, where every role uses 
 
 | Role | Model | Effort | Prompt cache | Compaction | Tools it may use |
 | --- | --- | --- | --- | --- | --- |
-| Orchestrator | `claude-opus-5-5` | medium | API default (5 min) | none | plan, delegate, follow_up, memory, request_memory, response |
+| Orchestrator | `claude-opus-5-5` | medium | API default (5 min) | none | plan, delegate, follow_up, memory, set_limits, response |
 | Worker | `claude-haiku-5-5` | high | explicit `ttl: 5m` | at 100k input tokens | memory_save, memory_search, response |
-| Coder | `claude-haiku-5-5` | xhigh | API default (5 min) | at 100k input tokens | sandbox, request_memory, response |
+| Coder | `claude-haiku-5-5` | xhigh | API default (5 min) | at 100k input tokens | sandbox, response |
 | Reviewer | `claude-opus-5-5` | high | API default (5 min) | none | review |
 
 Every call sets `max_tokens` to 100,000. The worker and coder use server-side threshold compaction (`compact_20260112`, beta `compact-2026-01-12`). Haiku summarizes its own conversation, and the engine then resets that context to its policy, its task and the summary turn, so the stored history stays bounded.
 
 With `AR_INFERENCE_PROVIDER=vultr` (the live deployment), every role uses `glm-5.3-flash`. The same effort column is sent as `reasoning: {effort, max_tokens: 8192}` within a 16k output budget, so reasoning can never use more than half and every role keeps room to answer. Both parts are required. Without an effort, GLM can spend all of its output on hidden reasoning. Without the cap, the coder at xhigh did the same on a harder task (job `510a429a`: 16,384 reasoning tokens, no answer).
+
+## Resource ceilings
+
+The orchestrator decides how much a task may use, but not how much each run starts with:
+- **`set_limits`** sets the memory ceiling (256 MiB to 1 GiB) and the time limit per run (5 to 120 s). Until it is called, runs use 512 MiB and 60 s.
+- **Trusted code clamps** the ceiling to the job's admitted lease and the node's capacity.
+- **Each run starts at 256 MiB and 0.5 vCPU.** The worker raises memory and CPU live as the program needs them, up to the ceiling.
+- **The coder cannot change resources.** The agent that writes code has no limits tool.
+
+In live job `37853f20`, the orchestrator chose 768 MiB and 120 s for a task that needed about 500 MiB. The run grew 256 → 512 → 768 MiB and 0.5 → 1 vCPU, and peaked at 478 MiB.
 
 ## Flow
 

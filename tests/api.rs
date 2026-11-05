@@ -442,3 +442,45 @@ async fn context_export_is_authenticated_and_admission_policy_is_explicit() {
         1024
     );
 }
+
+#[tokio::test]
+async fn a_task_larger_than_the_deployment_can_admit_is_rejected_not_queued_forever() {
+    let mut settings = Settings::local();
+    settings.operator_password = "test-password-long-enough".into();
+    let app = router(AppState::new(settings, Ledger::memory(768).unwrap()).unwrap());
+    let (_, session, cookie) = call(
+        app.clone(),
+        "POST",
+        "/api/login",
+        json!({"password":"test-password-long-enough"}),
+        "",
+        "",
+    )
+    .await;
+    let csrf = session["csrf"].as_str().unwrap();
+    // The UI sends no limits, so the request asks for the 1 GiB default lease.
+    let (status, body, _) = call(
+        app.clone(),
+        "POST",
+        "/api/jobs",
+        json!({"prompt":"Calculate revenue totals"}),
+        &cookie,
+        csrf,
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(
+        body["error"].as_str().unwrap().contains("768 MiB"),
+        "{body}"
+    );
+    let (status, _, _) = call(
+        app,
+        "POST",
+        "/api/jobs",
+        json!({"prompt":"Calculate revenue totals","memory_mb":512}),
+        &cookie,
+        csrf,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+}

@@ -1,48 +1,49 @@
 # Workspace visual system
 
-Reworked on 2026-11-05 using Anthropic's `frontend-design` skill (anthropics/skills). It replaces the earlier sidebar-and-cards workspace, which read as a generic SaaS template.
+Reworked on 2026-11-05 into a dark chat, following Anthropic's `frontend-design` skill. The operator asked for a simpler interface: no resource controls, no agent-team panel, and a chat-like dark theme.
 
-## Concept: chain of custody
+## Concept
 
-The product's subject is sealed, destroyed and auditable runs, so the interface borrows from evidence handling.
-- **The sealed sandbox panel** has a red tamper-tape border. Its limits update as the operator changes memory or the time limit.
-- **Each run is an exhibit.** The run record has a numbered timeline, the SHA-256 seal of every file, and a "Destroyed" stamp once cleanup is verified.
+A conversation with a containment system:
+- Your task is a message.
+- The agent's reply carries its answer, a memory meter for the sandbox and a "Destroyed" stamp once cleanup is verified.
+- Everything else (timeline, program output, file hashes, evidence downloads) sits behind one disclosure per run.
 
-The bold choices are spent in one place: the sandbox panel and the stamp. Everything else is quiet: hairline rules, no card grid, no gradients and no decorative motion.
+The one loud element is the **memory meter**. A hazard-striped track shows the ceiling the orchestrator set. A dim amber fill shows the limit the run grew to, a bright amber fill shows peak use, and a thin marker shows where the run started. The text says it plainly, for example: "Memory started at 256 MiB and grew live to 768 MiB of a 768 MiB ceiling. Peak use 478 MiB."
 
 ## Tokens
 
 | Token | Value | Use |
 | --- | --- | --- |
-| paper | `#f3f5f4` | page background (cool, not cream) |
-| panel | `#ffffff` | inputs, sandbox panel, dialogs |
-| ink | `#1b2024` | text, rules, primary buttons |
-| ink-2 | `#4e5862` | secondary text |
-| rule | `#cdd3d6` | hairlines |
-| tamper | `#c01e2e` | the only accent: sandbox border, tape, stamp, failures |
-| ok | `#1f6847` | succeeded, verified, approved |
-| run | `#1f5a99` | running states, focus ring |
+| ground | `#12161b` | page background (graphite blue, not tinted black) |
+| surface | `#1a2027` | composer, disclosures, dialogs |
+| raised | `#232b34` | your message bubbles, hover |
+| rule | `#2c3540` | hairlines |
+| text / muted / faint | `#e6eaee` / `#9aa5b1` / `#6f7a86` | text levels |
+| amber | `#e8b04b` | the only accent: meter, stamp, send button, focus ring |
+| ok / bad / run | `#5bbf8a` / `#ec6e76` / `#6aa8e8` | state colours only |
 
-Type: Archivo (variable weight and width, SIL OFL 1.1), self-hosted at `/assets/archivo.woff2` because the CSP allows no third-party origins. Headlines and the stamp use condensed widths (62–75%), and body text is 100% width at 16/1.55. Monospace is used only for program output and hashes.
+Amber comes from hazard tape, the vernacular of containment, and avoids the generic "near-black with vermilion or acid green" look. The font is Archivo (SIL OFL 1.1), self-hosted at `/assets/archivo.woff2` because the CSP allows no third-party origins. Condensed widths are used for the welcome headline, the wordmark and the stamp. Monospace is used only for program output and hashes.
 
 ## Layout
 
-- **Masthead:** wordmark; live worker signal and inference provider; safety link; operator sign in. Its content aligns with the 1240px page column.
-- **Lead:** one plain-language headline and a short explanation.
-- **Bench:** the task form (prompt, three example tasks, memory and time-limit segmented controls) beside the sealed sandbox panel. They stack below 960px.
-- **Agent team:** four roles separated by rules, with each role's reasoning effort read from `/api/status`.
-- **Runs:** a ledger table showing task, state, time, model cost and cleanup. Below 640px each row becomes a stacked entry.
-- **Run record (dialog):** facts grid, the cleanup stamp, then the timeline beside the answer, program output and files.
+- **Bar:** wordmark, live worker signal and inference provider, a Safety link, and sign in or sign out.
+- **Thread** (760 px column): a welcome headline and four example tasks when empty. Then one turn per run, oldest first.
+- **Turn:** your message right-aligned, then the agent's status ("Running in the sandbox", with Stop), answer, memory meter, facts (outcome, time, sandbox time, model cost, review) and the stamp.
+- **Composer:** fixed at the bottom. Enter sends and Shift+Enter adds a line. The note under it explains the growth rule.
+
+Each message starts a fresh run. Turns are updated in place by job id on every 2.5 s poll, so an open disclosure stays open and the scroll position is kept.
 
 ## Copy rules
 
-Plain words, sentence case, active verbs. No all-caps labels except the stamp, where caps are the vernacular. No middle-dot metadata strings and no arrows on buttons. The timeline names roles instead of agent ids; raw ids stay in the evidence export.
+Plain words, sentence case, active verbs. No all-caps labels except the stamp. No middle-dot metadata strings. The timeline names roles ("The orchestrator used one of its tools") instead of agent ids; raw ids stay in the evidence export.
 
 ## Quality floor
 
-- Keyboard focus is always visible, and there is a skip link to the task form.
+- Keyboard focus is always visible, and there is a skip link to the message box.
 - Reduced-motion users get no animation.
-- The page has no horizontal overflow at 390px.
-- Toasts are a manual popover, so they appear above open dialogs.
+- The page has no horizontal overflow at 390 px.
+- The meter has an ARIA description and sets its sizes through the CSSOM, because the CSP allows no inline styles.
+- Toasts are a manual popover, so they appear above dialogs.
 
-`qa/workspace.spec.cjs` covers the desktop flow, the mobile layout, and a real Vultr receipt (`qa/fixtures/vultr-job-7d466fa9.json`) rendered with its stamp.
+`qa/workspace.spec.cjs` covers the chat flow, the mobile layout, and a real scaled Vultr run (`qa/fixtures/scaled-job.json`, job `37853f20`) rendered with its meter and stamp.
