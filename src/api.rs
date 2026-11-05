@@ -454,12 +454,15 @@ async fn artifact(
 /// The role table shown to operators, derived from the same mapping the gateway uses.
 fn agent_roles(settings: &crate::config::Settings) -> Value {
     use crate::agent::Role;
-    if settings.inference_provider != crate::config::Provider::Anthropic {
-        return json!({"all": settings.inference_model});
-    }
+    let anthropic = settings.inference_provider == crate::config::Provider::Anthropic;
     let describe = |role: Role| {
         let spec = crate::inference::anthropic_role(role);
-        json!({"model": spec.model, "effort": spec.effort, "cache_ttl": spec.cache_ttl.unwrap_or("default"), "compaction": spec.compaction})
+        if anthropic {
+            json!({"model": spec.model, "effort": spec.effort, "cache_ttl": spec.cache_ttl.unwrap_or("default"), "compaction": spec.compaction})
+        } else {
+            // Vultr serves one model; each role keeps its own reasoning effort.
+            json!({"model": settings.inference_model, "reasoning_effort": spec.effort})
+        }
     };
     json!({
         "orchestrator": describe(Role::Orchestrator),

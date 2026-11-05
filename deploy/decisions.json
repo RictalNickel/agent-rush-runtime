@@ -17,9 +17,9 @@
     "paid_calls_enabled": true,
     "tariff_owner": "Vultr_provider_model_rates_not_user_chosen",
     "tariff_configuration": "setup_populates_only_after_official_provider_verification",
-    "live_provider": "Anthropic (owner decision 2026-11-04; switchable to Vultr)",
-    "reasoning_effort": "per role: orchestrator medium, worker high, coder xhigh, reviewer high",
-    "live_verification": "job 2fd5b26f on Vultr Serverless Inference, 2026-11-05"
+    "live_provider": "Vultr Serverless Inference, glm-5.3-flash (owner switched 2026-11-05; Anthropic remains available)",
+    "reasoning_effort": "per role: orchestrator medium, worker high, coder xhigh, reviewer high; reasoning capped at 8192 of 16384 output tokens",
+    "live_verification": "jobs 2fd5b26f and 7d466fa9 on Vultr Serverless Inference, 2026-11-05"
   },
   "infrastructure": {
     "preferred_region": "ord",

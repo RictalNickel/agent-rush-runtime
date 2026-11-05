@@ -1,0 +1,162 @@
+{
+  "jobs": [
+    {
+      "job": "43a2e00b",
+      "state": "succeeded",
+      "memory_mb": 512,
+      "queued_s": 76.4,
+      "total_s": 121.0,
+      "sandbox_ms": 810,
+      "cleanup": "verified",
+      "review": true,
+      "model_calls": 5,
+      "usd": 0.0037,
+      "result": {
+        "closed_form": 333338333350000,
+        "iterative": 333338333350000,
+        "match": true
+      }
+    },
+    {
+      "job": "be2c59ca",
+      "state": "succeeded",
+      "memory_mb": 512,
+      "queued_s": 0.3,
+      "total_s": 65.1,
+      "sandbox_ms": 965,
+      "cleanup": "verified",
+      "review": true,
+      "model_calls": 5,
+      "usd": 0.0045,
+      "result": {
+        "distinct_words": 9,
+        "lines": 1,
+        "method_a": {
+          "distinct": 9,
+          "lines": 1,
+          "words": 12
+        },
+        "method_b": {
+          "distinct": 9,
+          "lines": 1,
+          "words": 12
+        },
+        "text": "the quick brown fox jumps over the lazy dog the dog sleeps",
+        "verified": true,
+        "words": 12
+      }
+    },
+    {
+      "job": "985bad2b",
+      "state": "succeeded",
+      "memory_mb": 768,
+      "queued_s": 65.6,
+      "total_s": 165.1,
+      "sandbox_ms": 1029,
+      "cleanup": "verified",
+      "review": true,
+      "model_calls": 7,
+      "usd": 0.0099,
+      "result": {
+        "count": 127,
+        "first_five": [
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            8,
+            10
+          ],
+          [
+            5,
+            12,
+            13
+          ],
+          [
+            9,
+            12,
+            15
+          ],
+          [
+            8,
+            15,
+            17
+          ]
+        ]
+      }
+    },
+    {
+      "job": "af0fe974",
+      "state": "succeeded",
+      "memory_mb": 512,
+      "queued_s": 0.8,
+      "total_s": 76.2,
+      "sandbox_ms": 812,
+      "cleanup": "verified",
+      "review": true,
+      "model_calls": 5,
+      "usd": 0.004,
+      "result": {
+        "fibonacci": 2880067194370816120,
+        "methods_agree": true,
+        "n": 90
+      }
+    }
+  ],
+  "wall_s": 170,
+  "total_usd": 0.0221,
+  "status_after": {
+    "agent_roles": {
+      "coder": {
+        "model": "glm-5.3-flash",
+        "reasoning_effort": "xhigh"
+      },
+      "orchestrator": {
+        "model": "glm-5.3-flash",
+        "reasoning_effort": "medium"
+      },
+      "reviewer": {
+        "model": "glm-5.3-flash",
+        "reasoning_effort": "high"
+      },
+      "worker": {
+        "model": "glm-5.3-flash",
+        "reasoning_effort": "high"
+      }
+    },
+    "cloud_status": "unverified",
+    "inference_accounted_usd": 2.89975729,
+    "inference_configured": true,
+    "inference_provider": "vultr",
+    "profiles": [
+      {
+        "available": true,
+        "id": "cli"
+      },
+      {
+        "available": false,
+        "id": "nested-dev",
+        "reason": "Not qualified"
+      },
+      {
+        "available": false,
+        "id": "browser",
+        "reason": "Not qualified"
+      }
+    ],
+    "reserved_memory_mb": 0,
+    "resources": {
+      "controller_admission_capacity_mb": 6144,
+      "cpu_scheduling": "equal weights, shared ceilings",
+      "max_concurrent_jobs": 2,
+      "memory_growth": "between sandbox attempts only",
+      "utilization": "not measured by this endpoint"
+    },
+    "runtime": "runsc",
+    "version": "0.1.0",
+    "worker_connected": true
+  }
+}

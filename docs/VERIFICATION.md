@@ -9,7 +9,7 @@
 | Dependency audit | `cargo audit`: 228 crates, no advisories |
 | Worker qualification | 9/9 real checks passed on the live worker (`evidence/live/worker-qualification-2026-11-05.json`). The earlier memory-cap failure does not reproduce on a host with enforcing cgroups |
 | Public HTTPS and worker mTLS | Deployed and tested. No client certificate: 400. Wrong or missing token: 401. Raw worker port unreachable |
-| Real inference, agent, worker roundtrip | Done with both providers: Anthropic (`2f6bd23b`, 138 s, $0.196) and Vultr GLM 5.3 Flash (`2fd5b26f`, 33 s, $0.003) |
+| Real inference, agent, worker roundtrip | Done with both providers: Anthropic (`2f6bd23b`, 138 s, $0.196) and Vultr GLM 5.3 Flash (`2fd5b26f`, 33 s, $0.003; public job `7d466fa9`, 58 s, $0.006) |
 | Concurrent load | 4 jobs, 2-slot admission, all succeeded with verified cleanup. Two sandboxes overlapped for 4.7 s within their caps; a third run was refused with 429 |
 | API performance | `/api/status` 460 req/s, p50 8 ms (was 31 req/s, 494 ms) |
 | Containment | Probe receipt plus timeout kills recorded |
@@ -50,7 +50,7 @@ Raw earlier local receipts and the complete failing resource-suite log are in do
 
 | Capability | Implementation | Acceptance |
 | --- | --- | --- |
-| Rust agent loop, team roles, contexts | Implemented: orchestrator, coder, worker and reviewer with enforced allowlists | Unit tests; live roundtrip passed with the Anthropic provider |
+| Rust agent loop, team roles, contexts | Implemented: orchestrator, coder, worker and reviewer with enforced allowlists | Unit tests; live roundtrips passed with both providers |
 | Authenticated product UI | Implemented, Rust-served HTML/CSS and browser JS | Desktop/mobile core flow tested |
 | Durable jobs/idempotency/owner scoping | Implemented, SQLite WAL | Tested |
 | Atomic memory admission/reservation | Implemented | Concurrency/restart tests pass |
@@ -58,7 +58,7 @@ Raw earlier local receipts and the complete failing resource-suite log are in do
 | Private worker/token auth | Implemented | Deployed mTLS and token rejection tested live |
 | Fixed gVisor execution and safe artifacts | Implemented | Live worker qualification 9/9 |
 | Recovery/reconciliation | Implemented, conservative lease retention | Crash/transport race qualification incomplete; no production claim |
-| Inference gateway and cost reservations | Implemented: Vultr Serverless Inference or Anthropic, selected by the operator | Both verified live; the public instance runs Anthropic |
+| Inference gateway and cost reservations | Implemented: Vultr Serverless Inference or Anthropic, selected by the operator | Both verified live; the public instance runs Vultr (GLM 5.3 Flash) |
 | Read-only cost planning | Implemented with guarded lifetime/rate budgets | Fixture tests; actual plan query blocked |
 | Infrastructure provisioning/independent teardown | Provisioning disabled; native tracked-resource watchdog and manual teardown implemented | Fixture tests and denial-path CLI smoke pass; real provider deletion/runner uptime unverified |
 | Nested Docker, browser/desktop profiles | Not enabled | Not qualified |

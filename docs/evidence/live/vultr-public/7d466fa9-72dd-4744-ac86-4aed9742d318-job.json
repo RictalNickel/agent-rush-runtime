@@ -1,0 +1,6269 @@
+{
+  "cancel_requested": false,
+  "created_at": "2026-11-05T14:07:56.109Z",
+  "dropped_events": 0,
+  "events": [
+    {
+      "at": "2026-11-05T14:07:56.109Z",
+      "kind": "queued",
+      "message": "Task accepted under fixed CLI policy"
+    },
+    {
+      "at": "2026-11-05T14:07:56.528Z",
+      "kind": "admitted",
+      "memory_mb": 512,
+      "message": "Memory lease admitted atomically"
+    },
+    {
+      "at": "2026-11-05T14:08:04.317Z",
+      "kind": "tool_started",
+      "message": "Agent 8fa8f61f-f601-4081-83e0-03ea78bf0327 at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T14:08:39.794Z",
+      "kind": "tool_started",
+      "message": "Agent d639118a-679f-41e7-b40f-0a948113a640 at depth 1 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T14:08:39.795Z",
+      "kind": "executing",
+      "message": "Rust std-only program: SplitMix64 PRNG (fixed seed) generates 1000 sales rows (id 1..1000, region, valid 2025 date, cents-based amounts $100.00-$10000.00); computes quarter/region/grand totals as integer cents; asserts all invariants; writes /work/artifacts/result.json; re-reads and validates it with a strict JSON parser; prints grand_total to stdout."
+    },
+    {
+      "at": "2026-11-05T14:08:39.796Z",
+      "kind": "node_run",
+      "message": "7d466fa9-72dd-4744-ac86-4aed9742d318-1"
+    },
+    {
+      "at": "2026-11-05T14:08:41.332Z",
+      "kind": "verifying",
+      "message": "Worker process/result/cleanup checks passed"
+    },
+    {
+      "at": "2026-11-05T14:08:41.334Z",
+      "kind": "tool_finished",
+      "message": "Allowed tool result recorded under the fixed task policy"
+    },
+    {
+      "at": "2026-11-05T14:08:44.155Z",
+      "kind": "tool_started",
+      "message": "Agent d639118a-679f-41e7-b40f-0a948113a640 at depth 1 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T14:08:44.157Z",
+      "kind": "subordinate",
+      "message": "Logical subordinate returned; worker evidence remains authoritative"
+    },
+    {
+      "at": "2026-11-05T14:08:49.170Z",
+      "kind": "tool_started",
+      "message": "Agent 8fa8f61f-f601-4081-83e0-03ea78bf0327 at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T14:08:54.553Z",
+      "kind": "review",
+      "message": "Reviewer approved: Evidence supports the claims: exit code 0, artifact result.json (76,595 bytes) present with matching sha256, stdout shows rows=1000, seed, and grand_total=5013559.38. Independent arithmetic check: quarter totals (1299224.39+1401461.29+1161168.41+1151705.29) and region totals (1284101.77+1279174.90+1294938.81+1155343.90) both sum exactly to 5013559.38, matching the printed grand total. The proposed answer's claims (deterministic SplitMix64, integer-cent money, valid 2025 dates, JSON validation, 1000-row count) are consistent with the code and worker evidence; no unsupported claims found."
+    },
+    {
+      "at": "2026-11-05T14:08:54.555Z",
+      "kind": "explanation",
+      "message": "Verified sandbox run completed successfully (exit code 0, all independent checks passed, verified=true). A std-only Rust 2024 program used a SplitMix64 PRNG (seed 0x5EEDCAFE20250001) to generate exactly 1,000 deterministic sales rows \u2014 ids 1..1000, regions North/South/East/West, valid 2025 dates (day checked against days-in-month), and amounts in integer cents in [100.00, 10000.00] to avoid float drift. It computed revenue totals per quarter and per region and wrote /work/artifacts/result.json (76,595 bytes), which was re-read and passed strict JSON validation plus a 1,000-row count check. The grand total was printed to stdout: 5,013,559.38. Cross-check in cents: quarter totals (1,299,224.39 + 1,401,461.29 + 1,161,168.41 + 1,151,705.29) and region totals (North 1,284,101.77 + South 1,279,174.90 + East 1,294,938.81 + West 1,155,343.90) both sum to 5,013,559.38, matching the grand total, so the quarter-sum and region-sum invariants hold."
+    },
+    {
+      "at": "2026-11-05T14:08:54.556Z",
+      "kind": "succeeded",
+      "message": "Worker cleanup verified; lease released"
+    }
+  ],
+  "id": "7d466fa9-72dd-4744-ac86-4aed9742d318",
+  "memory_mb": 512,
+  "owner": "operator",
+  "receipt": {
+    "artifacts": [
+      {
+        "bytes": 76595,
+        "name": "result.json",
+        "sha256": "cfe4293ab15acd2d462f20ea2423537447fccf7f9942d22968961257343d0213"
+      }
+    ],
+    "checks": [
+      {
+        "name": "process_exit_zero",
+        "passed": true
+      },
+      {
+        "name": "result_json_is_object",
+        "passed": true
+      },
+      {
+        "name": "output_within_limit",
+        "passed": true
+      },
+      {
+        "name": "output_capture_complete",
+        "passed": true
+      }
+    ],
+    "checks_passed": true,
+    "cleanup_state": "verified",
+    "creation_uncertain": false,
+    "duration_ms": 1332,
+    "execution_finished_at": "2026-11-05T14:08:41.058Z",
+    "execution_ms": 966,
+    "execution_started_at": "2026-11-05T14:08:40.092Z",
+    "exit_code": 0,
+    "explanation": "Verified sandbox run completed successfully (exit code 0, all independent checks passed, verified=true). A std-only Rust 2024 program used a SplitMix64 PRNG (seed 0x5EEDCAFE20250001) to generate exactly 1,000 deterministic sales rows \u2014 ids 1..1000, regions North/South/East/West, valid 2025 dates (day checked against days-in-month), and amounts in integer cents in [100.00, 10000.00] to avoid float drift. It computed revenue totals per quarter and per region and wrote /work/artifacts/result.json (76,595 bytes), which was re-read and passed strict JSON validation plus a 1,000-row count check. The grand total was printed to stdout: 5,013,559.38. Cross-check in cents: quarter totals (1,299,224.39 + 1,401,461.29 + 1,161,168.41 + 1,151,705.29) and region totals (North 1,284,101.77 + South 1,279,174.90 + East 1,294,938.81 + West 1,155,343.90) both sum to 5,013,559.38, matching the grand total, so the quarter-sum and region-sum invariants hold.",
+    "finished_at": "2026-11-05T14:08:41.236Z",
+    "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+    "inference_calls": [
+      {
+        "accounted_usd": 0.0001775,
+        "agent_id": "8fa8f61f-f601-4081-83e0-03ea78bf0327",
+        "at": "2026-11-05T14:08:04.316Z",
+        "call_id": "c3a35db1-996d-4b75-851d-30c22fd8cd7e",
+        "depth": 0,
+        "effort": "medium",
+        "input_tokens": 368,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 402,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-d880e1ff-8ea5-402b-9e8d-03476a579810",
+        "role": "orchestrator"
+      },
+      {
+        "accounted_usd": 0.0043386,
+        "agent_id": "d639118a-679f-41e7-b40f-0a948113a640",
+        "at": "2026-11-05T14:08:39.793Z",
+        "call_id": "c045f108-90f8-45e1-9352-88bc3835d63d",
+        "depth": 1,
+        "effort": "xhigh",
+        "input_tokens": 567,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 12234,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-85682413-23d4-4f8f-a9d7-d7afc83808e1",
+        "role": "coder"
+      },
+      {
+        "accounted_usd": 0.00078195,
+        "agent_id": "d639118a-679f-41e7-b40f-0a948113a640",
+        "at": "2026-11-05T14:08:44.153Z",
+        "call_id": "062da331-a5a3-4b79-84b0-32d5a0158250",
+        "depth": 1,
+        "effort": "xhigh",
+        "input_tokens": 4526,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 941,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-f0f896ab-27c4-4393-a7aa-c1eeb2db43f7",
+        "role": "coder"
+      },
+      {
+        "accounted_usd": 0.00025295,
+        "agent_id": "8fa8f61f-f601-4081-83e0-03ea78bf0327",
+        "at": "2026-11-05T14:08:49.168Z",
+        "call_id": "084755e5-5313-4302-b10a-f0d614356cab",
+        "depth": 0,
+        "effort": "medium",
+        "input_tokens": 1434,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 313,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-f9be0e11-9355-4edb-8794-f6af81351bd6",
+        "role": "orchestrator"
+      },
+      {
+        "accounted_usd": 0.00028260000000000004,
+        "agent_id": "8a251373-81ce-48fe-8b35-6322d03d2eab",
+        "at": "2026-11-05T14:08:54.553Z",
+        "call_id": "78f29fdb-bb75-46c6-a2bf-443085005fb8",
+        "depth": 0,
+        "effort": "high",
+        "input_tokens": 1657,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 334,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-dd281249-0f6f-4d6c-8a23-41d511b1f0f1",
+        "role": "reviewer"
+      }
+    ],
+    "job_id": "7d466fa9-72dd-4744-ac86-4aed9742d318-1",
+    "limits": {
+      "cpu_millis": 1000,
+      "memory_mb": 512,
+      "timeout_seconds": 60
+    },
+    "model_calls": 5,
+    "output_truncated": false,
+    "reason": "completed",
+    "resource_samples": [
+      {
+        "at": "2026-11-05T14:08:40.614Z",
+        "docker_stats": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "ar-task-7d466fa9-72dd-4744-ac86-4aed9742d318-1",
+          "ID": "395e222a2435dd4779e44919ff855e7ce77df975224e597af70414f6391d1399",
+          "MemPerc": "1.65%",
+          "MemUsage": "8.453MiB / 512MiB",
+          "Name": "ar-task-7d466fa9-72dd-4744-ac86-4aed9742d318-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "27"
+        }
+      },
+      {
+        "at": "2026-11-05T14:08:40.614Z",
+        "docker_stats": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "ar-task-7d466fa9-72dd-4744-ac86-4aed9742d318-1",
+          "ID": "395e222a2435dd4779e44919ff855e7ce77df975224e597af70414f6391d1399",
+          "MemPerc": "1.65%",
+          "MemUsage": "8.453MiB / 512MiB",
+          "Name": "ar-task-7d466fa9-72dd-4744-ac86-4aed9742d318-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "27"
+        }
+      }
+    ],
+    "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+    "result": {
+      "grand_total": 5013559.38,
+      "quarter_totals": {
+        "Q1": 1299224.39,
+        "Q2": 1401461.29,
+        "Q3": 1161168.41,
+        "Q4": 1151705.29
+      },
+      "region_totals": {
+        "East": 1294938.81,
+        "North": 1284101.77,
+        "South": 1279174.9,
+        "West": 1155343.9
+      },
+      "rows": [
+        {
+          "amount": 6302.35,
+          "date": "2025-01-22",
+          "id": 1,
+          "region": "East"
+        },
+        {
+          "amount": 860.05,
+          "date": "2025-07-15",
+          "id": 2,
+          "region": "North"
+        },
+        {
+          "amount": 9180.28,
+          "date": "2025-07-24",
+          "id": 3,
+          "region": "East"
+        },
+        {
+          "amount": 6998.75,
+          "date": "2025-06-02",
+          "id": 4,
+          "region": "East"
+        },
+        {
+          "amount": 709.22,
+          "date": "2025-09-05",
+          "id": 5,
+          "region": "West"
+        },
+        {
+          "amount": 265.81,
+          "date": "2025-08-02",
+          "id": 6,
+          "region": "North"
+        },
+        {
+          "amount": 2873.39,
+          "date": "2025-01-20",
+          "id": 7,
+          "region": "South"
+        },
+        {
+          "amount": 9697.06,
+          "date": "2025-11-09",
+          "id": 8,
+          "region": "North"
+        },
+        {
+          "amount": 317.74,
+          "date": "2025-06-02",
+          "id": 9,
+          "region": "North"
+        },
+        {
+          "amount": 1694.24,
+          "date": "2025-06-28",
+          "id": 10,
+          "region": "East"
+        },
+        {
+          "amount": 7873.82,
+          "date": "2025-07-25",
+          "id": 11,
+          "region": "East"
+        },
+        {
+          "amount": 1332.72,
+          "date": "2025-12-02",
+          "id": 12,
+          "region": "West"
+        },
+        {
+          "amount": 3852.18,
+          "date": "2025-10-29",
+          "id": 13,
+          "region": "East"
+        },
+        {
+          "amount": 7745.43,
+          "date": "2025-01-23",
+          "id": 14,
+          "region": "East"
+        },
+        {
+          "amount": 5975.41,
+          "date": "2025-04-05",
+          "id": 15,
+          "region": "North"
+        },
+        {
+          "amount": 8444.91,
+          "date": "2025-03-02",
+          "id": 16,
+          "region": "North"
+        },
+        {
+          "amount": 1633.35,
+          "date": "2025-12-05",
+          "id": 17,
+          "region": "South"
+        },
+        {
+          "amount": 1336.16,
+          "date": "2025-03-12",
+          "id": 18,
+          "region": "North"
+        },
+        {
+          "amount": 636.95,
+          "date": "2025-12-19",
+          "id": 19,
+          "region": "West"
+        },
+        {
+          "amount": 7839.41,
+          "date": "2025-04-28",
+          "id": 20,
+          "region": "East"
+        },
+        {
+          "amount": 4571.31,
+          "date": "2025-08-18",
+          "id": 21,
+          "region": "North"
+        },
+        {
+          "amount": 6886.22,
+          "date": "2025-08-06",
+          "id": 22,
+          "region": "West"
+        },
+        {
+          "amount": 4323.99,
+          "date": "2025-09-20",
+          "id": 23,
+          "region": "East"
+        },
+        {
+          "amount": 9654.96,
+          "date": "2025-07-28",
+          "id": 24,
+          "region": "West"
+        },
+        {
+          "amount": 9422.09,
+          "date": "2025-03-16",
+          "id": 25,
+          "region": "North"
+        },
+        {
+          "amount": 7313.91,
+          "date": "2025-02-22",
+          "id": 26,
+          "region": "South"
+        },
+        {
+          "amount": 4252.02,
+          "date": "2025-09-21",
+          "id": 27,
+          "region": "South"
+        },
+        {
+          "amount": 7421.43,
+          "date": "2025-06-30",
+          "id": 28,
+          "region": "East"
+        },
+        {
+          "amount": 275.4,
+          "date": "2025-03-16",
+          "id": 29,
+          "region": "South"
+        },
+        {
+          "amount": 273.01,
+          "date": "2025-10-10",
+          "id": 30,
+          "region": "North"
+        },
+        {
+          "amount": 8093.02,
+          "date": "2025-05-09",
+          "id": 31,
+          "region": "North"
+        },
+        {
+          "amount": 4415.54,
+          "date": "2025-07-13",
+          "id": 32,
+          "region": "North"
+        },
+        {
+          "amount": 9175.49,
+          "date": "2025-03-06",
+          "id": 33,
+          "region": "South"
+        },
+        {
+          "amount": 1704.43,
+          "date": "2025-02-17",
+          "id": 34,
+          "region": "East"
+        },
+        {
+          "amount": 3728.38,
+          "date": "2025-04-06",
+          "id": 35,
+          "region": "South"
+        },
+        {
+          "amount": 7224.84,
+          "date": "2025-02-11",
+          "id": 36,
+          "region": "West"
+        },
+        {
+          "amount": 7253.81,
+          "date": "2025-02-23",
+          "id": 37,
+          "region": "South"
+        },
+        {
+          "amount": 9633.68,
+          "date": "2025-05-20",
+          "id": 38,
+          "region": "West"
+        },
+        {
+          "amount": 3825.51,
+          "date": "2025-12-23",
+          "id": 39,
+          "region": "North"
+        },
+        {
+          "amount": 1210.8,
+          "date": "2025-07-11",
+          "id": 40,
+          "region": "North"
+        },
+        {
+          "amount": 3817.78,
+          "date": "2025-06-25",
+          "id": 41,
+          "region": "East"
+        },
+        {
+          "amount": 4505.41,
+          "date": "2025-07-07",
+          "id": 42,
+          "region": "North"
+        },
+        {
+          "amount": 7577.67,
+          "date": "2025-06-14",
+          "id": 43,
+          "region": "West"
+        },
+        {
+          "amount": 5446.78,
+          "date": "2025-10-27",
+          "id": 44,
+          "region": "North"
+        },
+        {
+          "amount": 6650.37,
+          "date": "2025-06-20",
+          "id": 45,
+          "region": "West"
+        },
+        {
+          "amount": 3761.48,
+          "date": "2025-01-03",
+          "id": 46,
+          "region": "West"
+        },
+        {
+          "amount": 7349.32,
+          "date": "2025-08-08",
+          "id": 47,
+          "region": "South"
+        },
+        {
+          "amount": 5600.76,
+          "date": "2025-05-25",
+          "id": 48,
+          "region": "West"
+        },
+        {
+          "amount": 5341.25,
+          "date": "2025-12-07",
+          "id": 49,
+          "region": "North"
+        },
+        {
+          "amount": 9557.38,
+          "date": "2025-04-22",
+          "id": 50,
+          "region": "South"
+        },
+        {
+          "amount": 6128.39,
+          "date": "2025-05-24",
+          "id": 51,
+          "region": "East"
+        },
+        {
+          "amount": 4630.87,
+          "date": "2025-02-18",
+          "id": 52,
+          "region": "South"
+        },
+        {
+          "amount": 7445.36,
+          "date": "2025-11-30",
+          "id": 53,
+          "region": "East"
+        },
+        {
+          "amount": 994.53,
+          "date": "2025-03-09",
+          "id": 54,
+          "region": "South"
+        },
+        {
+          "amount": 2721.45,
+          "date": "2025-05-06",
+          "id": 55,
+          "region": "North"
+        },
+        {
+          "amount": 4234.02,
+          "date": "2025-05-09",
+          "id": 56,
+          "region": "South"
+        },
+        {
+          "amount": 333.51,
+          "date": "2025-09-05",
+          "id": 57,
+          "region": "North"
+        },
+        {
+          "amount": 2454.32,
+          "date": "2025-03-08",
+          "id": 58,
+          "region": "West"
+        },
+        {
+          "amount": 6691.77,
+          "date": "2025-11-16",
+          "id": 59,
+          "region": "North"
+        },
+        {
+          "amount": 9389.59,
+          "date": "2025-06-19",
+          "id": 60,
+          "region": "North"
+        },
+        {
+          "amount": 6872.58,
+          "date": "2025-01-20",
+          "id": 61,
+          "region": "South"
+        },
+        {
+          "amount": 407.91,
+          "date": "2025-08-06",
+          "id": 62,
+          "region": "South"
+        },
+        {
+          "amount": 8518.57,
+          "date": "2025-07-07",
+          "id": 63,
+          "region": "East"
+        },
+        {
+          "amount": 4826.81,
+          "date": "2025-08-08",
+          "id": 64,
+          "region": "East"
+        },
+        {
+          "amount": 2799.54,
+          "date": "2025-12-16",
+          "id": 65,
+          "region": "South"
+        },
+        {
+          "amount": 3371.87,
+          "date": "2025-05-02",
+          "id": 66,
+          "region": "East"
+        },
+        {
+          "amount": 5884.63,
+          "date": "2025-07-31",
+          "id": 67,
+          "region": "South"
+        },
+        {
+          "amount": 617.95,
+          "date": "2025-10-05",
+          "id": 68,
+          "region": "South"
+        },
+        {
+          "amount": 1717.7,
+          "date": "2025-03-21",
+          "id": 69,
+          "region": "North"
+        },
+        {
+          "amount": 7432.35,
+          "date": "2025-09-23",
+          "id": 70,
+          "region": "North"
+        },
+        {
+          "amount": 4396.07,
+          "date": "2025-02-06",
+          "id": 71,
+          "region": "East"
+        },
+        {
+          "amount": 2683.48,
+          "date": "2025-02-21",
+          "id": 72,
+          "region": "North"
+        },
+        {
+          "amount": 5342.73,
+          "date": "2025-09-23",
+          "id": 73,
+          "region": "West"
+        },
+        {
+          "amount": 3961.5,
+          "date": "2025-10-20",
+          "id": 74,
+          "region": "North"
+        },
+        {
+          "amount": 6564.86,
+          "date": "2025-02-12",
+          "id": 75,
+          "region": "West"
+        },
+        {
+          "amount": 5038.81,
+          "date": "2025-12-04",
+          "id": 76,
+          "region": "North"
+        },
+        {
+          "amount": 3446.67,
+          "date": "2025-01-07",
+          "id": 77,
+          "region": "South"
+        },
+        {
+          "amount": 4506.65,
+          "date": "2025-09-02",
+          "id": 78,
+          "region": "North"
+        },
+        {
+          "amount": 4029.25,
+          "date": "2025-02-21",
+          "id": 79,
+          "region": "West"
+        },
+        {
+          "amount": 5320.99,
+          "date": "2025-04-29",
+          "id": 80,
+          "region": "West"
+        },
+        {
+          "amount": 9720.06,
+          "date": "2025-08-23",
+          "id": 81,
+          "region": "West"
+        },
+        {
+          "amount": 1732.6,
+          "date": "2025-04-14",
+          "id": 82,
+          "region": "South"
+        },
+        {
+          "amount": 1020.3,
+          "date": "2025-03-13",
+          "id": 83,
+          "region": "North"
+        },
+        {
+          "amount": 7535.77,
+          "date": "2025-03-28",
+          "id": 84,
+          "region": "West"
+        },
+        {
+          "amount": 8197.67,
+          "date": "2025-11-27",
+          "id": 85,
+          "region": "East"
+        },
+        {
+          "amount": 5662.37,
+          "date": "2025-09-16",
+          "id": 86,
+          "region": "West"
+        },
+        {
+          "amount": 7933.64,
+          "date": "2025-06-26",
+          "id": 87,
+          "region": "East"
+        },
+        {
+          "amount": 4448.72,
+          "date": "2025-03-31",
+          "id": 88,
+          "region": "South"
+        },
+        {
+          "amount": 1906.65,
+          "date": "2025-01-24",
+          "id": 89,
+          "region": "East"
+        },
+        {
+          "amount": 1576.19,
+          "date": "2025-09-20",
+          "id": 90,
+          "region": "West"
+        },
+        {
+          "amount": 141.71,
+          "date": "2025-11-18",
+          "id": 91,
+          "region": "South"
+        },
+        {
+          "amount": 7160.89,
+          "date": "2025-05-01",
+          "id": 92,
+          "region": "South"
+        },
+        {
+          "amount": 4541.63,
+          "date": "2025-11-04",
+          "id": 93,
+          "region": "West"
+        },
+        {
+          "amount": 5291.7,
+          "date": "2025-07-27",
+          "id": 94,
+          "region": "East"
+        },
+        {
+          "amount": 2001.07,
+          "date": "2025-06-10",
+          "id": 95,
+          "region": "North"
+        },
+        {
+          "amount": 3094.59,
+          "date": "2025-11-07",
+          "id": 96,
+          "region": "South"
+        },
+        {
+          "amount": 4736.66,
+          "date": "2025-03-05",
+          "id": 97,
+          "region": "West"
+        },
+        {
+          "amount": 2439.13,
+          "date": "2025-10-30",
+          "id": 98,
+          "region": "East"
+        },
+        {
+          "amount": 1387.18,
+          "date": "2025-11-04",
+          "id": 99,
+          "region": "East"
+        },
+        {
+          "amount": 5350.26,
+          "date": "2025-03-10",
+          "id": 100,
+          "region": "East"
+        },
+        {
+          "amount": 6109.69,
+          "date": "2025-10-24",
+          "id": 101,
+          "region": "East"
+        },
+        {
+          "amount": 2042.25,
+          "date": "2025-12-23",
+          "id": 102,
+          "region": "North"
+        },
+        {
+          "amount": 213.4,
+          "date": "2025-07-19",
+          "id": 103,
+          "region": "West"
+        },
+        {
+          "amount": 3256.91,
+          "date": "2025-07-02",
+          "id": 104,
+          "region": "North"
+        },
+        {
+          "amount": 1481.25,
+          "date": "2025-07-03",
+          "id": 105,
+          "region": "West"
+        },
+        {
+          "amount": 4706.56,
+          "date": "2025-11-17",
+          "id": 106,
+          "region": "East"
+        },
+        {
+          "amount": 1852.44,
+          "date": "2025-06-18",
+          "id": 107,
+          "region": "North"
+        },
+        {
+          "amount": 1467.32,
+          "date": "2025-01-09",
+          "id": 108,
+          "region": "East"
+        },
+        {
+          "amount": 4559.17,
+          "date": "2025-08-10",
+          "id": 109,
+          "region": "West"
+        },
+        {
+          "amount": 1337.97,
+          "date": "2025-01-12",
+          "id": 110,
+          "region": "West"
+        },
+        {
+          "amount": 3713.12,
+          "date": "2025-03-26",
+          "id": 111,
+          "region": "North"
+        },
+        {
+          "amount": 6781.06,
+          "date": "2025-02-02",
+          "id": 112,
+          "region": "North"
+        },
+        {
+          "amount": 6348.07,
+          "date": "2025-06-27",
+          "id": 113,
+          "region": "East"
+        },
+        {
+          "amount": 5143.07,
+          "date": "2025-05-17",
+          "id": 114,
+          "region": "North"
+        },
+        {
+          "amount": 4379.0,
+          "date": "2025-03-06",
+          "id": 115,
+          "region": "West"
+        },
+        {
+          "amount": 595.45,
+          "date": "2025-02-01",
+          "id": 116,
+          "region": "South"
+        },
+        {
+          "amount": 3055.27,
+          "date": "2025-02-23",
+          "id": 117,
+          "region": "West"
+        },
+        {
+          "amount": 9796.85,
+          "date": "2025-09-21",
+          "id": 118,
+          "region": "East"
+        },
+        {
+          "amount": 8056.79,
+          "date": "2025-12-16",
+          "id": 119,
+          "region": "East"
+        },
+        {
+          "amount": 2262.04,
+          "date": "2025-09-17",
+          "id": 120,
+          "region": "South"
+        },
+        {
+          "amount": 5442.7,
+          "date": "2025-04-19",
+          "id": 121,
+          "region": "South"
+        },
+        {
+          "amount": 5333.87,
+          "date": "2025-12-06",
+          "id": 122,
+          "region": "East"
+        },
+        {
+          "amount": 6891.34,
+          "date": "2025-02-01",
+          "id": 123,
+          "region": "West"
+        },
+        {
+          "amount": 7494.82,
+          "date": "2025-12-03",
+          "id": 124,
+          "region": "East"
+        },
+        {
+          "amount": 7283.88,
+          "date": "2025-04-24",
+          "id": 125,
+          "region": "South"
+        },
+        {
+          "amount": 2644.66,
+          "date": "2025-02-01",
+          "id": 126,
+          "region": "North"
+        },
+        {
+          "amount": 3690.05,
+          "date": "2025-09-06",
+          "id": 127,
+          "region": "North"
+        },
+        {
+          "amount": 2821.75,
+          "date": "2025-03-13",
+          "id": 128,
+          "region": "South"
+        },
+        {
+          "amount": 5527.3,
+          "date": "2025-02-14",
+          "id": 129,
+          "region": "East"
+        },
+        {
+          "amount": 6728.88,
+          "date": "2025-12-16",
+          "id": 130,
+          "region": "North"
+        },
+        {
+          "amount": 317.45,
+          "date": "2025-03-25",
+          "id": 131,
+          "region": "North"
+        },
+        {
+          "amount": 7614.0,
+          "date": "2025-02-17",
+          "id": 132,
+          "region": "East"
+        },
+        {
+          "amount": 4485.88,
+          "date": "2025-06-03",
+          "id": 133,
+          "region": "West"
+        },
+        {
+          "amount": 7614.8,
+          "date": "2025-09-26",
+          "id": 134,
+          "region": "West"
+        },
+        {
+          "amount": 3914.79,
+          "date": "2025-04-21",
+          "id": 135,
+          "region": "East"
+        },
+        {
+          "amount": 3769.81,
+          "date": "2025-09-15",
+          "id": 136,
+          "region": "South"
+        },
+        {
+          "amount": 6014.45,
+          "date": "2025-08-10",
+          "id": 137,
+          "region": "North"
+        },
+        {
+          "amount": 5838.55,
+          "date": "2025-12-31",
+          "id": 138,
+          "region": "East"
+        },
+        {
+          "amount": 6418.97,
+          "date": "2025-11-18",
+          "id": 139,
+          "region": "South"
+        },
+        {
+          "amount": 5905.19,
+          "date": "2025-07-21",
+          "id": 140,
+          "region": "South"
+        },
+        {
+          "amount": 5275.73,
+          "date": "2025-01-22",
+          "id": 141,
+          "region": "North"
+        },
+        {
+          "amount": 7251.98,
+          "date": "2025-03-08",
+          "id": 142,
+          "region": "South"
+        },
+        {
+          "amount": 8797.69,
+          "date": "2025-07-28",
+          "id": 143,
+          "region": "South"
+        },
+        {
+          "amount": 3500.16,
+          "date": "2025-10-28",
+          "id": 144,
+          "region": "North"
+        },
+        {
+          "amount": 4520.1,
+          "date": "2025-05-22",
+          "id": 145,
+          "region": "North"
+        },
+        {
+          "amount": 1875.9,
+          "date": "2025-03-02",
+          "id": 146,
+          "region": "South"
+        },
+        {
+          "amount": 3592.63,
+          "date": "2025-09-03",
+          "id": 147,
+          "region": "West"
+        },
+        {
+          "amount": 5678.36,
+          "date": "2025-02-23",
+          "id": 148,
+          "region": "North"
+        },
+        {
+          "amount": 851.26,
+          "date": "2025-11-17",
+          "id": 149,
+          "region": "North"
+        },
+        {
+          "amount": 9573.61,
+          "date": "2025-11-22",
+          "id": 150,
+          "region": "East"
+        },
+        {
+          "amount": 7808.51,
+          "date": "2025-01-19",
+          "id": 151,
+          "region": "North"
+        },
+        {
+          "amount": 4693.78,
+          "date": "2025-06-23",
+          "id": 152,
+          "region": "South"
+        },
+        {
+          "amount": 6481.39,
+          "date": "2025-12-30",
+          "id": 153,
+          "region": "South"
+        },
+        {
+          "amount": 3744.45,
+          "date": "2025-12-08",
+          "id": 154,
+          "region": "West"
+        },
+        {
+          "amount": 173.01,
+          "date": "2025-09-15",
+          "id": 155,
+          "region": "North"
+        },
+        {
+          "amount": 5158.6,
+          "date": "2025-01-28",
+          "id": 156,
+          "region": "West"
+        },
+        {
+          "amount": 101.72,
+          "date": "2025-12-26",
+          "id": 157,
+          "region": "East"
+        },
+        {
+          "amount": 8813.31,
+          "date": "2025-07-05",
+          "id": 158,
+          "region": "West"
+        },
+        {
+          "amount": 8581.21,
+          "date": "2025-11-03",
+          "id": 159,
+          "region": "East"
+        },
+        {
+          "amount": 5536.72,
+          "date": "2025-12-21",
+          "id": 160,
+          "region": "East"
+        },
+        {
+          "amount": 7142.07,
+          "date": "2025-12-11",
+          "id": 161,
+          "region": "West"
+        },
+        {
+          "amount": 3494.83,
+          "date": "2025-08-23",
+          "id": 162,
+          "region": "North"
+        },
+        {
+          "amount": 1457.76,
+          "date": "2025-04-19",
+          "id": 163,
+          "region": "West"
+        },
+        {
+          "amount": 5789.04,
+          "date": "2025-07-28",
+          "id": 164,
+          "region": "South"
+        },
+        {
+          "amount": 3705.19,
+          "date": "2025-05-08",
+          "id": 165,
+          "region": "East"
+        },
+        {
+          "amount": 7474.64,
+          "date": "2025-05-06",
+          "id": 166,
+          "region": "North"
+        },
+        {
+          "amount": 9429.34,
+          "date": "2025-12-18",
+          "id": 167,
+          "region": "North"
+        },
+        {
+          "amount": 3648.54,
+          "date": "2025-10-18",
+          "id": 168,
+          "region": "South"
+        },
+        {
+          "amount": 8293.8,
+          "date": "2025-05-15",
+          "id": 169,
+          "region": "West"
+        },
+        {
+          "amount": 9716.0,
+          "date": "2025-02-20",
+          "id": 170,
+          "region": "East"
+        },
+        {
+          "amount": 5737.95,
+          "date": "2025-08-08",
+          "id": 171,
+          "region": "West"
+        },
+        {
+          "amount": 279.05,
+          "date": "2025-01-25",
+          "id": 172,
+          "region": "North"
+        },
+        {
+          "amount": 5639.62,
+          "date": "2025-07-23",
+          "id": 173,
+          "region": "North"
+        },
+        {
+          "amount": 5213.14,
+          "date": "2025-06-08",
+          "id": 174,
+          "region": "South"
+        },
+        {
+          "amount": 2789.4,
+          "date": "2025-12-05",
+          "id": 175,
+          "region": "South"
+        },
+        {
+          "amount": 1437.79,
+          "date": "2025-05-16",
+          "id": 176,
+          "region": "North"
+        },
+        {
+          "amount": 9472.1,
+          "date": "2025-09-17",
+          "id": 177,
+          "region": "West"
+        },
+        {
+          "amount": 4703.41,
+          "date": "2025-03-08",
+          "id": 178,
+          "region": "South"
+        },
+        {
+          "amount": 2225.09,
+          "date": "2025-11-30",
+          "id": 179,
+          "region": "East"
+        },
+        {
+          "amount": 2254.03,
+          "date": "2025-05-06",
+          "id": 180,
+          "region": "East"
+        },
+        {
+          "amount": 6717.62,
+          "date": "2025-03-15",
+          "id": 181,
+          "region": "North"
+        },
+        {
+          "amount": 9918.37,
+          "date": "2025-12-25",
+          "id": 182,
+          "region": "South"
+        },
+        {
+          "amount": 337.29,
+          "date": "2025-08-31",
+          "id": 183,
+          "region": "East"
+        },
+        {
+          "amount": 8616.01,
+          "date": "2025-07-13",
+          "id": 184,
+          "region": "South"
+        },
+        {
+          "amount": 904.06,
+          "date": "2025-12-15",
+          "id": 185,
+          "region": "South"
+        },
+        {
+          "amount": 6800.98,
+          "date": "2025-04-09",
+          "id": 186,
+          "region": "West"
+        },
+        {
+          "amount": 7149.08,
+          "date": "2025-11-18",
+          "id": 187,
+          "region": "South"
+        },
+        {
+          "amount": 3181.87,
+          "date": "2025-12-14",
+          "id": 188,
+          "region": "South"
+        },
+        {
+          "amount": 4042.24,
+          "date": "2025-09-01",
+          "id": 189,
+          "region": "East"
+        },
+        {
+          "amount": 7717.46,
+          "date": "2025-06-23",
+          "id": 190,
+          "region": "South"
+        },
+        {
+          "amount": 8794.58,
+          "date": "2025-08-03",
+          "id": 191,
+          "region": "West"
+        },
+        {
+          "amount": 4410.38,
+          "date": "2025-06-26",
+          "id": 192,
+          "region": "North"
+        },
+        {
+          "amount": 1713.76,
+          "date": "2025-04-27",
+          "id": 193,
+          "region": "East"
+        },
+        {
+          "amount": 2303.03,
+          "date": "2025-07-23",
+          "id": 194,
+          "region": "North"
+        },
+        {
+          "amount": 7530.18,
+          "date": "2025-04-26",
+          "id": 195,
+          "region": "North"
+        },
+        {
+          "amount": 8295.33,
+          "date": "2025-06-24",
+          "id": 196,
+          "region": "West"
+        },
+        {
+          "amount": 6426.37,
+          "date": "2025-06-11",
+          "id": 197,
+          "region": "East"
+        },
+        {
+          "amount": 443.25,
+          "date": "2025-11-29",
+          "id": 198,
+          "region": "North"
+        },
+        {
+          "amount": 1813.78,
+          "date": "2025-04-10",
+          "id": 199,
+          "region": "South"
+        },
+        {
+          "amount": 561.44,
+          "date": "2025-08-28",
+          "id": 200,
+          "region": "West"
+        },
+        {
+          "amount": 7857.75,
+          "date": "2025-05-29",
+          "id": 201,
+          "region": "South"
+        },
+        {
+          "amount": 4494.42,
+          "date": "2025-01-06",
+          "id": 202,
+          "region": "East"
+        },
+        {
+          "amount": 2861.71,
+          "date": "2025-07-02",
+          "id": 203,
+          "region": "East"
+        },
+        {
+          "amount": 3390.97,
+          "date": "2025-11-01",
+          "id": 204,
+          "region": "East"
+        },
+        {
+          "amount": 2226.64,
+          "date": "2025-03-23",
+          "id": 205,
+          "region": "West"
+        },
+        {
+          "amount": 2725.22,
+          "date": "2025-08-14",
+          "id": 206,
+          "region": "West"
+        },
+        {
+          "amount": 5745.69,
+          "date": "2025-11-19",
+          "id": 207,
+          "region": "East"
+        },
+        {
+          "amount": 7936.34,
+          "date": "2025-07-24",
+          "id": 208,
+          "region": "North"
+        },
+        {
+          "amount": 6310.61,
+          "date": "2025-01-02",
+          "id": 209,
+          "region": "West"
+        },
+        {
+          "amount": 8444.45,
+          "date": "2025-10-14",
+          "id": 210,
+          "region": "South"
+        },
+        {
+          "amount": 6375.23,
+          "date": "2025-03-29",
+          "id": 211,
+          "region": "East"
+        },
+        {
+          "amount": 4171.72,
+          "date": "2025-03-14",
+          "id": 212,
+          "region": "East"
+        },
+        {
+          "amount": 2066.2,
+          "date": "2025-09-20",
+          "id": 213,
+          "region": "North"
+        },
+        {
+          "amount": 2355.05,
+          "date": "2025-10-17",
+          "id": 214,
+          "region": "East"
+        },
+        {
+          "amount": 5295.36,
+          "date": "2025-12-29",
+          "id": 215,
+          "region": "East"
+        },
+        {
+          "amount": 5367.17,
+          "date": "2025-04-27",
+          "id": 216,
+          "region": "East"
+        },
+        {
+          "amount": 8802.89,
+          "date": "2025-05-02",
+          "id": 217,
+          "region": "West"
+        },
+        {
+          "amount": 8901.53,
+          "date": "2025-08-12",
+          "id": 218,
+          "region": "North"
+        },
+        {
+          "amount": 4301.8,
+          "date": "2025-06-22",
+          "id": 219,
+          "region": "North"
+        },
+        {
+          "amount": 9399.27,
+          "date": "2025-08-18",
+          "id": 220,
+          "region": "East"
+        },
+        {
+          "amount": 4421.75,
+          "date": "2025-05-17",
+          "id": 221,
+          "region": "South"
+        },
+        {
+          "amount": 3029.0,
+          "date": "2025-03-24",
+          "id": 222,
+          "region": "West"
+        },
+        {
+          "amount": 9693.54,
+          "date": "2025-07-03",
+          "id": 223,
+          "region": "East"
+        },
+        {
+          "amount": 3438.43,
+          "date": "2025-07-06",
+          "id": 224,
+          "region": "North"
+        },
+        {
+          "amount": 5213.38,
+          "date": "2025-06-07",
+          "id": 225,
+          "region": "South"
+        },
+        {
+          "amount": 299.18,
+          "date": "2025-08-21",
+          "id": 226,
+          "region": "East"
+        },
+        {
+          "amount": 1170.26,
+          "date": "2025-01-21",
+          "id": 227,
+          "region": "East"
+        },
+        {
+          "amount": 8421.68,
+          "date": "2025-06-12",
+          "id": 228,
+          "region": "East"
+        },
+        {
+          "amount": 1267.5,
+          "date": "2025-01-29",
+          "id": 229,
+          "region": "North"
+        },
+        {
+          "amount": 2557.86,
+          "date": "2025-04-03",
+          "id": 230,
+          "region": "West"
+        },
+        {
+          "amount": 8281.9,
+          "date": "2025-04-09",
+          "id": 231,
+          "region": "East"
+        },
+        {
+          "amount": 9736.23,
+          "date": "2025-10-09",
+          "id": 232,
+          "region": "North"
+        },
+        {
+          "amount": 8917.02,
+          "date": "2025-04-03",
+          "id": 233,
+          "region": "South"
+        },
+        {
+          "amount": 1529.81,
+          "date": "2025-06-12",
+          "id": 234,
+          "region": "North"
+        },
+        {
+          "amount": 8600.98,
+          "date": "2025-09-13",
+          "id": 235,
+          "region": "East"
+        },
+        {
+          "amount": 7280.02,
+          "date": "2025-04-15",
+          "id": 236,
+          "region": "South"
+        },
+        {
+          "amount": 7254.28,
+          "date": "2025-10-02",
+          "id": 237,
+          "region": "North"
+        },
+        {
+          "amount": 3875.56,
+          "date": "2025-05-21",
+          "id": 238,
+          "region": "North"
+        },
+        {
+          "amount": 9045.68,
+          "date": "2025-02-07",
+          "id": 239,
+          "region": "East"
+        },
+        {
+          "amount": 8952.72,
+          "date": "2025-09-04",
+          "id": 240,
+          "region": "West"
+        },
+        {
+          "amount": 9768.92,
+          "date": "2025-04-25",
+          "id": 241,
+          "region": "North"
+        },
+        {
+          "amount": 8006.82,
+          "date": "2025-12-17",
+          "id": 242,
+          "region": "North"
+        },
+        {
+          "amount": 7058.81,
+          "date": "2025-12-09",
+          "id": 243,
+          "region": "South"
+        },
+        {
+          "amount": 345.14,
+          "date": "2025-04-02",
+          "id": 244,
+          "region": "North"
+        },
+        {
+          "amount": 6178.42,
+          "date": "2025-06-14",
+          "id": 245,
+          "region": "West"
+        },
+        {
+          "amount": 8398.67,
+          "date": "2025-10-21",
+          "id": 246,
+          "region": "South"
+        },
+        {
+          "amount": 327.59,
+          "date": "2025-07-29",
+          "id": 247,
+          "region": "North"
+        },
+        {
+          "amount": 7221.98,
+          "date": "2025-07-16",
+          "id": 248,
+          "region": "West"
+        },
+        {
+          "amount": 4286.9,
+          "date": "2025-02-19",
+          "id": 249,
+          "region": "West"
+        },
+        {
+          "amount": 4056.09,
+          "date": "2025-12-16",
+          "id": 250,
+          "region": "South"
+        },
+        {
+          "amount": 5804.06,
+          "date": "2025-01-12",
+          "id": 251,
+          "region": "East"
+        },
+        {
+          "amount": 6240.0,
+          "date": "2025-03-10",
+          "id": 252,
+          "region": "North"
+        },
+        {
+          "amount": 4307.42,
+          "date": "2025-11-14",
+          "id": 253,
+          "region": "West"
+        },
+        {
+          "amount": 3721.22,
+          "date": "2025-10-10",
+          "id": 254,
+          "region": "South"
+        },
+        {
+          "amount": 4256.39,
+          "date": "2025-01-27",
+          "id": 255,
+          "region": "West"
+        },
+        {
+          "amount": 4992.61,
+          "date": "2025-02-16",
+          "id": 256,
+          "region": "South"
+        },
+        {
+          "amount": 8364.2,
+          "date": "2025-03-16",
+          "id": 257,
+          "region": "East"
+        },
+        {
+          "amount": 9401.8,
+          "date": "2025-12-24",
+          "id": 258,
+          "region": "East"
+        },
+        {
+          "amount": 8029.47,
+          "date": "2025-06-15",
+          "id": 259,
+          "region": "North"
+        },
+        {
+          "amount": 6872.66,
+          "date": "2025-06-13",
+          "id": 260,
+          "region": "South"
+        },
+        {
+          "amount": 611.25,
+          "date": "2025-07-05",
+          "id": 261,
+          "region": "South"
+        },
+        {
+          "amount": 2505.88,
+          "date": "2025-03-02",
+          "id": 262,
+          "region": "North"
+        },
+        {
+          "amount": 594.94,
+          "date": "2025-05-26",
+          "id": 263,
+          "region": "East"
+        },
+        {
+          "amount": 7913.55,
+          "date": "2025-08-13",
+          "id": 264,
+          "region": "East"
+        },
+        {
+          "amount": 2458.8,
+          "date": "2025-04-06",
+          "id": 265,
+          "region": "East"
+        },
+        {
+          "amount": 8412.62,
+          "date": "2025-08-11",
+          "id": 266,
+          "region": "West"
+        },
+        {
+          "amount": 2839.36,
+          "date": "2025-03-15",
+          "id": 267,
+          "region": "South"
+        },
+        {
+          "amount": 3732.41,
+          "date": "2025-04-25",
+          "id": 268,
+          "region": "West"
+        },
+        {
+          "amount": 7662.6,
+          "date": "2025-12-31",
+          "id": 269,
+          "region": "West"
+        },
+        {
+          "amount": 569.7,
+          "date": "2025-07-21",
+          "id": 270,
+          "region": "South"
+        },
+        {
+          "amount": 7316.64,
+          "date": "2025-06-09",
+          "id": 271,
+          "region": "North"
+        },
+        {
+          "amount": 7605.81,
+          "date": "2025-03-03",
+          "id": 272,
+          "region": "West"
+        },
+        {
+          "amount": 9396.89,
+          "date": "2025-04-30",
+          "id": 273,
+          "region": "North"
+        },
+        {
+          "amount": 3693.82,
+          "date": "2025-11-28",
+          "id": 274,
+          "region": "North"
+        },
+        {
+          "amount": 1581.95,
+          "date": "2025-09-14",
+          "id": 275,
+          "region": "West"
+        },
+        {
+          "amount": 5009.09,
+          "date": "2025-09-10",
+          "id": 276,
+          "region": "West"
+        },
+        {
+          "amount": 3439.87,
+          "date": "2025-08-25",
+          "id": 277,
+          "region": "West"
+        },
+        {
+          "amount": 5483.53,
+          "date": "2025-11-26",
+          "id": 278,
+          "region": "East"
+        },
+        {
+          "amount": 6340.11,
+          "date": "2025-04-24",
+          "id": 279,
+          "region": "South"
+        },
+        {
+          "amount": 5036.21,
+          "date": "2025-05-09",
+          "id": 280,
+          "region": "North"
+        },
+        {
+          "amount": 2637.93,
+          "date": "2025-01-30",
+          "id": 281,
+          "region": "South"
+        },
+        {
+          "amount": 4100.74,
+          "date": "2025-03-21",
+          "id": 282,
+          "region": "West"
+        },
+        {
+          "amount": 6465.49,
+          "date": "2025-09-19",
+          "id": 283,
+          "region": "West"
+        },
+        {
+          "amount": 2283.89,
+          "date": "2025-05-04",
+          "id": 284,
+          "region": "East"
+        },
+        {
+          "amount": 3056.07,
+          "date": "2025-09-09",
+          "id": 285,
+          "region": "East"
+        },
+        {
+          "amount": 7228.55,
+          "date": "2025-10-29",
+          "id": 286,
+          "region": "South"
+        },
+        {
+          "amount": 8513.67,
+          "date": "2025-02-23",
+          "id": 287,
+          "region": "North"
+        },
+        {
+          "amount": 9632.19,
+          "date": "2025-05-21",
+          "id": 288,
+          "region": "North"
+        },
+        {
+          "amount": 4918.44,
+          "date": "2025-02-01",
+          "id": 289,
+          "region": "North"
+        },
+        {
+          "amount": 707.39,
+          "date": "2025-03-11",
+          "id": 290,
+          "region": "East"
+        },
+        {
+          "amount": 1704.38,
+          "date": "2025-06-21",
+          "id": 291,
+          "region": "West"
+        },
+        {
+          "amount": 1076.59,
+          "date": "2025-08-14",
+          "id": 292,
+          "region": "South"
+        },
+        {
+          "amount": 5373.28,
+          "date": "2025-11-12",
+          "id": 293,
+          "region": "North"
+        },
+        {
+          "amount": 370.93,
+          "date": "2025-10-03",
+          "id": 294,
+          "region": "North"
+        },
+        {
+          "amount": 5833.94,
+          "date": "2025-07-18",
+          "id": 295,
+          "region": "West"
+        },
+        {
+          "amount": 4218.49,
+          "date": "2025-08-28",
+          "id": 296,
+          "region": "South"
+        },
+        {
+          "amount": 8846.34,
+          "date": "2025-11-24",
+          "id": 297,
+          "region": "West"
+        },
+        {
+          "amount": 1763.06,
+          "date": "2025-11-20",
+          "id": 298,
+          "region": "South"
+        },
+        {
+          "amount": 3756.71,
+          "date": "2025-11-03",
+          "id": 299,
+          "region": "North"
+        },
+        {
+          "amount": 3871.64,
+          "date": "2025-04-05",
+          "id": 300,
+          "region": "North"
+        },
+        {
+          "amount": 5007.97,
+          "date": "2025-06-20",
+          "id": 301,
+          "region": "South"
+        },
+        {
+          "amount": 8358.32,
+          "date": "2025-06-06",
+          "id": 302,
+          "region": "South"
+        },
+        {
+          "amount": 8141.81,
+          "date": "2025-04-22",
+          "id": 303,
+          "region": "East"
+        },
+        {
+          "amount": 7416.04,
+          "date": "2025-07-04",
+          "id": 304,
+          "region": "West"
+        },
+        {
+          "amount": 6355.94,
+          "date": "2025-07-11",
+          "id": 305,
+          "region": "East"
+        },
+        {
+          "amount": 9985.24,
+          "date": "2025-12-06",
+          "id": 306,
+          "region": "South"
+        },
+        {
+          "amount": 9816.14,
+          "date": "2025-08-13",
+          "id": 307,
+          "region": "West"
+        },
+        {
+          "amount": 5241.1,
+          "date": "2025-12-23",
+          "id": 308,
+          "region": "East"
+        },
+        {
+          "amount": 9660.95,
+          "date": "2025-11-23",
+          "id": 309,
+          "region": "West"
+        },
+        {
+          "amount": 8814.59,
+          "date": "2025-12-14",
+          "id": 310,
+          "region": "West"
+        },
+        {
+          "amount": 7831.35,
+          "date": "2025-04-22",
+          "id": 311,
+          "region": "East"
+        },
+        {
+          "amount": 6030.54,
+          "date": "2025-11-21",
+          "id": 312,
+          "region": "West"
+        },
+        {
+          "amount": 3472.06,
+          "date": "2025-08-21",
+          "id": 313,
+          "region": "North"
+        },
+        {
+          "amount": 8795.45,
+          "date": "2025-02-19",
+          "id": 314,
+          "region": "North"
+        },
+        {
+          "amount": 4492.34,
+          "date": "2025-02-15",
+          "id": 315,
+          "region": "South"
+        },
+        {
+          "amount": 8006.67,
+          "date": "2025-08-04",
+          "id": 316,
+          "region": "West"
+        },
+        {
+          "amount": 4277.01,
+          "date": "2025-03-16",
+          "id": 317,
+          "region": "West"
+        },
+        {
+          "amount": 5279.97,
+          "date": "2025-07-18",
+          "id": 318,
+          "region": "South"
+        },
+        {
+          "amount": 8902.71,
+          "date": "2025-09-05",
+          "id": 319,
+          "region": "West"
+        },
+        {
+          "amount": 448.57,
+          "date": "2025-04-22",
+          "id": 320,
+          "region": "West"
+        },
+        {
+          "amount": 6690.42,
+          "date": "2025-11-02",
+          "id": 321,
+          "region": "South"
+        },
+        {
+          "amount": 4976.28,
+          "date": "2025-03-13",
+          "id": 322,
+          "region": "East"
+        },
+        {
+          "amount": 638.35,
+          "date": "2025-03-17",
+          "id": 323,
+          "region": "North"
+        },
+        {
+          "amount": 4195.84,
+          "date": "2025-01-11",
+          "id": 324,
+          "region": "East"
+        },
+        {
+          "amount": 8327.18,
+          "date": "2025-11-29",
+          "id": 325,
+          "region": "South"
+        },
+        {
+          "amount": 3893.39,
+          "date": "2025-10-26",
+          "id": 326,
+          "region": "West"
+        },
+        {
+          "amount": 1055.81,
+          "date": "2025-07-04",
+          "id": 327,
+          "region": "North"
+        },
+        {
+          "amount": 301.06,
+          "date": "2025-03-17",
+          "id": 328,
+          "region": "North"
+        },
+        {
+          "amount": 8546.96,
+          "date": "2025-10-05",
+          "id": 329,
+          "region": "South"
+        },
+        {
+          "amount": 961.72,
+          "date": "2025-01-11",
+          "id": 330,
+          "region": "West"
+        },
+        {
+          "amount": 4036.51,
+          "date": "2025-05-19",
+          "id": 331,
+          "region": "West"
+        },
+        {
+          "amount": 8722.29,
+          "date": "2025-10-24",
+          "id": 332,
+          "region": "West"
+        },
+        {
+          "amount": 9711.45,
+          "date": "2025-09-07",
+          "id": 333,
+          "region": "North"
+        },
+        {
+          "amount": 7014.41,
+          "date": "2025-04-25",
+          "id": 334,
+          "region": "West"
+        },
+        {
+          "amount": 6933.34,
+          "date": "2025-04-22",
+          "id": 335,
+          "region": "South"
+        },
+        {
+          "amount": 7729.31,
+          "date": "2025-10-31",
+          "id": 336,
+          "region": "East"
+        },
+        {
+          "amount": 2299.62,
+          "date": "2025-09-15",
+          "id": 337,
+          "region": "West"
+        },
+        {
+          "amount": 2563.13,
+          "date": "2025-12-11",
+          "id": 338,
+          "region": "West"
+        },
+        {
+          "amount": 8782.03,
+          "date": "2025-10-15",
+          "id": 339,
+          "region": "South"
+        },
+        {
+          "amount": 1545.63,
+          "date": "2025-07-26",
+          "id": 340,
+          "region": "South"
+        },
+        {
+          "amount": 1292.69,
+          "date": "2025-10-13",
+          "id": 341,
+          "region": "South"
+        },
+        {
+          "amount": 1524.73,
+          "date": "2025-08-13",
+          "id": 342,
+          "region": "West"
+        },
+        {
+          "amount": 8635.3,
+          "date": "2025-05-09",
+          "id": 343,
+          "region": "South"
+        },
+        {
+          "amount": 1313.13,
+          "date": "2025-04-06",
+          "id": 344,
+          "region": "East"
+        },
+        {
+          "amount": 368.75,
+          "date": "2025-12-20",
+          "id": 345,
+          "region": "West"
+        },
+        {
+          "amount": 3642.47,
+          "date": "2025-01-13",
+          "id": 346,
+          "region": "East"
+        },
+        {
+          "amount": 4402.71,
+          "date": "2025-03-08",
+          "id": 347,
+          "region": "East"
+        },
+        {
+          "amount": 3771.65,
+          "date": "2025-01-22",
+          "id": 348,
+          "region": "South"
+        },
+        {
+          "amount": 8362.35,
+          "date": "2025-01-07",
+          "id": 349,
+          "region": "North"
+        },
+        {
+          "amount": 6892.38,
+          "date": "2025-02-19",
+          "id": 350,
+          "region": "North"
+        },
+        {
+          "amount": 9165.02,
+          "date": "2025-09-04",
+          "id": 351,
+          "region": "West"
+        },
+        {
+          "amount": 7811.92,
+          "date": "2025-05-25",
+          "id": 352,
+          "region": "West"
+        },
+        {
+          "amount": 5785.79,
+          "date": "2025-11-08",
+          "id": 353,
+          "region": "South"
+        },
+        {
+          "amount": 4081.1,
+          "date": "2025-01-05",
+          "id": 354,
+          "region": "West"
+        },
+        {
+          "amount": 2204.77,
+          "date": "2025-09-17",
+          "id": 355,
+          "region": "West"
+        },
+        {
+          "amount": 9105.42,
+          "date": "2025-02-21",
+          "id": 356,
+          "region": "South"
+        },
+        {
+          "amount": 1203.31,
+          "date": "2025-09-05",
+          "id": 357,
+          "region": "North"
+        },
+        {
+          "amount": 6357.16,
+          "date": "2025-03-16",
+          "id": 358,
+          "region": "East"
+        },
+        {
+          "amount": 6297.9,
+          "date": "2025-11-12",
+          "id": 359,
+          "region": "East"
+        },
+        {
+          "amount": 6649.96,
+          "date": "2025-03-06",
+          "id": 360,
+          "region": "West"
+        },
+        {
+          "amount": 2937.1,
+          "date": "2025-10-17",
+          "id": 361,
+          "region": "East"
+        },
+        {
+          "amount": 3723.9,
+          "date": "2025-12-03",
+          "id": 362,
+          "region": "South"
+        },
+        {
+          "amount": 5028.05,
+          "date": "2025-12-08",
+          "id": 363,
+          "region": "South"
+        },
+        {
+          "amount": 4578.49,
+          "date": "2025-09-23",
+          "id": 364,
+          "region": "North"
+        },
+        {
+          "amount": 5441.48,
+          "date": "2025-04-27",
+          "id": 365,
+          "region": "West"
+        },
+        {
+          "amount": 1665.3,
+          "date": "2025-04-12",
+          "id": 366,
+          "region": "East"
+        },
+        {
+          "amount": 7634.9,
+          "date": "2025-08-19",
+          "id": 367,
+          "region": "West"
+        },
+        {
+          "amount": 3697.43,
+          "date": "2025-12-13",
+          "id": 368,
+          "region": "West"
+        },
+        {
+          "amount": 8004.6,
+          "date": "2025-01-02",
+          "id": 369,
+          "region": "North"
+        },
+        {
+          "amount": 5654.85,
+          "date": "2025-02-01",
+          "id": 370,
+          "region": "West"
+        },
+        {
+          "amount": 6634.84,
+          "date": "2025-12-31",
+          "id": 371,
+          "region": "North"
+        },
+        {
+          "amount": 9971.8,
+          "date": "2025-06-25",
+          "id": 372,
+          "region": "West"
+        },
+        {
+          "amount": 2815.2,
+          "date": "2025-05-21",
+          "id": 373,
+          "region": "North"
+        },
+        {
+          "amount": 9640.77,
+          "date": "2025-12-16",
+          "id": 374,
+          "region": "East"
+        },
+        {
+          "amount": 2129.7,
+          "date": "2025-02-13",
+          "id": 375,
+          "region": "East"
+        },
+        {
+          "amount": 906.16,
+          "date": "2025-12-07",
+          "id": 376,
+          "region": "South"
+        },
+        {
+          "amount": 7940.89,
+          "date": "2025-04-14",
+          "id": 377,
+          "region": "East"
+        },
+        {
+          "amount": 4195.11,
+          "date": "2025-06-30",
+          "id": 378,
+          "region": "East"
+        },
+        {
+          "amount": 7545.86,
+          "date": "2025-02-13",
+          "id": 379,
+          "region": "East"
+        },
+        {
+          "amount": 8640.07,
+          "date": "2025-05-16",
+          "id": 380,
+          "region": "South"
+        },
+        {
+          "amount": 2031.62,
+          "date": "2025-01-10",
+          "id": 381,
+          "region": "South"
+        },
+        {
+          "amount": 3370.88,
+          "date": "2025-10-19",
+          "id": 382,
+          "region": "North"
+        },
+        {
+          "amount": 709.18,
+          "date": "2025-04-11",
+          "id": 383,
+          "region": "East"
+        },
+        {
+          "amount": 547.26,
+          "date": "2025-01-28",
+          "id": 384,
+          "region": "West"
+        },
+        {
+          "amount": 9249.87,
+          "date": "2025-08-16",
+          "id": 385,
+          "region": "South"
+        },
+        {
+          "amount": 4830.67,
+          "date": "2025-11-07",
+          "id": 386,
+          "region": "West"
+        },
+        {
+          "amount": 475.18,
+          "date": "2025-12-01",
+          "id": 387,
+          "region": "West"
+        },
+        {
+          "amount": 1595.76,
+          "date": "2025-05-17",
+          "id": 388,
+          "region": "West"
+        },
+        {
+          "amount": 7462.3,
+          "date": "2025-03-30",
+          "id": 389,
+          "region": "North"
+        },
+        {
+          "amount": 781.19,
+          "date": "2025-05-08",
+          "id": 390,
+          "region": "North"
+        },
+        {
+          "amount": 5082.99,
+          "date": "2025-02-15",
+          "id": 391,
+          "region": "North"
+        },
+        {
+          "amount": 2715.19,
+          "date": "2025-07-20",
+          "id": 392,
+          "region": "East"
+        },
+        {
+          "amount": 4859.96,
+          "date": "2025-05-30",
+          "id": 393,
+          "region": "West"
+        },
+        {
+          "amount": 5201.63,
+          "date": "2025-03-16",
+          "id": 394,
+          "region": "East"
+        },
+        {
+          "amount": 2137.04,
+          "date": "2025-03-28",
+          "id": 395,
+          "region": "East"
+        },
+        {
+          "amount": 7169.81,
+          "date": "2025-08-12",
+          "id": 396,
+          "region": "North"
+        },
+        {
+          "amount": 7517.8,
+          "date": "2025-08-06",
+          "id": 397,
+          "region": "North"
+        },
+        {
+          "amount": 1108.5,
+          "date": "2025-06-07",
+          "id": 398,
+          "region": "West"
+        },
+        {
+          "amount": 2462.33,
+          "date": "2025-06-18",
+          "id": 399,
+          "region": "South"
+        },
+        {
+          "amount": 6037.44,
+          "date": "2025-02-11",
+          "id": 400,
+          "region": "North"
+        },
+        {
+          "amount": 6250.27,
+          "date": "2025-07-07",
+          "id": 401,
+          "region": "South"
+        },
+        {
+          "amount": 1699.82,
+          "date": "2025-12-20",
+          "id": 402,
+          "region": "North"
+        },
+        {
+          "amount": 2482.72,
+          "date": "2025-04-20",
+          "id": 403,
+          "region": "West"
+        },
+        {
+          "amount": 6177.59,
+          "date": "2025-12-13",
+          "id": 404,
+          "region": "East"
+        },
+        {
+          "amount": 930.21,
+          "date": "2025-10-10",
+          "id": 405,
+          "region": "South"
+        },
+        {
+          "amount": 8150.34,
+          "date": "2025-07-11",
+          "id": 406,
+          "region": "South"
+        },
+        {
+          "amount": 9492.59,
+          "date": "2025-08-04",
+          "id": 407,
+          "region": "West"
+        },
+        {
+          "amount": 2232.67,
+          "date": "2025-08-10",
+          "id": 408,
+          "region": "South"
+        },
+        {
+          "amount": 3028.02,
+          "date": "2025-02-03",
+          "id": 409,
+          "region": "North"
+        },
+        {
+          "amount": 971.11,
+          "date": "2025-02-18",
+          "id": 410,
+          "region": "West"
+        },
+        {
+          "amount": 2096.4,
+          "date": "2025-12-09",
+          "id": 411,
+          "region": "East"
+        },
+        {
+          "amount": 746.41,
+          "date": "2025-06-16",
+          "id": 412,
+          "region": "West"
+        },
+        {
+          "amount": 4767.82,
+          "date": "2025-08-27",
+          "id": 413,
+          "region": "South"
+        },
+        {
+          "amount": 700.69,
+          "date": "2025-12-01",
+          "id": 414,
+          "region": "South"
+        },
+        {
+          "amount": 8109.5,
+          "date": "2025-03-13",
+          "id": 415,
+          "region": "South"
+        },
+        {
+          "amount": 7955.25,
+          "date": "2025-09-19",
+          "id": 416,
+          "region": "North"
+        },
+        {
+          "amount": 865.92,
+          "date": "2025-10-09",
+          "id": 417,
+          "region": "South"
+        },
+        {
+          "amount": 6984.12,
+          "date": "2025-05-17",
+          "id": 418,
+          "region": "East"
+        },
+        {
+          "amount": 5662.95,
+          "date": "2025-06-07",
+          "id": 419,
+          "region": "East"
+        },
+        {
+          "amount": 2953.4,
+          "date": "2025-08-15",
+          "id": 420,
+          "region": "East"
+        },
+        {
+          "amount": 6247.05,
+          "date": "2025-03-18",
+          "id": 421,
+          "region": "North"
+        },
+        {
+          "amount": 2338.93,
+          "date": "2025-06-17",
+          "id": 422,
+          "region": "West"
+        },
+        {
+          "amount": 8664.14,
+          "date": "2025-07-26",
+          "id": 423,
+          "region": "North"
+        },
+        {
+          "amount": 8021.36,
+          "date": "2025-12-21",
+          "id": 424,
+          "region": "East"
+        },
+        {
+          "amount": 8845.61,
+          "date": "2025-07-22",
+          "id": 425,
+          "region": "East"
+        },
+        {
+          "amount": 6167.53,
+          "date": "2025-01-06",
+          "id": 426,
+          "region": "South"
+        },
+        {
+          "amount": 3061.73,
+          "date": "2025-03-22",
+          "id": 427,
+          "region": "North"
+        },
+        {
+          "amount": 105.09,
+          "date": "2025-03-08",
+          "id": 428,
+          "region": "East"
+        },
+        {
+          "amount": 7646.93,
+          "date": "2025-07-11",
+          "id": 429,
+          "region": "South"
+        },
+        {
+          "amount": 1079.27,
+          "date": "2025-08-23",
+          "id": 430,
+          "region": "West"
+        },
+        {
+          "amount": 5499.81,
+          "date": "2025-06-30",
+          "id": 431,
+          "region": "South"
+        },
+        {
+          "amount": 5654.78,
+          "date": "2025-05-16",
+          "id": 432,
+          "region": "North"
+        },
+        {
+          "amount": 4488.54,
+          "date": "2025-01-06",
+          "id": 433,
+          "region": "West"
+        },
+        {
+          "amount": 5185.96,
+          "date": "2025-04-10",
+          "id": 434,
+          "region": "West"
+        },
+        {
+          "amount": 8263.02,
+          "date": "2025-03-30",
+          "id": 435,
+          "region": "South"
+        },
+        {
+          "amount": 8273.37,
+          "date": "2025-01-23",
+          "id": 436,
+          "region": "North"
+        },
+        {
+          "amount": 1262.12,
+          "date": "2025-10-27",
+          "id": 437,
+          "region": "South"
+        },
+        {
+          "amount": 9268.94,
+          "date": "2025-06-29",
+          "id": 438,
+          "region": "East"
+        },
+        {
+          "amount": 321.99,
+          "date": "2025-05-21",
+          "id": 439,
+          "region": "North"
+        },
+        {
+          "amount": 6527.35,
+          "date": "2025-11-28",
+          "id": 440,
+          "region": "West"
+        },
+        {
+          "amount": 3053.9,
+          "date": "2025-06-16",
+          "id": 441,
+          "region": "South"
+        },
+        {
+          "amount": 3164.8,
+          "date": "2025-05-04",
+          "id": 442,
+          "region": "North"
+        },
+        {
+          "amount": 4499.07,
+          "date": "2025-05-19",
+          "id": 443,
+          "region": "East"
+        },
+        {
+          "amount": 9842.36,
+          "date": "2025-11-27",
+          "id": 444,
+          "region": "North"
+        },
+        {
+          "amount": 1127.29,
+          "date": "2025-11-02",
+          "id": 445,
+          "region": "South"
+        },
+        {
+          "amount": 3099.89,
+          "date": "2025-05-08",
+          "id": 446,
+          "region": "East"
+        },
+        {
+          "amount": 5432.62,
+          "date": "2025-04-07",
+          "id": 447,
+          "region": "South"
+        },
+        {
+          "amount": 5438.62,
+          "date": "2025-01-27",
+          "id": 448,
+          "region": "North"
+        },
+        {
+          "amount": 3978.4,
+          "date": "2025-12-20",
+          "id": 449,
+          "region": "North"
+        },
+        {
+          "amount": 9916.35,
+          "date": "2025-01-27",
+          "id": 450,
+          "region": "West"
+        },
+        {
+          "amount": 613.02,
+          "date": "2025-11-11",
+          "id": 451,
+          "region": "East"
+        },
+        {
+          "amount": 9602.12,
+          "date": "2025-01-19",
+          "id": 452,
+          "region": "South"
+        },
+        {
+          "amount": 1685.77,
+          "date": "2025-07-29",
+          "id": 453,
+          "region": "South"
+        },
+        {
+          "amount": 1736.88,
+          "date": "2025-03-18",
+          "id": 454,
+          "region": "North"
+        },
+        {
+          "amount": 4041.22,
+          "date": "2025-01-22",
+          "id": 455,
+          "region": "West"
+        },
+        {
+          "amount": 315.33,
+          "date": "2025-05-27",
+          "id": 456,
+          "region": "West"
+        },
+        {
+          "amount": 5664.69,
+          "date": "2025-05-12",
+          "id": 457,
+          "region": "North"
+        },
+        {
+          "amount": 3278.34,
+          "date": "2025-10-03",
+          "id": 458,
+          "region": "South"
+        },
+        {
+          "amount": 1363.09,
+          "date": "2025-07-24",
+          "id": 459,
+          "region": "South"
+        },
+        {
+          "amount": 7849.03,
+          "date": "2025-02-23",
+          "id": 460,
+          "region": "East"
+        },
+        {
+          "amount": 8352.31,
+          "date": "2025-02-27",
+          "id": 461,
+          "region": "North"
+        },
+        {
+          "amount": 2897.42,
+          "date": "2025-06-24",
+          "id": 462,
+          "region": "North"
+        },
+        {
+          "amount": 3376.19,
+          "date": "2025-04-22",
+          "id": 463,
+          "region": "North"
+        },
+        {
+          "amount": 814.65,
+          "date": "2025-08-25",
+          "id": 464,
+          "region": "North"
+        },
+        {
+          "amount": 421.76,
+          "date": "2025-05-24",
+          "id": 465,
+          "region": "South"
+        },
+        {
+          "amount": 3237.71,
+          "date": "2025-08-20",
+          "id": 466,
+          "region": "South"
+        },
+        {
+          "amount": 553.1,
+          "date": "2025-05-28",
+          "id": 467,
+          "region": "North"
+        },
+        {
+          "amount": 1787.19,
+          "date": "2025-08-20",
+          "id": 468,
+          "region": "North"
+        },
+        {
+          "amount": 9964.86,
+          "date": "2025-05-02",
+          "id": 469,
+          "region": "West"
+        },
+        {
+          "amount": 3138.3,
+          "date": "2025-11-06",
+          "id": 470,
+          "region": "East"
+        },
+        {
+          "amount": 7341.24,
+          "date": "2025-09-10",
+          "id": 471,
+          "region": "East"
+        },
+        {
+          "amount": 7448.2,
+          "date": "2025-04-24",
+          "id": 472,
+          "region": "South"
+        },
+        {
+          "amount": 2658.21,
+          "date": "2025-09-12",
+          "id": 473,
+          "region": "West"
+        },
+        {
+          "amount": 7925.95,
+          "date": "2025-12-15",
+          "id": 474,
+          "region": "West"
+        },
+        {
+          "amount": 9754.62,
+          "date": "2025-04-24",
+          "id": 475,
+          "region": "South"
+        },
+        {
+          "amount": 4495.87,
+          "date": "2025-01-13",
+          "id": 476,
+          "region": "West"
+        },
+        {
+          "amount": 7117.22,
+          "date": "2025-05-27",
+          "id": 477,
+          "region": "North"
+        },
+        {
+          "amount": 5569.75,
+          "date": "2025-08-20",
+          "id": 478,
+          "region": "North"
+        },
+        {
+          "amount": 4384.6,
+          "date": "2025-01-20",
+          "id": 479,
+          "region": "West"
+        },
+        {
+          "amount": 9031.51,
+          "date": "2025-05-15",
+          "id": 480,
+          "region": "South"
+        },
+        {
+          "amount": 8284.3,
+          "date": "2025-03-14",
+          "id": 481,
+          "region": "South"
+        },
+        {
+          "amount": 6772.42,
+          "date": "2025-05-05",
+          "id": 482,
+          "region": "East"
+        },
+        {
+          "amount": 5140.12,
+          "date": "2025-02-26",
+          "id": 483,
+          "region": "East"
+        },
+        {
+          "amount": 1656.77,
+          "date": "2025-03-19",
+          "id": 484,
+          "region": "West"
+        },
+        {
+          "amount": 3700.17,
+          "date": "2025-07-01",
+          "id": 485,
+          "region": "West"
+        },
+        {
+          "amount": 2293.88,
+          "date": "2025-01-20",
+          "id": 486,
+          "region": "North"
+        },
+        {
+          "amount": 7696.93,
+          "date": "2025-06-08",
+          "id": 487,
+          "region": "West"
+        },
+        {
+          "amount": 1054.75,
+          "date": "2025-05-10",
+          "id": 488,
+          "region": "East"
+        },
+        {
+          "amount": 8786.02,
+          "date": "2025-08-11",
+          "id": 489,
+          "region": "North"
+        },
+        {
+          "amount": 8923.21,
+          "date": "2025-11-28",
+          "id": 490,
+          "region": "East"
+        },
+        {
+          "amount": 7052.36,
+          "date": "2025-07-25",
+          "id": 491,
+          "region": "East"
+        },
+        {
+          "amount": 6158.79,
+          "date": "2025-02-26",
+          "id": 492,
+          "region": "West"
+        },
+        {
+          "amount": 930.38,
+          "date": "2025-04-25",
+          "id": 493,
+          "region": "West"
+        },
+        {
+          "amount": 1762.69,
+          "date": "2025-04-30",
+          "id": 494,
+          "region": "West"
+        },
+        {
+          "amount": 2448.08,
+          "date": "2025-11-26",
+          "id": 495,
+          "region": "West"
+        },
+        {
+          "amount": 2642.12,
+          "date": "2025-01-14",
+          "id": 496,
+          "region": "South"
+        },
+        {
+          "amount": 859.91,
+          "date": "2025-02-18",
+          "id": 497,
+          "region": "West"
+        },
+        {
+          "amount": 6434.25,
+          "date": "2025-02-21",
+          "id": 498,
+          "region": "North"
+        },
+        {
+          "amount": 8434.89,
+          "date": "2025-07-20",
+          "id": 499,
+          "region": "North"
+        },
+        {
+          "amount": 1661.58,
+          "date": "2025-03-10",
+          "id": 500,
+          "region": "East"
+        },
+        {
+          "amount": 2417.55,
+          "date": "2025-02-24",
+          "id": 501,
+          "region": "East"
+        },
+        {
+          "amount": 3501.8,
+          "date": "2025-07-18",
+          "id": 502,
+          "region": "South"
+        },
+        {
+          "amount": 6245.26,
+          "date": "2025-08-12",
+          "id": 503,
+          "region": "North"
+        },
+        {
+          "amount": 2240.68,
+          "date": "2025-05-14",
+          "id": 504,
+          "region": "East"
+        },
+        {
+          "amount": 1366.85,
+          "date": "2025-10-09",
+          "id": 505,
+          "region": "East"
+        },
+        {
+          "amount": 5182.51,
+          "date": "2025-06-18",
+          "id": 506,
+          "region": "East"
+        },
+        {
+          "amount": 5287.51,
+          "date": "2025-05-11",
+          "id": 507,
+          "region": "East"
+        },
+        {
+          "amount": 4157.2,
+          "date": "2025-04-03",
+          "id": 508,
+          "region": "North"
+        },
+        {
+          "amount": 5251.44,
+          "date": "2025-11-01",
+          "id": 509,
+          "region": "East"
+        },
+        {
+          "amount": 1494.99,
+          "date": "2025-12-26",
+          "id": 510,
+          "region": "North"
+        },
+        {
+          "amount": 8534.09,
+          "date": "2025-03-21",
+          "id": 511,
+          "region": "West"
+        },
+        {
+          "amount": 3538.42,
+          "date": "2025-04-18",
+          "id": 512,
+          "region": "West"
+        },
+        {
+          "amount": 4663.03,
+          "date": "2025-10-07",
+          "id": 513,
+          "region": "South"
+        },
+        {
+          "amount": 4650.11,
+          "date": "2025-10-10",
+          "id": 514,
+          "region": "North"
+        },
+        {
+          "amount": 3696.38,
+          "date": "2025-01-03",
+          "id": 515,
+          "region": "North"
+        },
+        {
+          "amount": 4819.31,
+          "date": "2025-01-20",
+          "id": 516,
+          "region": "South"
+        },
+        {
+          "amount": 8672.92,
+          "date": "2025-02-02",
+          "id": 517,
+          "region": "South"
+        },
+        {
+          "amount": 334.08,
+          "date": "2025-05-26",
+          "id": 518,
+          "region": "South"
+        },
+        {
+          "amount": 8089.55,
+          "date": "2025-12-29",
+          "id": 519,
+          "region": "South"
+        },
+        {
+          "amount": 3315.73,
+          "date": "2025-01-13",
+          "id": 520,
+          "region": "West"
+        },
+        {
+          "amount": 813.64,
+          "date": "2025-03-11",
+          "id": 521,
+          "region": "East"
+        },
+        {
+          "amount": 581.65,
+          "date": "2025-04-18",
+          "id": 522,
+          "region": "West"
+        },
+        {
+          "amount": 9327.23,
+          "date": "2025-07-30",
+          "id": 523,
+          "region": "West"
+        },
+        {
+          "amount": 6196.6,
+          "date": "2025-05-10",
+          "id": 524,
+          "region": "North"
+        },
+        {
+          "amount": 1010.25,
+          "date": "2025-09-20",
+          "id": 525,
+          "region": "South"
+        },
+        {
+          "amount": 8672.27,
+          "date": "2025-03-25",
+          "id": 526,
+          "region": "East"
+        },
+        {
+          "amount": 2992.26,
+          "date": "2025-02-08",
+          "id": 527,
+          "region": "West"
+        },
+        {
+          "amount": 3250.34,
+          "date": "2025-04-16",
+          "id": 528,
+          "region": "South"
+        },
+        {
+          "amount": 7360.86,
+          "date": "2025-03-19",
+          "id": 529,
+          "region": "North"
+        },
+        {
+          "amount": 1830.24,
+          "date": "2025-11-20",
+          "id": 530,
+          "region": "South"
+        },
+        {
+          "amount": 6278.03,
+          "date": "2025-06-08",
+          "id": 531,
+          "region": "South"
+        },
+        {
+          "amount": 5236.2,
+          "date": "2025-11-23",
+          "id": 532,
+          "region": "North"
+        },
+        {
+          "amount": 6698.39,
+          "date": "2025-01-12",
+          "id": 533,
+          "region": "East"
+        },
+        {
+          "amount": 1002.89,
+          "date": "2025-07-23",
+          "id": 534,
+          "region": "West"
+        },
+        {
+          "amount": 2907.82,
+          "date": "2025-03-03",
+          "id": 535,
+          "region": "North"
+        },
+        {
+          "amount": 3127.61,
+          "date": "2025-06-08",
+          "id": 536,
+          "region": "North"
+        },
+        {
+          "amount": 6853.67,
+          "date": "2025-10-12",
+          "id": 537,
+          "region": "North"
+        },
+        {
+          "amount": 6770.2,
+          "date": "2025-07-16",
+          "id": 538,
+          "region": "South"
+        },
+        {
+          "amount": 5759.23,
+          "date": "2025-08-16",
+          "id": 539,
+          "region": "West"
+        },
+        {
+          "amount": 3260.54,
+          "date": "2025-04-18",
+          "id": 540,
+          "region": "West"
+        },
+        {
+          "amount": 2063.86,
+          "date": "2025-06-27",
+          "id": 541,
+          "region": "East"
+        },
+        {
+          "amount": 4104.86,
+          "date": "2025-05-03",
+          "id": 542,
+          "region": "West"
+        },
+        {
+          "amount": 6263.44,
+          "date": "2025-05-14",
+          "id": 543,
+          "region": "North"
+        },
+        {
+          "amount": 916.56,
+          "date": "2025-11-02",
+          "id": 544,
+          "region": "South"
+        },
+        {
+          "amount": 4463.23,
+          "date": "2025-10-02",
+          "id": 545,
+          "region": "East"
+        },
+        {
+          "amount": 2601.78,
+          "date": "2025-03-04",
+          "id": 546,
+          "region": "East"
+        },
+        {
+          "amount": 5029.28,
+          "date": "2025-11-05",
+          "id": 547,
+          "region": "East"
+        },
+        {
+          "amount": 5290.32,
+          "date": "2025-02-02",
+          "id": 548,
+          "region": "North"
+        },
+        {
+          "amount": 7990.81,
+          "date": "2025-07-22",
+          "id": 549,
+          "region": "North"
+        },
+        {
+          "amount": 7449.5,
+          "date": "2025-04-28",
+          "id": 550,
+          "region": "West"
+        },
+        {
+          "amount": 1893.97,
+          "date": "2025-11-25",
+          "id": 551,
+          "region": "East"
+        },
+        {
+          "amount": 2405.12,
+          "date": "2025-05-27",
+          "id": 552,
+          "region": "South"
+        },
+        {
+          "amount": 3087.04,
+          "date": "2025-10-28",
+          "id": 553,
+          "region": "West"
+        },
+        {
+          "amount": 4260.48,
+          "date": "2025-07-30",
+          "id": 554,
+          "region": "South"
+        },
+        {
+          "amount": 6773.87,
+          "date": "2025-10-25",
+          "id": 555,
+          "region": "South"
+        },
+        {
+          "amount": 8710.52,
+          "date": "2025-08-27",
+          "id": 556,
+          "region": "East"
+        },
+        {
+          "amount": 1881.71,
+          "date": "2025-09-14",
+          "id": 557,
+          "region": "West"
+        },
+        {
+          "amount": 6675.23,
+          "date": "2025-01-06",
+          "id": 558,
+          "region": "West"
+        },
+        {
+          "amount": 7224.88,
+          "date": "2025-01-19",
+          "id": 559,
+          "region": "East"
+        },
+        {
+          "amount": 9304.37,
+          "date": "2025-11-06",
+          "id": 560,
+          "region": "South"
+        },
+        {
+          "amount": 1769.1,
+          "date": "2025-07-05",
+          "id": 561,
+          "region": "South"
+        },
+        {
+          "amount": 3999.35,
+          "date": "2025-03-08",
+          "id": 562,
+          "region": "West"
+        },
+        {
+          "amount": 5423.38,
+          "date": "2025-03-04",
+          "id": 563,
+          "region": "East"
+        },
+        {
+          "amount": 324.11,
+          "date": "2025-01-18",
+          "id": 564,
+          "region": "South"
+        },
+        {
+          "amount": 8389.8,
+          "date": "2025-06-14",
+          "id": 565,
+          "region": "North"
+        },
+        {
+          "amount": 6677.98,
+          "date": "2025-07-01",
+          "id": 566,
+          "region": "North"
+        },
+        {
+          "amount": 5587.41,
+          "date": "2025-11-04",
+          "id": 567,
+          "region": "South"
+        },
+        {
+          "amount": 3381.32,
+          "date": "2025-03-28",
+          "id": 568,
+          "region": "South"
+        },
+        {
+          "amount": 1088.82,
+          "date": "2025-05-05",
+          "id": 569,
+          "region": "South"
+        },
+        {
+          "amount": 4068.12,
+          "date": "2025-08-10",
+          "id": 570,
+          "region": "South"
+        },
+        {
+          "amount": 4338.35,
+          "date": "2025-12-12",
+          "id": 571,
+          "region": "West"
+        },
+        {
+          "amount": 7276.4,
+          "date": "2025-03-03",
+          "id": 572,
+          "region": "North"
+        },
+        {
+          "amount": 7033.4,
+          "date": "2025-02-05",
+          "id": 573,
+          "region": "East"
+        },
+        {
+          "amount": 8858.91,
+          "date": "2025-09-07",
+          "id": 574,
+          "region": "East"
+        },
+        {
+          "amount": 4713.15,
+          "date": "2025-03-14",
+          "id": 575,
+          "region": "North"
+        },
+        {
+          "amount": 4171.43,
+          "date": "2025-12-28",
+          "id": 576,
+          "region": "West"
+        },
+        {
+          "amount": 9040.43,
+          "date": "2025-08-28",
+          "id": 577,
+          "region": "South"
+        },
+        {
+          "amount": 414.07,
+          "date": "2025-09-30",
+          "id": 578,
+          "region": "West"
+        },
+        {
+          "amount": 5195.8,
+          "date": "2025-03-29",
+          "id": 579,
+          "region": "West"
+        },
+        {
+          "amount": 9362.84,
+          "date": "2025-11-03",
+          "id": 580,
+          "region": "South"
+        },
+        {
+          "amount": 5374.35,
+          "date": "2025-06-16",
+          "id": 581,
+          "region": "West"
+        },
+        {
+          "amount": 9143.41,
+          "date": "2025-04-01",
+          "id": 582,
+          "region": "South"
+        },
+        {
+          "amount": 3178.88,
+          "date": "2025-06-02",
+          "id": 583,
+          "region": "West"
+        },
+        {
+          "amount": 862.06,
+          "date": "2025-10-26",
+          "id": 584,
+          "region": "East"
+        },
+        {
+          "amount": 6366.34,
+          "date": "2025-05-03",
+          "id": 585,
+          "region": "South"
+        },
+        {
+          "amount": 2524.49,
+          "date": "2025-06-06",
+          "id": 586,
+          "region": "North"
+        },
+        {
+          "amount": 1981.62,
+          "date": "2025-11-26",
+          "id": 587,
+          "region": "North"
+        },
+        {
+          "amount": 7621.62,
+          "date": "2025-04-27",
+          "id": 588,
+          "region": "South"
+        },
+        {
+          "amount": 7101.79,
+          "date": "2025-12-23",
+          "id": 589,
+          "region": "East"
+        },
+        {
+          "amount": 8009.15,
+          "date": "2025-10-22",
+          "id": 590,
+          "region": "East"
+        },
+        {
+          "amount": 9621.31,
+          "date": "2025-03-28",
+          "id": 591,
+          "region": "North"
+        },
+        {
+          "amount": 8761.17,
+          "date": "2025-01-08",
+          "id": 592,
+          "region": "South"
+        },
+        {
+          "amount": 9438.44,
+          "date": "2025-07-18",
+          "id": 593,
+          "region": "West"
+        },
+        {
+          "amount": 7626.19,
+          "date": "2025-03-29",
+          "id": 594,
+          "region": "South"
+        },
+        {
+          "amount": 5859.85,
+          "date": "2025-04-03",
+          "id": 595,
+          "region": "North"
+        },
+        {
+          "amount": 8583.72,
+          "date": "2025-05-03",
+          "id": 596,
+          "region": "East"
+        },
+        {
+          "amount": 4765.87,
+          "date": "2025-03-22",
+          "id": 597,
+          "region": "East"
+        },
+        {
+          "amount": 3864.02,
+          "date": "2025-11-22",
+          "id": 598,
+          "region": "West"
+        },
+        {
+          "amount": 5331.7,
+          "date": "2025-01-14",
+          "id": 599,
+          "region": "West"
+        },
+        {
+          "amount": 5935.09,
+          "date": "2025-12-26",
+          "id": 600,
+          "region": "South"
+        },
+        {
+          "amount": 4453.33,
+          "date": "2025-03-11",
+          "id": 601,
+          "region": "North"
+        },
+        {
+          "amount": 2423.45,
+          "date": "2025-08-31",
+          "id": 602,
+          "region": "South"
+        },
+        {
+          "amount": 5634.04,
+          "date": "2025-12-06",
+          "id": 603,
+          "region": "North"
+        },
+        {
+          "amount": 3281.82,
+          "date": "2025-02-10",
+          "id": 604,
+          "region": "West"
+        },
+        {
+          "amount": 1476.01,
+          "date": "2025-06-01",
+          "id": 605,
+          "region": "East"
+        },
+        {
+          "amount": 6018.98,
+          "date": "2025-10-02",
+          "id": 606,
+          "region": "North"
+        },
+        {
+          "amount": 7130.77,
+          "date": "2025-05-18",
+          "id": 607,
+          "region": "North"
+        },
+        {
+          "amount": 592.52,
+          "date": "2025-05-12",
+          "id": 608,
+          "region": "West"
+        },
+        {
+          "amount": 2834.56,
+          "date": "2025-12-14",
+          "id": 609,
+          "region": "North"
+        },
+        {
+          "amount": 7538.87,
+          "date": "2025-01-21",
+          "id": 610,
+          "region": "East"
+        },
+        {
+          "amount": 3161.37,
+          "date": "2025-02-17",
+          "id": 611,
+          "region": "East"
+        },
+        {
+          "amount": 8121.36,
+          "date": "2025-01-08",
+          "id": 612,
+          "region": "East"
+        },
+        {
+          "amount": 3244.11,
+          "date": "2025-04-15",
+          "id": 613,
+          "region": "North"
+        },
+        {
+          "amount": 1773.53,
+          "date": "2025-07-08",
+          "id": 614,
+          "region": "West"
+        },
+        {
+          "amount": 6269.35,
+          "date": "2025-02-25",
+          "id": 615,
+          "region": "North"
+        },
+        {
+          "amount": 2815.76,
+          "date": "2025-08-06",
+          "id": 616,
+          "region": "South"
+        },
+        {
+          "amount": 7368.08,
+          "date": "2025-11-14",
+          "id": 617,
+          "region": "North"
+        },
+        {
+          "amount": 3532.45,
+          "date": "2025-10-05",
+          "id": 618,
+          "region": "South"
+        },
+        {
+          "amount": 8311.54,
+          "date": "2025-12-01",
+          "id": 619,
+          "region": "East"
+        },
+        {
+          "amount": 4216.33,
+          "date": "2025-04-12",
+          "id": 620,
+          "region": "East"
+        },
+        {
+          "amount": 4334.87,
+          "date": "2025-02-11",
+          "id": 621,
+          "region": "West"
+        },
+        {
+          "amount": 4653.94,
+          "date": "2025-12-05",
+          "id": 622,
+          "region": "West"
+        },
+        {
+          "amount": 6748.9,
+          "date": "2025-02-16",
+          "id": 623,
+          "region": "East"
+        },
+        {
+          "amount": 3543.36,
+          "date": "2025-06-05",
+          "id": 624,
+          "region": "West"
+        },
+        {
+          "amount": 6440.69,
+          "date": "2025-09-19",
+          "id": 625,
+          "region": "South"
+        },
+        {
+          "amount": 5129.26,
+          "date": "2025-01-11",
+          "id": 626,
+          "region": "South"
+        },
+        {
+          "amount": 858.24,
+          "date": "2025-08-12",
+          "id": 627,
+          "region": "West"
+        },
+        {
+          "amount": 971.17,
+          "date": "2025-05-15",
+          "id": 628,
+          "region": "West"
+        },
+        {
+          "amount": 3784.14,
+          "date": "2025-09-20",
+          "id": 629,
+          "region": "West"
+        },
+        {
+          "amount": 4772.73,
+          "date": "2025-12-22",
+          "id": 630,
+          "region": "East"
+        },
+        {
+          "amount": 3615.48,
+          "date": "2025-11-27",
+          "id": 631,
+          "region": "East"
+        },
+        {
+          "amount": 7452.26,
+          "date": "2025-06-18",
+          "id": 632,
+          "region": "East"
+        },
+        {
+          "amount": 1404.31,
+          "date": "2025-05-08",
+          "id": 633,
+          "region": "South"
+        },
+        {
+          "amount": 9242.47,
+          "date": "2025-04-09",
+          "id": 634,
+          "region": "South"
+        },
+        {
+          "amount": 7384.27,
+          "date": "2025-10-27",
+          "id": 635,
+          "region": "South"
+        },
+        {
+          "amount": 131.75,
+          "date": "2025-11-14",
+          "id": 636,
+          "region": "West"
+        },
+        {
+          "amount": 3498.1,
+          "date": "2025-04-20",
+          "id": 637,
+          "region": "East"
+        },
+        {
+          "amount": 9004.44,
+          "date": "2025-02-04",
+          "id": 638,
+          "region": "West"
+        },
+        {
+          "amount": 5431.5,
+          "date": "2025-02-15",
+          "id": 639,
+          "region": "East"
+        },
+        {
+          "amount": 7375.63,
+          "date": "2025-06-02",
+          "id": 640,
+          "region": "South"
+        },
+        {
+          "amount": 2283.36,
+          "date": "2025-03-11",
+          "id": 641,
+          "region": "North"
+        },
+        {
+          "amount": 9792.23,
+          "date": "2025-04-01",
+          "id": 642,
+          "region": "West"
+        },
+        {
+          "amount": 2486.08,
+          "date": "2025-06-04",
+          "id": 643,
+          "region": "West"
+        },
+        {
+          "amount": 5207.64,
+          "date": "2025-04-12",
+          "id": 644,
+          "region": "South"
+        },
+        {
+          "amount": 6970.26,
+          "date": "2025-04-15",
+          "id": 645,
+          "region": "South"
+        },
+        {
+          "amount": 5225.21,
+          "date": "2025-05-25",
+          "id": 646,
+          "region": "East"
+        },
+        {
+          "amount": 8417.13,
+          "date": "2025-01-26",
+          "id": 647,
+          "region": "North"
+        },
+        {
+          "amount": 3190.68,
+          "date": "2025-02-20",
+          "id": 648,
+          "region": "South"
+        },
+        {
+          "amount": 2336.34,
+          "date": "2025-08-28",
+          "id": 649,
+          "region": "East"
+        },
+        {
+          "amount": 8998.43,
+          "date": "2025-06-07",
+          "id": 650,
+          "region": "West"
+        },
+        {
+          "amount": 3806.89,
+          "date": "2025-05-27",
+          "id": 651,
+          "region": "North"
+        },
+        {
+          "amount": 9908.02,
+          "date": "2025-08-04",
+          "id": 652,
+          "region": "South"
+        },
+        {
+          "amount": 9363.46,
+          "date": "2025-01-14",
+          "id": 653,
+          "region": "South"
+        },
+        {
+          "amount": 1974.63,
+          "date": "2025-07-31",
+          "id": 654,
+          "region": "North"
+        },
+        {
+          "amount": 1401.86,
+          "date": "2025-11-18",
+          "id": 655,
+          "region": "West"
+        },
+        {
+          "amount": 3691.03,
+          "date": "2025-07-20",
+          "id": 656,
+          "region": "West"
+        },
+        {
+          "amount": 1726.02,
+          "date": "2025-08-30",
+          "id": 657,
+          "region": "West"
+        },
+        {
+          "amount": 6465.77,
+          "date": "2025-11-07",
+          "id": 658,
+          "region": "West"
+        },
+        {
+          "amount": 7809.35,
+          "date": "2025-09-20",
+          "id": 659,
+          "region": "South"
+        },
+        {
+          "amount": 5770.32,
+          "date": "2025-06-15",
+          "id": 660,
+          "region": "North"
+        },
+        {
+          "amount": 3373.19,
+          "date": "2025-05-09",
+          "id": 661,
+          "region": "South"
+        },
+        {
+          "amount": 5299.55,
+          "date": "2025-10-23",
+          "id": 662,
+          "region": "West"
+        },
+        {
+          "amount": 3187.59,
+          "date": "2025-06-06",
+          "id": 663,
+          "region": "North"
+        },
+        {
+          "amount": 6332.51,
+          "date": "2025-05-27",
+          "id": 664,
+          "region": "East"
+        },
+        {
+          "amount": 2330.11,
+          "date": "2025-12-23",
+          "id": 665,
+          "region": "East"
+        },
+        {
+          "amount": 9370.37,
+          "date": "2025-07-25",
+          "id": 666,
+          "region": "West"
+        },
+        {
+          "amount": 6521.57,
+          "date": "2025-11-24",
+          "id": 667,
+          "region": "East"
+        },
+        {
+          "amount": 9750.08,
+          "date": "2025-02-23",
+          "id": 668,
+          "region": "South"
+        },
+        {
+          "amount": 7692.82,
+          "date": "2025-01-25",
+          "id": 669,
+          "region": "South"
+        },
+        {
+          "amount": 7428.86,
+          "date": "2025-02-12",
+          "id": 670,
+          "region": "South"
+        },
+        {
+          "amount": 306.18,
+          "date": "2025-06-16",
+          "id": 671,
+          "region": "East"
+        },
+        {
+          "amount": 6775.18,
+          "date": "2025-01-08",
+          "id": 672,
+          "region": "North"
+        },
+        {
+          "amount": 8644.83,
+          "date": "2025-02-22",
+          "id": 673,
+          "region": "South"
+        },
+        {
+          "amount": 8832.73,
+          "date": "2025-04-23",
+          "id": 674,
+          "region": "North"
+        },
+        {
+          "amount": 442.25,
+          "date": "2025-07-09",
+          "id": 675,
+          "region": "East"
+        },
+        {
+          "amount": 1665.27,
+          "date": "2025-05-21",
+          "id": 676,
+          "region": "North"
+        },
+        {
+          "amount": 884.34,
+          "date": "2025-02-20",
+          "id": 677,
+          "region": "North"
+        },
+        {
+          "amount": 4857.09,
+          "date": "2025-08-10",
+          "id": 678,
+          "region": "South"
+        },
+        {
+          "amount": 6012.04,
+          "date": "2025-04-23",
+          "id": 679,
+          "region": "North"
+        },
+        {
+          "amount": 7210.64,
+          "date": "2025-12-22",
+          "id": 680,
+          "region": "West"
+        },
+        {
+          "amount": 5849.81,
+          "date": "2025-10-24",
+          "id": 681,
+          "region": "East"
+        },
+        {
+          "amount": 1005.45,
+          "date": "2025-09-27",
+          "id": 682,
+          "region": "North"
+        },
+        {
+          "amount": 8794.38,
+          "date": "2025-03-08",
+          "id": 683,
+          "region": "North"
+        },
+        {
+          "amount": 9823.36,
+          "date": "2025-06-07",
+          "id": 684,
+          "region": "West"
+        },
+        {
+          "amount": 2710.36,
+          "date": "2025-09-09",
+          "id": 685,
+          "region": "South"
+        },
+        {
+          "amount": 3674.51,
+          "date": "2025-04-24",
+          "id": 686,
+          "region": "South"
+        },
+        {
+          "amount": 703.12,
+          "date": "2025-03-03",
+          "id": 687,
+          "region": "South"
+        },
+        {
+          "amount": 9778.49,
+          "date": "2025-07-18",
+          "id": 688,
+          "region": "East"
+        },
+        {
+          "amount": 3582.99,
+          "date": "2025-02-23",
+          "id": 689,
+          "region": "East"
+        },
+        {
+          "amount": 9608.55,
+          "date": "2025-10-01",
+          "id": 690,
+          "region": "West"
+        },
+        {
+          "amount": 5267.23,
+          "date": "2025-07-17",
+          "id": 691,
+          "region": "East"
+        },
+        {
+          "amount": 8239.97,
+          "date": "2025-01-13",
+          "id": 692,
+          "region": "West"
+        },
+        {
+          "amount": 6982.47,
+          "date": "2025-04-20",
+          "id": 693,
+          "region": "East"
+        },
+        {
+          "amount": 6230.32,
+          "date": "2025-06-30",
+          "id": 694,
+          "region": "West"
+        },
+        {
+          "amount": 6756.36,
+          "date": "2025-03-30",
+          "id": 695,
+          "region": "East"
+        },
+        {
+          "amount": 2299.72,
+          "date": "2025-12-15",
+          "id": 696,
+          "region": "East"
+        },
+        {
+          "amount": 1676.53,
+          "date": "2025-10-02",
+          "id": 697,
+          "region": "South"
+        },
+        {
+          "amount": 8392.43,
+          "date": "2025-01-30",
+          "id": 698,
+          "region": "North"
+        },
+        {
+          "amount": 9181.16,
+          "date": "2025-02-22",
+          "id": 699,
+          "region": "West"
+        },
+        {
+          "amount": 2037.03,
+          "date": "2025-04-20",
+          "id": 700,
+          "region": "North"
+        },
+        {
+          "amount": 9723.21,
+          "date": "2025-01-31",
+          "id": 701,
+          "region": "South"
+        },
+        {
+          "amount": 6570.25,
+          "date": "2025-04-25",
+          "id": 702,
+          "region": "South"
+        },
+        {
+          "amount": 1264.84,
+          "date": "2025-06-22",
+          "id": 703,
+          "region": "North"
+        },
+        {
+          "amount": 5973.19,
+          "date": "2025-05-26",
+          "id": 704,
+          "region": "East"
+        },
+        {
+          "amount": 1977.65,
+          "date": "2025-02-04",
+          "id": 705,
+          "region": "West"
+        },
+        {
+          "amount": 3250.4,
+          "date": "2025-05-08",
+          "id": 706,
+          "region": "West"
+        },
+        {
+          "amount": 5273.53,
+          "date": "2025-10-27",
+          "id": 707,
+          "region": "North"
+        },
+        {
+          "amount": 6916.81,
+          "date": "2025-10-08",
+          "id": 708,
+          "region": "South"
+        },
+        {
+          "amount": 7174.79,
+          "date": "2025-04-17",
+          "id": 709,
+          "region": "East"
+        },
+        {
+          "amount": 8282.45,
+          "date": "2025-03-22",
+          "id": 710,
+          "region": "East"
+        },
+        {
+          "amount": 3252.37,
+          "date": "2025-11-21",
+          "id": 711,
+          "region": "North"
+        },
+        {
+          "amount": 2842.67,
+          "date": "2025-12-05",
+          "id": 712,
+          "region": "South"
+        },
+        {
+          "amount": 5271.51,
+          "date": "2025-01-10",
+          "id": 713,
+          "region": "West"
+        },
+        {
+          "amount": 594.63,
+          "date": "2025-10-02",
+          "id": 714,
+          "region": "East"
+        },
+        {
+          "amount": 6130.13,
+          "date": "2025-05-12",
+          "id": 715,
+          "region": "South"
+        },
+        {
+          "amount": 6885.51,
+          "date": "2025-09-13",
+          "id": 716,
+          "region": "East"
+        },
+        {
+          "amount": 6590.11,
+          "date": "2025-05-11",
+          "id": 717,
+          "region": "North"
+        },
+        {
+          "amount": 7275.02,
+          "date": "2025-12-25",
+          "id": 718,
+          "region": "East"
+        },
+        {
+          "amount": 6614.3,
+          "date": "2025-06-05",
+          "id": 719,
+          "region": "East"
+        },
+        {
+          "amount": 217.18,
+          "date": "2025-04-05",
+          "id": 720,
+          "region": "North"
+        },
+        {
+          "amount": 4799.92,
+          "date": "2025-04-28",
+          "id": 721,
+          "region": "East"
+        },
+        {
+          "amount": 249.31,
+          "date": "2025-09-10",
+          "id": 722,
+          "region": "South"
+        },
+        {
+          "amount": 7450.04,
+          "date": "2025-03-27",
+          "id": 723,
+          "region": "West"
+        },
+        {
+          "amount": 7896.91,
+          "date": "2025-02-15",
+          "id": 724,
+          "region": "East"
+        },
+        {
+          "amount": 9262.32,
+          "date": "2025-09-16",
+          "id": 725,
+          "region": "North"
+        },
+        {
+          "amount": 2411.02,
+          "date": "2025-06-18",
+          "id": 726,
+          "region": "South"
+        },
+        {
+          "amount": 9367.53,
+          "date": "2025-08-14",
+          "id": 727,
+          "region": "North"
+        },
+        {
+          "amount": 8367.42,
+          "date": "2025-12-12",
+          "id": 728,
+          "region": "North"
+        },
+        {
+          "amount": 6222.14,
+          "date": "2025-04-23",
+          "id": 729,
+          "region": "East"
+        },
+        {
+          "amount": 7998.37,
+          "date": "2025-01-29",
+          "id": 730,
+          "region": "East"
+        },
+        {
+          "amount": 2817.55,
+          "date": "2025-02-08",
+          "id": 731,
+          "region": "South"
+        },
+        {
+          "amount": 283.03,
+          "date": "2025-08-02",
+          "id": 732,
+          "region": "North"
+        },
+        {
+          "amount": 4197.87,
+          "date": "2025-07-11",
+          "id": 733,
+          "region": "South"
+        },
+        {
+          "amount": 6453.2,
+          "date": "2025-04-14",
+          "id": 734,
+          "region": "East"
+        },
+        {
+          "amount": 7976.1,
+          "date": "2025-07-24",
+          "id": 735,
+          "region": "East"
+        },
+        {
+          "amount": 4267.05,
+          "date": "2025-05-16",
+          "id": 736,
+          "region": "North"
+        },
+        {
+          "amount": 2121.39,
+          "date": "2025-04-21",
+          "id": 737,
+          "region": "North"
+        },
+        {
+          "amount": 565.13,
+          "date": "2025-04-01",
+          "id": 738,
+          "region": "East"
+        },
+        {
+          "amount": 3917.92,
+          "date": "2025-02-28",
+          "id": 739,
+          "region": "South"
+        },
+        {
+          "amount": 3794.42,
+          "date": "2025-02-03",
+          "id": 740,
+          "region": "East"
+        },
+        {
+          "amount": 691.6,
+          "date": "2025-08-11",
+          "id": 741,
+          "region": "East"
+        },
+        {
+          "amount": 3702.76,
+          "date": "2025-01-01",
+          "id": 742,
+          "region": "South"
+        },
+        {
+          "amount": 7613.91,
+          "date": "2025-09-09",
+          "id": 743,
+          "region": "West"
+        },
+        {
+          "amount": 2268.97,
+          "date": "2025-05-09",
+          "id": 744,
+          "region": "North"
+        },
+        {
+          "amount": 639.65,
+          "date": "2025-01-09",
+          "id": 745,
+          "region": "North"
+        },
+        {
+          "amount": 2191.55,
+          "date": "2025-08-28",
+          "id": 746,
+          "region": "West"
+        },
+        {
+          "amount": 9559.87,
+          "date": "2025-06-09",
+          "id": 747,
+          "region": "North"
+        },
+        {
+          "amount": 712.0,
+          "date": "2025-01-11",
+          "id": 748,
+          "region": "North"
+        },
+        {
+          "amount": 9598.59,
+          "date": "2025-06-04",
+          "id": 749,
+          "region": "West"
+        },
+        {
+          "amount": 3325.9,
+          "date": "2025-02-15",
+          "id": 750,
+          "region": "South"
+        },
+        {
+          "amount": 6088.83,
+          "date": "2025-08-27",
+          "id": 751,
+          "region": "West"
+        },
+        {
+          "amount": 4475.91,
+          "date": "2025-09-16",
+          "id": 752,
+          "region": "South"
+        },
+        {
+          "amount": 1517.74,
+          "date": "2025-10-01",
+          "id": 753,
+          "region": "West"
+        },
+        {
+          "amount": 8962.38,
+          "date": "2025-08-27",
+          "id": 754,
+          "region": "East"
+        },
+        {
+          "amount": 1059.11,
+          "date": "2025-09-28",
+          "id": 755,
+          "region": "East"
+        },
+        {
+          "amount": 1206.68,
+          "date": "2025-06-25",
+          "id": 756,
+          "region": "South"
+        },
+        {
+          "amount": 7969.03,
+          "date": "2025-05-02",
+          "id": 757,
+          "region": "West"
+        },
+        {
+          "amount": 3485.5,
+          "date": "2025-08-05",
+          "id": 758,
+          "region": "East"
+        },
+        {
+          "amount": 2305.89,
+          "date": "2025-06-22",
+          "id": 759,
+          "region": "North"
+        },
+        {
+          "amount": 3468.41,
+          "date": "2025-05-06",
+          "id": 760,
+          "region": "South"
+        },
+        {
+          "amount": 4234.97,
+          "date": "2025-07-25",
+          "id": 761,
+          "region": "South"
+        },
+        {
+          "amount": 2260.38,
+          "date": "2025-02-23",
+          "id": 762,
+          "region": "North"
+        },
+        {
+          "amount": 2352.19,
+          "date": "2025-02-06",
+          "id": 763,
+          "region": "West"
+        },
+        {
+          "amount": 9761.6,
+          "date": "2025-03-27",
+          "id": 764,
+          "region": "North"
+        },
+        {
+          "amount": 9701.85,
+          "date": "2025-06-27",
+          "id": 765,
+          "region": "West"
+        },
+        {
+          "amount": 5748.88,
+          "date": "2025-10-17",
+          "id": 766,
+          "region": "North"
+        },
+        {
+          "amount": 9553.84,
+          "date": "2025-12-16",
+          "id": 767,
+          "region": "East"
+        },
+        {
+          "amount": 3426.47,
+          "date": "2025-06-25",
+          "id": 768,
+          "region": "North"
+        },
+        {
+          "amount": 8389.83,
+          "date": "2025-05-22",
+          "id": 769,
+          "region": "East"
+        },
+        {
+          "amount": 8329.65,
+          "date": "2025-07-13",
+          "id": 770,
+          "region": "South"
+        },
+        {
+          "amount": 4353.72,
+          "date": "2025-04-05",
+          "id": 771,
+          "region": "South"
+        },
+        {
+          "amount": 6788.45,
+          "date": "2025-06-11",
+          "id": 772,
+          "region": "North"
+        },
+        {
+          "amount": 9762.47,
+          "date": "2025-03-16",
+          "id": 773,
+          "region": "South"
+        },
+        {
+          "amount": 8813.24,
+          "date": "2025-07-16",
+          "id": 774,
+          "region": "South"
+        },
+        {
+          "amount": 3442.68,
+          "date": "2025-04-08",
+          "id": 775,
+          "region": "West"
+        },
+        {
+          "amount": 6159.73,
+          "date": "2025-06-10",
+          "id": 776,
+          "region": "East"
+        },
+        {
+          "amount": 8514.89,
+          "date": "2025-08-08",
+          "id": 777,
+          "region": "South"
+        },
+        {
+          "amount": 7292.81,
+          "date": "2025-01-17",
+          "id": 778,
+          "region": "North"
+        },
+        {
+          "amount": 6864.82,
+          "date": "2025-11-19",
+          "id": 779,
+          "region": "North"
+        },
+        {
+          "amount": 2443.76,
+          "date": "2025-07-08",
+          "id": 780,
+          "region": "North"
+        },
+        {
+          "amount": 3301.91,
+          "date": "2025-12-21",
+          "id": 781,
+          "region": "East"
+        },
+        {
+          "amount": 942.67,
+          "date": "2025-01-15",
+          "id": 782,
+          "region": "East"
+        },
+        {
+          "amount": 520.42,
+          "date": "2025-06-15",
+          "id": 783,
+          "region": "East"
+        },
+        {
+          "amount": 7793.19,
+          "date": "2025-12-24",
+          "id": 784,
+          "region": "South"
+        },
+        {
+          "amount": 1620.82,
+          "date": "2025-09-08",
+          "id": 785,
+          "region": "West"
+        },
+        {
+          "amount": 5884.09,
+          "date": "2025-11-06",
+          "id": 786,
+          "region": "East"
+        },
+        {
+          "amount": 3248.54,
+          "date": "2025-12-17",
+          "id": 787,
+          "region": "East"
+        },
+        {
+          "amount": 543.42,
+          "date": "2025-12-06",
+          "id": 788,
+          "region": "North"
+        },
+        {
+          "amount": 5589.0,
+          "date": "2025-02-22",
+          "id": 789,
+          "region": "East"
+        },
+        {
+          "amount": 7526.01,
+          "date": "2025-01-31",
+          "id": 790,
+          "region": "North"
+        },
+        {
+          "amount": 3622.48,
+          "date": "2025-06-21",
+          "id": 791,
+          "region": "South"
+        },
+        {
+          "amount": 8414.41,
+          "date": "2025-12-26",
+          "id": 792,
+          "region": "North"
+        },
+        {
+          "amount": 4722.52,
+          "date": "2025-09-07",
+          "id": 793,
+          "region": "East"
+        },
+        {
+          "amount": 8226.02,
+          "date": "2025-12-17",
+          "id": 794,
+          "region": "East"
+        },
+        {
+          "amount": 4562.6,
+          "date": "2025-12-20",
+          "id": 795,
+          "region": "North"
+        },
+        {
+          "amount": 4735.02,
+          "date": "2025-06-28",
+          "id": 796,
+          "region": "West"
+        },
+        {
+          "amount": 4032.44,
+          "date": "2025-07-18",
+          "id": 797,
+          "region": "North"
+        },
+        {
+          "amount": 2088.31,
+          "date": "2025-11-16",
+          "id": 798,
+          "region": "East"
+        },
+        {
+          "amount": 9746.25,
+          "date": "2025-12-21",
+          "id": 799,
+          "region": "South"
+        },
+        {
+          "amount": 2815.02,
+          "date": "2025-02-09",
+          "id": 800,
+          "region": "North"
+        },
+        {
+          "amount": 3163.78,
+          "date": "2025-11-26",
+          "id": 801,
+          "region": "South"
+        },
+        {
+          "amount": 4423.37,
+          "date": "2025-09-16",
+          "id": 802,
+          "region": "East"
+        },
+        {
+          "amount": 1733.69,
+          "date": "2025-10-21",
+          "id": 803,
+          "region": "West"
+        },
+        {
+          "amount": 7319.86,
+          "date": "2025-04-02",
+          "id": 804,
+          "region": "North"
+        },
+        {
+          "amount": 8961.3,
+          "date": "2025-04-04",
+          "id": 805,
+          "region": "East"
+        },
+        {
+          "amount": 5762.38,
+          "date": "2025-08-23",
+          "id": 806,
+          "region": "South"
+        },
+        {
+          "amount": 5078.43,
+          "date": "2025-02-16",
+          "id": 807,
+          "region": "West"
+        },
+        {
+          "amount": 7621.74,
+          "date": "2025-02-23",
+          "id": 808,
+          "region": "South"
+        },
+        {
+          "amount": 7849.31,
+          "date": "2025-06-14",
+          "id": 809,
+          "region": "East"
+        },
+        {
+          "amount": 9128.2,
+          "date": "2025-07-20",
+          "id": 810,
+          "region": "West"
+        },
+        {
+          "amount": 157.37,
+          "date": "2025-04-30",
+          "id": 811,
+          "region": "West"
+        },
+        {
+          "amount": 4376.86,
+          "date": "2025-07-19",
+          "id": 812,
+          "region": "South"
+        },
+        {
+          "amount": 4829.43,
+          "date": "2025-06-16",
+          "id": 813,
+          "region": "North"
+        },
+        {
+          "amount": 9016.48,
+          "date": "2025-12-01",
+          "id": 814,
+          "region": "South"
+        },
+        {
+          "amount": 9523.31,
+          "date": "2025-11-15",
+          "id": 815,
+          "region": "East"
+        },
+        {
+          "amount": 2396.54,
+          "date": "2025-04-19",
+          "id": 816,
+          "region": "South"
+        },
+        {
+          "amount": 1109.28,
+          "date": "2025-06-21",
+          "id": 817,
+          "region": "East"
+        },
+        {
+          "amount": 256.51,
+          "date": "2025-02-12",
+          "id": 818,
+          "region": "West"
+        },
+        {
+          "amount": 481.33,
+          "date": "2025-08-22",
+          "id": 819,
+          "region": "North"
+        },
+        {
+          "amount": 1156.28,
+          "date": "2025-01-05",
+          "id": 820,
+          "region": "East"
+        },
+        {
+          "amount": 3424.92,
+          "date": "2025-02-11",
+          "id": 821,
+          "region": "West"
+        },
+        {
+          "amount": 6931.04,
+          "date": "2025-11-04",
+          "id": 822,
+          "region": "South"
+        },
+        {
+          "amount": 3007.93,
+          "date": "2025-10-26",
+          "id": 823,
+          "region": "South"
+        },
+        {
+          "amount": 8914.3,
+          "date": "2025-01-14",
+          "id": 824,
+          "region": "North"
+        },
+        {
+          "amount": 7095.53,
+          "date": "2025-09-30",
+          "id": 825,
+          "region": "North"
+        },
+        {
+          "amount": 3536.4,
+          "date": "2025-01-24",
+          "id": 826,
+          "region": "East"
+        },
+        {
+          "amount": 6859.06,
+          "date": "2025-05-13",
+          "id": 827,
+          "region": "East"
+        },
+        {
+          "amount": 1149.01,
+          "date": "2025-12-08",
+          "id": 828,
+          "region": "East"
+        },
+        {
+          "amount": 2904.16,
+          "date": "2025-07-23",
+          "id": 829,
+          "region": "West"
+        },
+        {
+          "amount": 9391.95,
+          "date": "2025-10-28",
+          "id": 830,
+          "region": "South"
+        },
+        {
+          "amount": 447.04,
+          "date": "2025-06-15",
+          "id": 831,
+          "region": "West"
+        },
+        {
+          "amount": 7414.65,
+          "date": "2025-06-17",
+          "id": 832,
+          "region": "South"
+        },
+        {
+          "amount": 3783.15,
+          "date": "2025-06-15",
+          "id": 833,
+          "region": "North"
+        },
+        {
+          "amount": 4771.78,
+          "date": "2025-04-11",
+          "id": 834,
+          "region": "East"
+        },
+        {
+          "amount": 2539.95,
+          "date": "2025-11-27",
+          "id": 835,
+          "region": "South"
+        },
+        {
+          "amount": 1785.05,
+          "date": "2025-01-05",
+          "id": 836,
+          "region": "East"
+        },
+        {
+          "amount": 313.43,
+          "date": "2025-02-11",
+          "id": 837,
+          "region": "North"
+        },
+        {
+          "amount": 911.23,
+          "date": "2025-07-31",
+          "id": 838,
+          "region": "South"
+        },
+        {
+          "amount": 4442.16,
+          "date": "2025-07-23",
+          "id": 839,
+          "region": "West"
+        },
+        {
+          "amount": 9575.4,
+          "date": "2025-01-12",
+          "id": 840,
+          "region": "East"
+        },
+        {
+          "amount": 4670.07,
+          "date": "2025-02-25",
+          "id": 841,
+          "region": "North"
+        },
+        {
+          "amount": 3207.16,
+          "date": "2025-04-04",
+          "id": 842,
+          "region": "South"
+        },
+        {
+          "amount": 569.48,
+          "date": "2025-07-12",
+          "id": 843,
+          "region": "North"
+        },
+        {
+          "amount": 3713.89,
+          "date": "2025-12-04",
+          "id": 844,
+          "region": "South"
+        },
+        {
+          "amount": 6726.39,
+          "date": "2025-11-20",
+          "id": 845,
+          "region": "South"
+        },
+        {
+          "amount": 753.78,
+          "date": "2025-04-30",
+          "id": 846,
+          "region": "East"
+        },
+        {
+          "amount": 4493.27,
+          "date": "2025-01-13",
+          "id": 847,
+          "region": "East"
+        },
+        {
+          "amount": 1777.77,
+          "date": "2025-12-01",
+          "id": 848,
+          "region": "South"
+        },
+        {
+          "amount": 3412.57,
+          "date": "2025-08-11",
+          "id": 849,
+          "region": "North"
+        },
+        {
+          "amount": 1026.23,
+          "date": "2025-10-06",
+          "id": 850,
+          "region": "West"
+        },
+        {
+          "amount": 3581.65,
+          "date": "2025-11-01",
+          "id": 851,
+          "region": "South"
+        },
+        {
+          "amount": 8064.78,
+          "date": "2025-06-11",
+          "id": 852,
+          "region": "East"
+        },
+        {
+          "amount": 4570.27,
+          "date": "2025-03-05",
+          "id": 853,
+          "region": "West"
+        },
+        {
+          "amount": 3294.78,
+          "date": "2025-12-21",
+          "id": 854,
+          "region": "North"
+        },
+        {
+          "amount": 8917.51,
+          "date": "2025-06-21",
+          "id": 855,
+          "region": "East"
+        },
+        {
+          "amount": 2206.83,
+          "date": "2025-10-26",
+          "id": 856,
+          "region": "East"
+        },
+        {
+          "amount": 6875.44,
+          "date": "2025-07-28",
+          "id": 857,
+          "region": "South"
+        },
+        {
+          "amount": 4795.7,
+          "date": "2025-04-04",
+          "id": 858,
+          "region": "West"
+        },
+        {
+          "amount": 873.25,
+          "date": "2025-04-09",
+          "id": 859,
+          "region": "South"
+        },
+        {
+          "amount": 4881.85,
+          "date": "2025-03-22",
+          "id": 860,
+          "region": "South"
+        },
+        {
+          "amount": 2748.12,
+          "date": "2025-07-12",
+          "id": 861,
+          "region": "East"
+        },
+        {
+          "amount": 3137.9,
+          "date": "2025-09-03",
+          "id": 862,
+          "region": "South"
+        },
+        {
+          "amount": 8412.09,
+          "date": "2025-08-04",
+          "id": 863,
+          "region": "West"
+        },
+        {
+          "amount": 4342.69,
+          "date": "2025-10-08",
+          "id": 864,
+          "region": "East"
+        },
+        {
+          "amount": 6621.94,
+          "date": "2025-11-27",
+          "id": 865,
+          "region": "South"
+        },
+        {
+          "amount": 1801.02,
+          "date": "2025-06-11",
+          "id": 866,
+          "region": "North"
+        },
+        {
+          "amount": 8453.29,
+          "date": "2025-12-05",
+          "id": 867,
+          "region": "South"
+        },
+        {
+          "amount": 8437.68,
+          "date": "2025-04-16",
+          "id": 868,
+          "region": "South"
+        },
+        {
+          "amount": 6061.25,
+          "date": "2025-10-03",
+          "id": 869,
+          "region": "South"
+        },
+        {
+          "amount": 7439.79,
+          "date": "2025-02-01",
+          "id": 870,
+          "region": "North"
+        },
+        {
+          "amount": 377.82,
+          "date": "2025-10-05",
+          "id": 871,
+          "region": "South"
+        },
+        {
+          "amount": 723.78,
+          "date": "2025-04-04",
+          "id": 872,
+          "region": "West"
+        },
+        {
+          "amount": 6233.11,
+          "date": "2025-12-24",
+          "id": 873,
+          "region": "North"
+        },
+        {
+          "amount": 7616.44,
+          "date": "2025-07-08",
+          "id": 874,
+          "region": "East"
+        },
+        {
+          "amount": 9737.4,
+          "date": "2025-06-09",
+          "id": 875,
+          "region": "East"
+        },
+        {
+          "amount": 7046.52,
+          "date": "2025-08-02",
+          "id": 876,
+          "region": "North"
+        },
+        {
+          "amount": 9007.91,
+          "date": "2025-04-06",
+          "id": 877,
+          "region": "North"
+        },
+        {
+          "amount": 5699.02,
+          "date": "2025-05-08",
+          "id": 878,
+          "region": "North"
+        },
+        {
+          "amount": 3014.64,
+          "date": "2025-02-11",
+          "id": 879,
+          "region": "East"
+        },
+        {
+          "amount": 6655.43,
+          "date": "2025-01-04",
+          "id": 880,
+          "region": "West"
+        },
+        {
+          "amount": 8693.27,
+          "date": "2025-08-23",
+          "id": 881,
+          "region": "West"
+        },
+        {
+          "amount": 4922.36,
+          "date": "2025-01-04",
+          "id": 882,
+          "region": "South"
+        },
+        {
+          "amount": 9034.69,
+          "date": "2025-06-12",
+          "id": 883,
+          "region": "North"
+        },
+        {
+          "amount": 2026.27,
+          "date": "2025-10-08",
+          "id": 884,
+          "region": "West"
+        },
+        {
+          "amount": 9816.04,
+          "date": "2025-01-20",
+          "id": 885,
+          "region": "North"
+        },
+        {
+          "amount": 9106.17,
+          "date": "2025-01-31",
+          "id": 886,
+          "region": "South"
+        },
+        {
+          "amount": 1913.29,
+          "date": "2025-02-15",
+          "id": 887,
+          "region": "West"
+        },
+        {
+          "amount": 6549.62,
+          "date": "2025-09-04",
+          "id": 888,
+          "region": "South"
+        },
+        {
+          "amount": 3325.41,
+          "date": "2025-09-04",
+          "id": 889,
+          "region": "East"
+        },
+        {
+          "amount": 4232.85,
+          "date": "2025-01-23",
+          "id": 890,
+          "region": "East"
+        },
+        {
+          "amount": 9424.87,
+          "date": "2025-04-08",
+          "id": 891,
+          "region": "East"
+        },
+        {
+          "amount": 4144.63,
+          "date": "2025-04-22",
+          "id": 892,
+          "region": "East"
+        },
+        {
+          "amount": 5402.85,
+          "date": "2025-07-31",
+          "id": 893,
+          "region": "North"
+        },
+        {
+          "amount": 4298.86,
+          "date": "2025-01-16",
+          "id": 894,
+          "region": "West"
+        },
+        {
+          "amount": 6199.48,
+          "date": "2025-09-12",
+          "id": 895,
+          "region": "East"
+        },
+        {
+          "amount": 5682.05,
+          "date": "2025-11-21",
+          "id": 896,
+          "region": "North"
+        },
+        {
+          "amount": 3116.61,
+          "date": "2025-10-27",
+          "id": 897,
+          "region": "East"
+        },
+        {
+          "amount": 3954.47,
+          "date": "2025-04-18",
+          "id": 898,
+          "region": "West"
+        },
+        {
+          "amount": 6945.57,
+          "date": "2025-08-21",
+          "id": 899,
+          "region": "East"
+        },
+        {
+          "amount": 8780.3,
+          "date": "2025-04-19",
+          "id": 900,
+          "region": "North"
+        },
+        {
+          "amount": 5692.3,
+          "date": "2025-12-09",
+          "id": 901,
+          "region": "South"
+        },
+        {
+          "amount": 8706.01,
+          "date": "2025-05-25",
+          "id": 902,
+          "region": "North"
+        },
+        {
+          "amount": 1821.55,
+          "date": "2025-03-19",
+          "id": 903,
+          "region": "East"
+        },
+        {
+          "amount": 2080.98,
+          "date": "2025-08-22",
+          "id": 904,
+          "region": "South"
+        },
+        {
+          "amount": 3324.18,
+          "date": "2025-02-11",
+          "id": 905,
+          "region": "North"
+        },
+        {
+          "amount": 1579.66,
+          "date": "2025-09-22",
+          "id": 906,
+          "region": "East"
+        },
+        {
+          "amount": 3414.01,
+          "date": "2025-10-25",
+          "id": 907,
+          "region": "West"
+        },
+        {
+          "amount": 2614.35,
+          "date": "2025-08-04",
+          "id": 908,
+          "region": "West"
+        },
+        {
+          "amount": 2050.97,
+          "date": "2025-06-17",
+          "id": 909,
+          "region": "South"
+        },
+        {
+          "amount": 5560.21,
+          "date": "2025-10-10",
+          "id": 910,
+          "region": "East"
+        },
+        {
+          "amount": 6687.28,
+          "date": "2025-05-21",
+          "id": 911,
+          "region": "West"
+        },
+        {
+          "amount": 5116.76,
+          "date": "2025-12-23",
+          "id": 912,
+          "region": "West"
+        },
+        {
+          "amount": 7196.68,
+          "date": "2025-02-21",
+          "id": 913,
+          "region": "South"
+        },
+        {
+          "amount": 7822.33,
+          "date": "2025-11-08",
+          "id": 914,
+          "region": "North"
+        },
+        {
+          "amount": 6172.26,
+          "date": "2025-03-16",
+          "id": 915,
+          "region": "West"
+        },
+        {
+          "amount": 9451.96,
+          "date": "2025-07-19",
+          "id": 916,
+          "region": "South"
+        },
+        {
+          "amount": 9600.16,
+          "date": "2025-08-06",
+          "id": 917,
+          "region": "West"
+        },
+        {
+          "amount": 5586.18,
+          "date": "2025-11-28",
+          "id": 918,
+          "region": "North"
+        },
+        {
+          "amount": 3584.95,
+          "date": "2025-10-15",
+          "id": 919,
+          "region": "East"
+        },
+        {
+          "amount": 4633.09,
+          "date": "2025-09-13",
+          "id": 920,
+          "region": "East"
+        },
+        {
+          "amount": 145.57,
+          "date": "2025-08-26",
+          "id": 921,
+          "region": "West"
+        },
+        {
+          "amount": 5941.84,
+          "date": "2025-07-11",
+          "id": 922,
+          "region": "West"
+        },
+        {
+          "amount": 9074.25,
+          "date": "2025-08-23",
+          "id": 923,
+          "region": "West"
+        },
+        {
+          "amount": 3173.26,
+          "date": "2025-04-05",
+          "id": 924,
+          "region": "West"
+        },
+        {
+          "amount": 9347.77,
+          "date": "2025-04-06",
+          "id": 925,
+          "region": "East"
+        },
+        {
+          "amount": 8949.99,
+          "date": "2025-04-26",
+          "id": 926,
+          "region": "North"
+        },
+        {
+          "amount": 6576.52,
+          "date": "2025-07-19",
+          "id": 927,
+          "region": "East"
+        },
+        {
+          "amount": 4851.5,
+          "date": "2025-09-27",
+          "id": 928,
+          "region": "South"
+        },
+        {
+          "amount": 9452.69,
+          "date": "2025-02-07",
+          "id": 929,
+          "region": "West"
+        },
+        {
+          "amount": 7215.56,
+          "date": "2025-09-02",
+          "id": 930,
+          "region": "West"
+        },
+        {
+          "amount": 8022.38,
+          "date": "2025-04-13",
+          "id": 931,
+          "region": "North"
+        },
+        {
+          "amount": 2981.9,
+          "date": "2025-02-21",
+          "id": 932,
+          "region": "South"
+        },
+        {
+          "amount": 5489.81,
+          "date": "2025-09-09",
+          "id": 933,
+          "region": "East"
+        },
+        {
+          "amount": 7510.28,
+          "date": "2025-08-10",
+          "id": 934,
+          "region": "West"
+        },
+        {
+          "amount": 9474.17,
+          "date": "2025-11-19",
+          "id": 935,
+          "region": "North"
+        },
+        {
+          "amount": 7671.33,
+          "date": "2025-11-04",
+          "id": 936,
+          "region": "West"
+        },
+        {
+          "amount": 2972.71,
+          "date": "2025-12-25",
+          "id": 937,
+          "region": "South"
+        },
+        {
+          "amount": 5109.21,
+          "date": "2025-04-29",
+          "id": 938,
+          "region": "North"
+        },
+        {
+          "amount": 2827.74,
+          "date": "2025-04-01",
+          "id": 939,
+          "region": "North"
+        },
+        {
+          "amount": 7450.98,
+          "date": "2025-10-10",
+          "id": 940,
+          "region": "North"
+        },
+        {
+          "amount": 8116.78,
+          "date": "2025-09-01",
+          "id": 941,
+          "region": "West"
+        },
+        {
+          "amount": 535.09,
+          "date": "2025-08-27",
+          "id": 942,
+          "region": "South"
+        },
+        {
+          "amount": 2119.18,
+          "date": "2025-08-21",
+          "id": 943,
+          "region": "North"
+        },
+        {
+          "amount": 7924.6,
+          "date": "2025-04-15",
+          "id": 944,
+          "region": "South"
+        },
+        {
+          "amount": 6363.76,
+          "date": "2025-04-20",
+          "id": 945,
+          "region": "East"
+        },
+        {
+          "amount": 6828.46,
+          "date": "2025-03-12",
+          "id": 946,
+          "region": "West"
+        },
+        {
+          "amount": 3330.67,
+          "date": "2025-02-13",
+          "id": 947,
+          "region": "West"
+        },
+        {
+          "amount": 9380.17,
+          "date": "2025-10-24",
+          "id": 948,
+          "region": "East"
+        },
+        {
+          "amount": 3277.02,
+          "date": "2025-04-28",
+          "id": 949,
+          "region": "North"
+        },
+        {
+          "amount": 1770.21,
+          "date": "2025-12-14",
+          "id": 950,
+          "region": "East"
+        },
+        {
+          "amount": 9771.93,
+          "date": "2025-05-08",
+          "id": 951,
+          "region": "West"
+        },
+        {
+          "amount": 8558.11,
+          "date": "2025-02-21",
+          "id": 952,
+          "region": "North"
+        },
+        {
+          "amount": 4710.57,
+          "date": "2025-11-10",
+          "id": 953,
+          "region": "East"
+        },
+        {
+          "amount": 3031.39,
+          "date": "2025-06-19",
+          "id": 954,
+          "region": "North"
+        },
+        {
+          "amount": 1170.61,
+          "date": "2025-01-26",
+          "id": 955,
+          "region": "North"
+        },
+        {
+          "amount": 5985.32,
+          "date": "2025-03-03",
+          "id": 956,
+          "region": "North"
+        },
+        {
+          "amount": 3189.44,
+          "date": "2025-11-08",
+          "id": 957,
+          "region": "North"
+        },
+        {
+          "amount": 9704.37,
+          "date": "2025-02-09",
+          "id": 958,
+          "region": "East"
+        },
+        {
+          "amount": 4045.92,
+          "date": "2025-11-25",
+          "id": 959,
+          "region": "North"
+        },
+        {
+          "amount": 3621.12,
+          "date": "2025-09-23",
+          "id": 960,
+          "region": "East"
+        },
+        {
+          "amount": 8309.93,
+          "date": "2025-01-04",
+          "id": 961,
+          "region": "North"
+        },
+        {
+          "amount": 1413.28,
+          "date": "2025-03-16",
+          "id": 962,
+          "region": "North"
+        },
+        {
+          "amount": 8680.15,
+          "date": "2025-01-26",
+          "id": 963,
+          "region": "West"
+        },
+        {
+          "amount": 3621.46,
+          "date": "2025-07-15",
+          "id": 964,
+          "region": "South"
+        },
+        {
+          "amount": 7574.61,
+          "date": "2025-02-05",
+          "id": 965,
+          "region": "East"
+        },
+        {
+          "amount": 7104.61,
+          "date": "2025-12-16",
+          "id": 966,
+          "region": "South"
+        },
+        {
+          "amount": 2409.83,
+          "date": "2025-04-02",
+          "id": 967,
+          "region": "South"
+        },
+        {
+          "amount": 2892.7,
+          "date": "2025-07-09",
+          "id": 968,
+          "region": "South"
+        },
+        {
+          "amount": 5333.08,
+          "date": "2025-09-02",
+          "id": 969,
+          "region": "South"
+        },
+        {
+          "amount": 3453.2,
+          "date": "2025-02-17",
+          "id": 970,
+          "region": "North"
+        },
+        {
+          "amount": 2354.08,
+          "date": "2025-03-19",
+          "id": 971,
+          "region": "East"
+        },
+        {
+          "amount": 1858.43,
+          "date": "2025-07-04",
+          "id": 972,
+          "region": "North"
+        },
+        {
+          "amount": 9672.57,
+          "date": "2025-08-17",
+          "id": 973,
+          "region": "North"
+        },
+        {
+          "amount": 6238.6,
+          "date": "2025-07-24",
+          "id": 974,
+          "region": "West"
+        },
+        {
+          "amount": 4106.05,
+          "date": "2025-12-18",
+          "id": 975,
+          "region": "East"
+        },
+        {
+          "amount": 9586.13,
+          "date": "2025-04-01",
+          "id": 976,
+          "region": "North"
+        },
+        {
+          "amount": 1897.3,
+          "date": "2025-01-18",
+          "id": 977,
+          "region": "East"
+        },
+        {
+          "amount": 7549.9,
+          "date": "2025-05-18",
+          "id": 978,
+          "region": "North"
+        },
+        {
+          "amount": 4293.88,
+          "date": "2025-05-29",
+          "id": 979,
+          "region": "West"
+        },
+        {
+          "amount": 2164.35,
+          "date": "2025-07-26",
+          "id": 980,
+          "region": "East"
+        },
+        {
+          "amount": 6416.23,
+          "date": "2025-04-04",
+          "id": 981,
+          "region": "South"
+        },
+        {
+          "amount": 3144.74,
+          "date": "2025-08-29",
+          "id": 982,
+          "region": "South"
+        },
+        {
+          "amount": 9406.68,
+          "date": "2025-09-08",
+          "id": 983,
+          "region": "North"
+        },
+        {
+          "amount": 8592.6,
+          "date": "2025-11-24",
+          "id": 984,
+          "region": "West"
+        },
+        {
+          "amount": 273.57,
+          "date": "2025-07-27",
+          "id": 985,
+          "region": "East"
+        },
+        {
+          "amount": 9962.01,
+          "date": "2025-03-23",
+          "id": 986,
+          "region": "North"
+        },
+        {
+          "amount": 4983.13,
+          "date": "2025-10-15",
+          "id": 987,
+          "region": "East"
+        },
+        {
+          "amount": 6276.33,
+          "date": "2025-07-08",
+          "id": 988,
+          "region": "East"
+        },
+        {
+          "amount": 5203.27,
+          "date": "2025-12-06",
+          "id": 989,
+          "region": "South"
+        },
+        {
+          "amount": 9610.88,
+          "date": "2025-11-24",
+          "id": 990,
+          "region": "North"
+        },
+        {
+          "amount": 1268.13,
+          "date": "2025-01-13",
+          "id": 991,
+          "region": "North"
+        },
+        {
+          "amount": 7750.84,
+          "date": "2025-05-05",
+          "id": 992,
+          "region": "South"
+        },
+        {
+          "amount": 4091.47,
+          "date": "2025-01-04",
+          "id": 993,
+          "region": "North"
+        },
+        {
+          "amount": 3266.11,
+          "date": "2025-08-18",
+          "id": 994,
+          "region": "South"
+        },
+        {
+          "amount": 9090.99,
+          "date": "2025-04-20",
+          "id": 995,
+          "region": "South"
+        },
+        {
+          "amount": 1812.28,
+          "date": "2025-02-07",
+          "id": 996,
+          "region": "South"
+        },
+        {
+          "amount": 8693.29,
+          "date": "2025-10-07",
+          "id": 997,
+          "region": "South"
+        },
+        {
+          "amount": 6966.83,
+          "date": "2025-06-16",
+          "id": 998,
+          "region": "East"
+        },
+        {
+          "amount": 639.48,
+          "date": "2025-06-30",
+          "id": 999,
+          "region": "South"
+        },
+        {
+          "amount": 8188.62,
+          "date": "2025-03-24",
+          "id": 1000,
+          "region": "South"
+        }
+      ]
+    },
+    "review": {
+      "approved": true,
+      "notes": "Evidence supports the claims: exit code 0, artifact result.json (76,595 bytes) present with matching sha256, stdout shows rows=1000, seed, and grand_total=5013559.38. Independent arithmetic check: quarter totals (1299224.39+1401461.29+1161168.41+1151705.29) and region totals (1284101.77+1279174.90+1294938.81+1155343.90) both sum exactly to 5013559.38, matching the printed grand total. The proposed answer's claims (deterministic SplitMix64, integer-cent money, valid 2025 dates, JSON validation, 1000-row count) are consistent with the code and worker evidence; no unsupported claims found."
+    },
+    "runtime": "runsc",
+    "started_at": "2026-11-05T14:08:39.904Z",
+    "stderr": "",
+    "stdout": "grand_total=5013559.38\nrows=1000 seed=0x5EEDCAFE20250001\nquarter_totals: Q1=1299224.39 Q2=1401461.29 Q3=1161168.41 Q4=1151705.29\nregion_totals: North=1284101.77 South=1279174.90 East=1294938.81 West=1155343.90\nwrote /work/artifacts/result.json (76595 bytes); re-read, strict JSON validation, and 1000-row count all passed\n"
+  },
+  "request": {
+    "memory_mb": 512,
+    "profile": "cli",
+    "prompt": "Generate 1,000 deterministic sales rows (seeded PRNG, regions North/South/East/West, dates across 2025) in Rust, compute revenue totals per quarter and per region, and write them to /work/artifacts/result.json. Print the grand total.",
+    "timeout_seconds": 60
+  },
+  "state": "succeeded",
+  "updated_at": "2026-11-05T14:08:54.556Z"
+}

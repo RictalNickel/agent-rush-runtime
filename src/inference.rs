@@ -14,6 +14,8 @@ pub const ANTHROPIC_ENDPOINT: &str = "https://api.anthropic.com/v1/messages";
 const INPUT_BYTES: usize = 32000;
 /// Vultr output ceiling. GLM reasoning tokens count against it, so it leaves room for both.
 const OUTPUT_TOKENS: u64 = 16384;
+/// Cap on GLM reasoning tokens, so every role keeps half the output budget for its answer.
+const REASONING_TOKENS: u64 = OUTPUT_TOKENS / 2;
 /// Per-call output ceiling for every Claude role.
 pub const ANTHROPIC_MAX_TOKENS: u64 = 100_000;
 /// Haiku roles compact server-side once their input reaches this many tokens.
@@ -55,11 +57,20 @@ pub struct Completion {
     pub input_tokens: u64,
     pub output_tokens: u64,
 }
-/// Attach the role's reasoning effort to a Vultr request. Without it GLM 5.3 Flash may
-/// spend its whole output budget reasoning and return empty content.
+/// Attach the role's reasoning effort, with a token cap, to a Vultr request. Uncapped,
+/// GLM 5.3 Flash at high effort can spend its whole output budget reasoning and return
+/// empty content.
 pub fn with_reasoning_effort(mut request: Value, role: Role) -> Value {
-    request["reasoning_effort"] = json!(anthropic_role(role).effort);
+    request["reasoning"] =
+        json!({"effort": anthropic_role(role).effort, "max_tokens": REASONING_TOKENS});
     request
+}
+/// Price an OpenAI-style usage block. Read before the answer is decoded, so a call whose
+/// answer is unusable is still charged what it actually cost.
+pub fn vultr_cost(usage: &Value, input_per_million: f64, output_per_million: f64) -> Option<f64> {
+    let input = usage["prompt_tokens"].as_u64()?;
+    let output = usage["completion_tokens"].as_u64()?;
+    Some((input as f64 * input_per_million + output as f64 * output_per_million) / 1_000_000.0)
 }
 pub fn decode_response(body: Value) -> Result<Completion> {
     let message = &body["choices"][0]["message"];
@@ -67,7 +78,9 @@ pub fn decode_response(body: Value) -> Result<Completion> {
     ensure!(
         !content.is_empty() || !message["reasoning"].is_string(),
         "model returned reasoning but no answer (finish_reason {})",
-        body["choices"][0]["finish_reason"].as_str().unwrap_or("unknown")
+        body["choices"][0]["finish_reason"]
+            .as_str()
+            .unwrap_or("unknown")
     );
     ensure!(
         message["content"].is_string(),
@@ -455,15 +468,16 @@ impl InferenceGateway {
             response.status().as_u16()
         );
         let bytes = Self::read_bounded(response, 262144).await?;
-        let completion = decode_response(serde_json::from_slice(&bytes)?)?;
-        let cost = (completion.input_tokens as f64 * input
-            + completion.output_tokens as f64 * output)
-            / 1_000_000.0;
+        let body: Value = serde_json::from_slice(&bytes)?;
+        // Settle from usage before decoding, as on the Claude path; missing usage keeps
+        // the conservative reservation.
+        let cost = vultr_cost(&body["usage"], input, output).unwrap_or(reservation);
+        self.ledger.settle_spend(&call_id, cost)?;
         ensure!(
             cost <= reservation,
             "provider usage exceeds cost reservation; stop and reconcile billing"
         );
-        self.ledger.settle_spend(&call_id, cost)?;
+        let completion = decode_response(body)?;
         let receipt = json!({"call_id":call_id,"provider":"Vultr Serverless Inference","origin":"https://api.vultrinference.com/v1","role":context.role,"effort":anthropic_role(context.role).effort,"model":completion.model,"provider_request_id":completion.provider_id,"input_tokens":completion.input_tokens,"output_tokens":completion.output_tokens,"accounted_usd":cost,"at":crate::domain::now()});
         Ok((completion, receipt))
     }

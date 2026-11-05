@@ -1,6 +1,8 @@
 use agent_rush::{
     agent::Role,
-    inference::{build_request, decode_response, validate_pricing, with_reasoning_effort},
+    inference::{
+        build_request, decode_response, validate_pricing, vultr_cost, with_reasoning_effort,
+    },
     ledger::Ledger,
 };
 use serde_json::json;
@@ -38,12 +40,24 @@ fn invalid_pricing_and_oversized_prompts_fail_closed() {
     .unwrap();
     assert_eq!(r["max_tokens"], 16384);
     let r = with_reasoning_effort(r, Role::Coder);
-    assert_eq!(r["reasoning_effort"], "xhigh");
+    // Observed live: uncapped xhigh spent all 16384 tokens reasoning and never answered.
+    // The cap always leaves half the output budget for the answer.
+    assert_eq!(r["reasoning"], json!({"effort":"xhigh","max_tokens":8192}));
+    assert!(r.get("reasoning_effort").is_none());
     assert_eq!(
-        with_reasoning_effort(r.clone(), Role::Orchestrator)["reasoning_effort"],
+        with_reasoning_effort(r.clone(), Role::Orchestrator)["reasoning"]["effort"],
         "medium"
     );
     assert_eq!(r["stream"], false);
+}
+
+#[test]
+fn usage_is_priced_even_when_the_answer_is_unusable() {
+    let body = json!({"choices":[{"finish_reason":"length","message":{"content":"","reasoning":"long chain"}}],"usage":{"prompt_tokens":1000,"completion_tokens":16384}});
+    let cost = vultr_cost(&body["usage"], 0.10, 0.35).unwrap();
+    assert!((cost - (1000.0 * 0.10 + 16384.0 * 0.35) / 1e6).abs() < 1e-12);
+    assert!(decode_response(body).is_err());
+    assert!(vultr_cost(&json!({}), 0.10, 0.35).is_none());
 }
 
 #[test]

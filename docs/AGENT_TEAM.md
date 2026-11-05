@@ -11,7 +11,7 @@ With `AR_INFERENCE_PROVIDER=anthropic` (and with `vultr`, where every role uses 
 
 Every call sets `max_tokens` to 100,000. The worker and coder use server-side threshold compaction (`compact_20260112`, beta `compact-2026-01-12`). Haiku summarizes its own conversation, and the engine then resets that context to its policy, its task and the summary turn, so the stored history stays bounded.
 
-With `AR_INFERENCE_PROVIDER=vultr`, every role uses `glm-5.3-flash`, and the same effort column is sent as `reasoning_effort` with a 16k output budget. The setting is required: without it GLM can spend all of its output on hidden reasoning and return no answer.
+With `AR_INFERENCE_PROVIDER=vultr` (the live deployment), every role uses `glm-5.3-flash`. The same effort column is sent as `reasoning: {effort, max_tokens: 8192}` within a 16k output budget, so reasoning can never use more than half and every role keeps room to answer. Both parts are required. Without an effort, GLM can spend all of its output on hidden reasoning. Without the cap, the coder at xhigh did the same on a harder task (job `510a429a`: 16,384 reasoning tokens, no answer).
 
 ## Flow
 

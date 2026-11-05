@@ -99,3 +99,8 @@ Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
   - Overlapping sandboxes verified, with 429 backpressure.
   - `/api/status` went from 31 to 460 req/s (health caching, no idle worker polling).
   - Playwright 2/2 and `cargo audit` clean.
+- Vultr switch (owner decision):
+  - The public instance runs GLM 5.3 Flash on Vultr Serverless Inference.
+  - Reasoning is capped at 8,192 of 16,384 output tokens after the xhigh coder spent its whole budget reasoning (`510a429a`).
+  - Usage is settled before decoding, so failed calls are charged their actual cost.
+  - Public job `7d466fa9`: 58 s, $0.006, reviewer approved. `/api/status` shows each role's reasoning effort.

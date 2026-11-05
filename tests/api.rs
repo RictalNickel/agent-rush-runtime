@@ -159,6 +159,17 @@ async fn login_rate_limit_and_unconfigured_status() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(v["inference_configured"], false);
     assert_eq!(v["worker_connected"], false);
+    // On Vultr every role shares one model but keeps its own reasoning effort.
+    assert_eq!(v["inference_provider"], "vultr");
+    assert_eq!(v["agent_roles"]["coder"]["reasoning_effort"], "xhigh");
+    assert_eq!(
+        v["agent_roles"]["orchestrator"]["reasoning_effort"],
+        "medium"
+    );
+    assert_eq!(
+        v["agent_roles"]["reviewer"]["model"],
+        v["agent_roles"]["worker"]["model"]
+    );
     for _ in 0..10 {
         call(
             app.clone(),

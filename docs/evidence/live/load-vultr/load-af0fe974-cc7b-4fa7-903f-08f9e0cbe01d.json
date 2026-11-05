@@ -1,0 +1,257 @@
+{
+  "cancel_requested": false,
+  "created_at": "2026-11-05T14:09:29.317Z",
+  "dropped_events": 0,
+  "events": [
+    {
+      "at": "2026-11-05T14:09:29.317Z",
+      "kind": "queued",
+      "message": "Task accepted under fixed CLI policy"
+    },
+    {
+      "at": "2026-11-05T14:09:30.086Z",
+      "kind": "admitted",
+      "memory_mb": 512,
+      "message": "Memory lease admitted atomically"
+    },
+    {
+      "at": "2026-11-05T14:09:32.375Z",
+      "kind": "tool_started",
+      "message": "Agent 6f9ffefa-b4eb-452d-8bbc-b7366a64e328 at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T14:10:21.617Z",
+      "kind": "tool_started",
+      "message": "Agent c7491b04-9fe3-4dd8-96c7-6e6bcf4d0d69 at depth 1 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T14:10:21.618Z",
+      "kind": "executing",
+      "message": "Compile and run a Rust 2024 program that computes F(90) two ways (u128 iteration and fast-doubling over the bits of 90), asserts both equal 2880067194370816120 and each other, writes /work/artifacts/result.json, and verifies the artifact by reading it back."
+    },
+    {
+      "at": "2026-11-05T14:10:21.619Z",
+      "kind": "node_run",
+      "message": "af0fe974-cc7b-4fa7-903f-08f9e0cbe01d-1"
+    },
+    {
+      "at": "2026-11-05T14:10:23.139Z",
+      "kind": "verifying",
+      "message": "Worker process/result/cleanup checks passed"
+    },
+    {
+      "at": "2026-11-05T14:10:23.140Z",
+      "kind": "tool_finished",
+      "message": "Allowed tool result recorded under the fixed task policy"
+    },
+    {
+      "at": "2026-11-05T14:10:35.982Z",
+      "kind": "tool_started",
+      "message": "Agent c7491b04-9fe3-4dd8-96c7-6e6bcf4d0d69 at depth 1 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T14:10:35.983Z",
+      "kind": "subordinate",
+      "message": "Logical subordinate returned; worker evidence remains authoritative"
+    },
+    {
+      "at": "2026-11-05T14:10:39.943Z",
+      "kind": "tool_started",
+      "message": "Agent 6f9ffefa-b4eb-452d-8bbc-b7366a64e328 at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T14:10:45.533Z",
+      "kind": "review",
+      "message": "Reviewer approved: Code correctly implements both iterative and fast-doubling Fibonacci in u128 with overflow checks; F(90)=2880067194370816120 is the known correct value. Worker evidence confirms exit code 0, empty stderr, and the artifact result.json (61 bytes, sha256 recorded) decodes to {\"n\":90,\"fibonacci\":2880067194370816120,\"methods_agree\":true}, matching the code's output. Proposed answer makes no unsupported claims."
+    },
+    {
+      "at": "2026-11-05T14:10:45.534Z",
+      "kind": "explanation",
+      "message": "Verified sandbox run: a Rust 2024 program computed F(90) via simple u128 iteration and via fast doubling; both methods returned 2880067194370816120, matching the known value of F(90). Assertions confirmed the two results agree and the value fits in u128. The program wrote /work/artifacts/result.json with {\"n\":90,\"fibonacci\":2880067194370816120,\"methods_agree\":true}. Independent worker evidence: verified=true, exit_code=0, all 4 checks passed, empty stderr, artifact contents confirmed."
+    },
+    {
+      "at": "2026-11-05T14:10:45.535Z",
+      "kind": "succeeded",
+      "message": "Worker cleanup verified; lease released"
+    }
+  ],
+  "id": "af0fe974-cc7b-4fa7-903f-08f9e0cbe01d",
+  "memory_mb": 512,
+  "owner": "operator",
+  "receipt": {
+    "artifacts": [
+      {
+        "bytes": 61,
+        "name": "result.json",
+        "sha256": "762925d30431534c58ed8a611dbe966aa6572279b8c72a24b751e2e97b6132ff"
+      }
+    ],
+    "checks": [
+      {
+        "name": "process_exit_zero",
+        "passed": true
+      },
+      {
+        "name": "result_json_is_object",
+        "passed": true
+      },
+      {
+        "name": "output_within_limit",
+        "passed": true
+      },
+      {
+        "name": "output_capture_complete",
+        "passed": true
+      }
+    ],
+    "checks_passed": true,
+    "cleanup_state": "verified",
+    "creation_uncertain": false,
+    "duration_ms": 1178,
+    "execution_finished_at": "2026-11-05T14:10:22.720Z",
+    "execution_ms": 812,
+    "execution_started_at": "2026-11-05T14:10:21.907Z",
+    "exit_code": 0,
+    "explanation": "Verified sandbox run: a Rust 2024 program computed F(90) via simple u128 iteration and via fast doubling; both methods returned 2880067194370816120, matching the known value of F(90). Assertions confirmed the two results agree and the value fits in u128. The program wrote /work/artifacts/result.json with {\"n\":90,\"fibonacci\":2880067194370816120,\"methods_agree\":true}. Independent worker evidence: verified=true, exit_code=0, all 4 checks passed, empty stderr, artifact contents confirmed.",
+    "finished_at": "2026-11-05T14:10:22.901Z",
+    "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+    "inference_calls": [
+      {
+        "accounted_usd": 0.0001129,
+        "agent_id": "6f9ffefa-b4eb-452d-8bbc-b7366a64e328",
+        "at": "2026-11-05T14:09:32.374Z",
+        "call_id": "e998b13f-9463-4327-b55c-4038a05d652a",
+        "depth": 0,
+        "effort": "medium",
+        "input_tokens": 338,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 226,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-c8551a97-5761-47e7-ab28-476a51973d4f",
+        "role": "orchestrator"
+      },
+      {
+        "accounted_usd": 0.00320675,
+        "agent_id": "c7491b04-9fe3-4dd8-96c7-6e6bcf4d0d69",
+        "at": "2026-11-05T14:10:21.615Z",
+        "call_id": "08e573f0-f062-48e4-96bd-89da6817d81a",
+        "depth": 1,
+        "effort": "xhigh",
+        "input_tokens": 389,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 9051,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-20f387bc-cb84-40df-af0a-f5dafb2733c8",
+        "role": "coder"
+      },
+      {
+        "accounted_usd": 0.000262,
+        "agent_id": "c7491b04-9fe3-4dd8-96c7-6e6bcf4d0d69",
+        "at": "2026-11-05T14:10:35.980Z",
+        "call_id": "621b8e95-3e74-4da2-a243-e2630671fd7f",
+        "depth": 1,
+        "effort": "xhigh",
+        "input_tokens": 1465,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 330,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-83f53599-6c74-49b3-b75e-f813ed7e6fe5",
+        "role": "coder"
+      },
+      {
+        "accounted_usd": 0.0001494,
+        "agent_id": "6f9ffefa-b4eb-452d-8bbc-b7366a64e328",
+        "at": "2026-11-05T14:10:39.942Z",
+        "call_id": "1a334177-218c-4ea8-b415-5c3e127672d6",
+        "depth": 0,
+        "effort": "medium",
+        "input_tokens": 1004,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 140,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-56e7e6c8-49f7-4383-8b18-9e2ec1224505",
+        "role": "orchestrator"
+      },
+      {
+        "accounted_usd": 0.00024325,
+        "agent_id": "afab8745-c1b4-494f-81c5-0b4fff78d4f1",
+        "at": "2026-11-05T14:10:45.533Z",
+        "call_id": "84218e25-f991-404f-83f9-58a8abacf685",
+        "depth": 0,
+        "effort": "high",
+        "input_tokens": 1372,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 303,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-eef2dcc5-92be-447f-b91d-af54a3ba7fca",
+        "role": "reviewer"
+      }
+    ],
+    "job_id": "af0fe974-cc7b-4fa7-903f-08f9e0cbe01d-1",
+    "limits": {
+      "cpu_millis": 1000,
+      "memory_mb": 512,
+      "timeout_seconds": 60
+    },
+    "model_calls": 5,
+    "output_truncated": false,
+    "reason": "completed",
+    "resource_samples": [
+      {
+        "at": "2026-11-05T14:10:22.433Z",
+        "docker_stats": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "ar-task-af0fe974-cc7b-4fa7-903f-08f9e0cbe01d-1",
+          "ID": "0184d906bb20bb8908bd29efefca656ef72e153c0684c8bb437b1f0b10d56a70",
+          "MemPerc": "1.66%",
+          "MemUsage": "8.488MiB / 512MiB",
+          "Name": "ar-task-af0fe974-cc7b-4fa7-903f-08f9e0cbe01d-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "27"
+        }
+      },
+      {
+        "at": "2026-11-05T14:10:22.433Z",
+        "docker_stats": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "ar-task-af0fe974-cc7b-4fa7-903f-08f9e0cbe01d-1",
+          "ID": "0184d906bb20bb8908bd29efefca656ef72e153c0684c8bb437b1f0b10d56a70",
+          "MemPerc": "1.66%",
+          "MemUsage": "8.488MiB / 512MiB",
+          "Name": "ar-task-af0fe974-cc7b-4fa7-903f-08f9e0cbe01d-1",
+          "NetIO": "0B / 0B",
+          "PIDs": "27"
+        }
+      }
+    ],
+    "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+    "result": {
+      "fibonacci": 2880067194370816120,
+      "methods_agree": true,
+      "n": 90
+    },
+    "review": {
+      "approved": true,
+      "notes": "Code correctly implements both iterative and fast-doubling Fibonacci in u128 with overflow checks; F(90)=2880067194370816120 is the known correct value. Worker evidence confirms exit code 0, empty stderr, and the artifact result.json (61 bytes, sha256 recorded) decodes to {\"n\":90,\"fibonacci\":2880067194370816120,\"methods_agree\":true}, matching the code's output. Proposed answer makes no unsupported claims."
+    },
+    "runtime": "runsc",
+    "started_at": "2026-11-05T14:10:21.722Z",
+    "stderr": "",
+    "stdout": "F(90) = 2880067194370816120\nmethods_agree: true (iterative == fast-doubling == 2880067194370816120)\nartifact /work/artifacts/result.json: {\"n\":90,\"fibonacci\":2880067194370816120,\"methods_agree\":true}\n"
+  },
+  "request": {
+    "memory_mb": 512,
+    "profile": "cli",
+    "prompt": "Compute the 90th Fibonacci number iteratively and with fast doubling, assert the two agree, and write the value to result.json.",
+    "timeout_seconds": 60
+  },
+  "state": "succeeded",
+  "updated_at": "2026-11-05T14:10:45.535Z"
+}

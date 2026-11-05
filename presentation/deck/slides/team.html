@@ -4,12 +4,12 @@
 <h2 style="font-size:72px;font-weight:700;line-height:1.1">Four roles, each with only the tools it needs</h2>
 </div>
 <table style="font-size:28px;color:#142033;font-family:'IBM Plex Sans', Arial, sans-serif">
-<tr style="background:#E6E1D4"><th style="width:20%">Role</th><th style="width:24%">Model · effort</th><th style="width:56%">May do</th></tr>
-<tr><td>Orchestrator</td><td>Opus 5.5 · medium</td><td>Plan, delegate, supervise the coder, answer — never runs code</td></tr>
-<tr style="background:#FBFAF5"><td>Coder</td><td>Haiku 5.5 · xhigh</td><td>Write Rust, run it in the sandbox, fix and rerun</td></tr>
-<tr><td>Worker</td><td>Haiku 5.5 · high</td><td>Small defined tasks, memory lookups — no code execution</td></tr>
-<tr style="background:#FBFAF5"><td>Reviewer</td><td>Opus 5.5 · high</td><td>Audit the answer against the worker’s evidence — approve or send back</td></tr>
+<tr style="background:#E6E1D4"><th style="width:20%">Role</th><th style="width:24%">GLM 5.3 Flash effort</th><th style="width:56%">May do</th></tr>
+<tr><td>Orchestrator</td><td>medium</td><td>Plan, delegate, supervise the coder, answer — never runs code</td></tr>
+<tr style="background:#FBFAF5"><td>Coder</td><td>xhigh</td><td>Write Rust, run it in the sandbox, fix and rerun</td></tr>
+<tr><td>Worker</td><td>high</td><td>Small defined tasks, memory lookups — no code execution</td></tr>
+<tr style="background:#FBFAF5"><td>Reviewer</td><td>high</td><td>Audit the answer against the worker’s evidence — approve or send back</td></tr>
 </table>
-<p style="font-size:28px;line-height:1.4;color:#4A5568;width:1500px">Role prompts are stripped to their own tools, and trusted code enforces each allowlist. Haiku roles compact their context server-side at 100k tokens. Every call reserves its worst-case cost before it is sent.</p>
-<aside>Each role sees a short system prompt listing only its own tools, and the engine rejects any tool outside the role’s allowlist even if a model asks for it — in testing, an orchestrator that tried to run code itself was refused and logged. Inference is pluggable: the same engine runs on Vultr Serverless Inference, where every role uses GLM 5.3 Flash, or on Anthropic Claude with the per-role models shown here. Today’s live demo runs the Claude team.</aside>
+<p style="font-size:28px;line-height:1.4;color:#4A5568;width:1500px">Every call goes to Vultr Serverless Inference. Role prompts are stripped to their own tools, and trusted code enforces each allowlist. Reasoning is capped so every role keeps room to answer, and every call reserves its worst-case cost before it is sent.</p>
+<aside>Each role sees a short system prompt listing only its own tools, and the engine rejects any tool outside the role’s allowlist even if a model asks for it — in testing, an orchestrator that tried to run code itself was refused and logged. The live demo runs every role on Vultr Serverless Inference with GLM 5.3 Flash; the roles differ in reasoning effort, and each call’s reasoning is capped at half its output budget so the model always has room to answer. Inference is pluggable: the same engine also runs on Anthropic Claude, with Opus for the orchestrator and reviewer and Haiku for the coder and worker.</aside>
 </section>

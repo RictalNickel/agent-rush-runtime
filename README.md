@@ -70,7 +70,7 @@ Control settings:
 - `AR_INFERENCE_BUDGET_USD`: persisted inference budget, default $5, hard maximum $25. Each call reserves its worst case before it is sent and settles to actual usage.
 - `AR_DATA_DIR`, `AR_CAPACITY_MB`: trusted state directory and admission capacity; reserve node headroom when choosing capacity.
 
-**Hackathon note:** the Blast Radius Zero track requires Vultr Serverless Inference for every agent LLM call. The Vultr path is verified live with GLM 5.3 Flash (job `2fd5b26f`: 33 s, $0.003, every call on Vultr). The public instance currently runs the `anthropic` provider; set `AR_INFERENCE_PROVIDER=vultr` with the GLM settings in `deploy/control.env.example` before submitting.
+**Hackathon note:** the Blast Radius Zero track requires Vultr Serverless Inference for every agent LLM call. The public instance runs the `vultr` provider with GLM 5.3 Flash, so every agent call goes to Vultr (job `7d466fa9`: 58 s, $0.006, reviewer approved). The Anthropic provider remains available for development.
 
 Logical subordinate contexts share task identity; they are not OS sandboxes. Unresolved usage keeps its conservative cost reservation.
 

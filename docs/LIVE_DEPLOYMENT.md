@@ -69,6 +69,17 @@ Task: compute the first 200 primes by trial division and a sieve, assert they ag
 - Peak sandbox memory was 75 MiB. The worker kept at least 7.1 GB available, and `load1` peaked at 0.58.
 - Limitation: sandbox runs lasted under 1 s while model turns took tens of seconds, so no two sandboxes overlapped in this test. The qualification's `concurrency` check covers overlapping sandboxes.
 
+The same four tasks were rerun on Vultr Serverless Inference after the switch (raw data: `evidence/live/load-vultr/`):
+
+| Job | Queued | Total | Sandbox run | Review | Model calls | Cost |
+| --- | --- | --- | --- | --- | --- | --- |
+| be2c59ca | 0.3 s | 65.1 s | 965 ms | approved | 5 | $0.0045 |
+| af0fe974 | 0.8 s | 76.2 s | 812 ms | approved | 5 | $0.0040 |
+| 985bad2b | 65.6 s | 165.1 s | 1029 ms | approved | 7 | $0.0099 |
+| 43a2e00b | 76.4 s | 121.0 s | 810 ms | approved | 5 | $0.0037 |
+
+All four succeeded with cleanup verified, under the same two-slot admission. Wall time was 170 s, against 217 s on Claude, and the total cost was $0.022 against $0.36.
+
 ### Containment
 
 **Deterministic probe** (`examples/containment_probe.rs`, run with `agent-rush sandbox --memory-mb 256` on the worker; receipt in `evidence/live/containment/probe-receipt.json`):
@@ -110,7 +121,28 @@ A temporary second control instance (loopback only, its own data directory, `AR_
 
 Every model call in `2fd5b26f` went to Vultr Serverless Inference. Raw evidence: `evidence/live/vultr/`.
 
-The first Vultr attempt (`826c79d5`) failed, and that failure is kept as evidence. Without a reasoning effort, GLM 5.3 Flash can spend its whole output budget on hidden reasoning and return empty content. The gateway now sends each role's `reasoning_effort` (the same table as the Claude roles) and allows 16k output tokens. A reasoning-only reply now produces a clear error. Measured per call: 3–6 s at medium, high and xhigh effort, against 10–26 s with no effort set.
+The first Vultr attempt (`826c79d5`) failed, and that failure is kept as evidence. Without a reasoning effort, GLM 5.3 Flash can spend its whole output budget on hidden reasoning and return empty content. The gateway now sends each role's reasoning effort (the same table as the Claude roles) and allows 16k output tokens. A reasoning-only reply now produces a clear error. Measured per call: 3–6 s at medium, high and xhigh effort, against 10–26 s with no effort set.
+
+### Public instance on Vultr (job `7d466fa9`)
+
+On 2026-11-05 the owner switched the public instance to `AR_INFERENCE_PROVIDER=vultr` with GLM 5.3 Flash at $0.10/$0.35 per million tokens. `/api/status` now lists each role's model and reasoning effort.
+
+The first public job on a harder task (`510a429a`, kept in `evidence/live/vultr-public-failed-uncapped/`) failed. The coder at xhigh used all 16,384 output tokens on reasoning and returned no answer. A direct probe reproduced it, and showed that GLM honours `reasoning.max_tokens`: with the cap at 8,192, the same prompt used 8,202 reasoning tokens and then returned valid JSON. Two changes followed:
+- Every Vultr request now sends `reasoning: {effort, max_tokens: 8192}`.
+- The gateway settles a call's actual usage before decoding the answer, as the Claude path does. A failed call used to keep its worst-case reservation.
+
+The same task then succeeded through the public URL:
+
+| | |
+| --- | --- |
+| Task | 1,000 seeded sales rows; revenue by quarter and region |
+| Flow | orchestrator (medium) → coder (xhigh) → orchestrator → reviewer (high), approved |
+| Sandbox | exit 0 in 966 ms; checks passed; cleanup verified |
+| Result | grand total 5,013,559.38; quarter and region totals both reconcile |
+| End to end | 58 s |
+| Model cost | $0.0058 over 5 calls (the coder's first call was 12,234 tokens) |
+
+Raw evidence: `evidence/live/vultr-public/`.
 
 ### Overlapping sandboxes
 
@@ -144,7 +176,6 @@ Most of a job's time is model time. Sandbox execution took 0.8–0.9 s, or about
 
 ## Not yet done
 
-- The public deployment still uses the `anthropic` provider, by owner decision. The Vultr path is verified live (above). Switching the public instance means setting `AR_INFERENCE_PROVIDER=vultr`, `AR_INFERENCE_MODEL=glm-5.3-flash`, `AR_INPUT_USD_PER_MILLION=0.10`, `AR_OUTPUT_USD_PER_MILLION=0.35` and `AR_PRICING_VERIFIED=true` in the control env file, then restarting the service.
 - No recorded demo video yet. The slide deck is in `presentation/deck/`; a PDF export is pending.
 - Security-flavoured tasks can be declined by the Opus classifier. Anthropic's server-side `fallbacks` option would reroute those calls to another model; it is off because it substitutes models outside the configured role table.
 - The private mTLS certificates expire 2026-11-11 04:31 UTC and must be regenerated if the demo runs past that.

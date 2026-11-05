@@ -1,0 +1,70 @@
+{
+  "disclaimer": "Worker-collected execution evidence; not independent remote attestation",
+  "dropped_events": 0,
+  "events": [
+    {
+      "at": "2026-11-05T14:02:22.869Z",
+      "kind": "queued",
+      "message": "Task accepted under fixed CLI policy"
+    },
+    {
+      "at": "2026-11-05T14:02:23.424Z",
+      "kind": "admitted",
+      "memory_mb": 512,
+      "message": "Memory lease admitted atomically"
+    },
+    {
+      "at": "2026-11-05T14:02:26.788Z",
+      "kind": "tool_started",
+      "message": "Agent 5a0a85e6-212f-41c1-8036-fc8c3b0ed895 at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T14:03:42.776Z",
+      "kind": "error",
+      "message": "Task could not complete: model returned reasoning but no answer (finish_reason length)"
+    },
+    {
+      "at": "2026-11-05T14:03:42.778Z",
+      "kind": "failed",
+      "message": "Worker cleanup verified; lease released"
+    }
+  ],
+  "job": "510a429a-502b-447f-8a3c-b98a78b779bf",
+  "receipt": {
+    "artifacts": [],
+    "checks_passed": false,
+    "cleanup_state": "verified",
+    "exit_code": null,
+    "explanation": null,
+    "inference_calls": [
+      {
+        "accounted_usd": 0.00016209999999999998,
+        "agent_id": "5a0a85e6-212f-41c1-8036-fc8c3b0ed895",
+        "at": "2026-11-05T14:02:26.788Z",
+        "call_id": "6853c9c8-e496-4efd-9a57-e2db360531a2",
+        "depth": 0,
+        "effort": "medium",
+        "input_tokens": 368,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 358,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-b3ea267c-512e-488f-9084-4a5452ffce00",
+        "role": "orchestrator"
+      }
+    ],
+    "model_calls": 2,
+    "reason": "controller_error",
+    "review": null,
+    "stderr": "",
+    "stdout": ""
+  },
+  "request": {
+    "memory_mb": 512,
+    "profile": "cli",
+    "prompt": "Generate 1,000 deterministic sales rows (seeded PRNG, regions North/South/East/West, dates across 2025) in Rust, compute revenue totals per quarter and per region, and write them to /work/artifacts/result.json. Print the grand total.",
+    "timeout_seconds": 60
+  },
+  "schema": "agent-rush.evidence.v1",
+  "state": "failed"
+}
