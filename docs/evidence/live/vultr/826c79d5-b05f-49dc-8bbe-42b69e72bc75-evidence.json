@@ -1,0 +1,69 @@
+{
+  "disclaimer": "Worker-collected execution evidence; not independent remote attestation",
+  "dropped_events": 0,
+  "events": [
+    {
+      "at": "2026-11-05T06:14:01.705Z",
+      "kind": "queued",
+      "message": "Task accepted under fixed CLI policy"
+    },
+    {
+      "at": "2026-11-05T06:14:02.059Z",
+      "kind": "admitted",
+      "memory_mb": 512,
+      "message": "Memory lease admitted atomically"
+    },
+    {
+      "at": "2026-11-05T06:14:13.787Z",
+      "kind": "tool_started",
+      "message": "Agent d6a6e48c-0ffe-4d97-b639-aefd04a83cbb at depth 0 requested an allowed tool"
+    },
+    {
+      "at": "2026-11-05T06:14:31.403Z",
+      "kind": "error",
+      "message": "Task could not complete: invalid model output length"
+    },
+    {
+      "at": "2026-11-05T06:14:31.404Z",
+      "kind": "failed",
+      "message": "Worker cleanup verified; lease released"
+    }
+  ],
+  "job": "826c79d5-b05f-49dc-8bbe-42b69e72bc75",
+  "receipt": {
+    "artifacts": [],
+    "checks_passed": false,
+    "cleanup_state": "verified",
+    "exit_code": null,
+    "explanation": null,
+    "inference_calls": [
+      {
+        "accounted_usd": 0.0008769999999999998,
+        "agent_id": "d6a6e48c-0ffe-4d97-b639-aefd04a83cbb",
+        "at": "2026-11-05T06:14:13.785Z",
+        "call_id": "85779116-7e5c-4a68-be25-60fa91e55d2a",
+        "depth": 0,
+        "input_tokens": 363,
+        "model": "glm-5.3-flash",
+        "origin": "https://api.vultrinference.com/v1",
+        "output_tokens": 2402,
+        "provider": "Vultr Serverless Inference",
+        "provider_request_id": "chatcmpl-de953673-678a-4c3c-8b4d-cbcbc6ec2cef",
+        "role": "orchestrator"
+      }
+    ],
+    "model_calls": 2,
+    "reason": "controller_error",
+    "review": null,
+    "stderr": "",
+    "stdout": ""
+  },
+  "request": {
+    "memory_mb": 512,
+    "profile": "cli",
+    "prompt": "Compute the first 200 prime numbers. Report their count, their sum, and the largest one. Check the result two independent ways (trial division and a sieve) and assert they agree. Write count, sum, largest and the check outcome to result.json.",
+    "timeout_seconds": 60
+  },
+  "schema": "agent-rush.evidence.v1",
+  "state": "failed"
+}

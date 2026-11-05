@@ -21,7 +21,10 @@ pub struct AppState {
     pub ledger: Arc<Ledger>,
     login_attempts: Arc<Mutex<Vec<Instant>>>,
     pub http: reqwest::Client,
+    worker_seen: Arc<tokio::sync::Mutex<Option<(Instant, bool)>>>,
 }
+/// How long the public status endpoint reuses one worker health check.
+const WORKER_STATUS_TTL: Duration = Duration::from_secs(5);
 impl AppState {
     pub fn new(settings: Settings, ledger: Ledger) -> anyhow::Result<Self> {
         let mut builder = reqwest::Client::builder()
@@ -40,6 +43,7 @@ impl AppState {
             ledger: Arc::new(ledger),
             login_attempts: Arc::new(Mutex::new(Vec::new())),
             http,
+            worker_seen: Arc::new(tokio::sync::Mutex::new(None)),
         })
     }
     pub fn owner(&self, headers: &HeaderMap, mutation: bool) -> Result<String, ApiError> {
@@ -143,18 +147,33 @@ async fn js() -> impl IntoResponse {
         include_str!("../web/app.js"),
     )
 }
-async fn status(State(s): State<AppState>) -> Json<Value> {
-    let connected = if let Some(url) = &s.settings.worker_url {
-        s.http
+impl AppState {
+    /// Worker reachability for the public status page. Cached so anonymous polling cannot
+    /// drive private-worker traffic; concurrent requests share one in-flight check.
+    async fn worker_connected(&self) -> bool {
+        let Some(url) = &self.settings.worker_url else {
+            return false;
+        };
+        let mut seen = self.worker_seen.lock().await;
+        if let Some((at, connected)) = *seen
+            && at.elapsed() < WORKER_STATUS_TTL
+        {
+            return connected;
+        }
+        let connected = self
+            .http
             .get(format!("{url}/v1/health"))
-            .bearer_auth(&s.settings.worker_token)
+            .bearer_auth(&self.settings.worker_token)
             .send()
             .await
             .ok()
-            .is_some_and(|r| r.status().is_success())
-    } else {
-        false
-    };
+            .is_some_and(|r| r.status().is_success());
+        *seen = Some((Instant::now(), connected));
+        connected
+    }
+}
+async fn status(State(s): State<AppState>) -> Json<Value> {
+    let connected = s.worker_connected().await;
     Json(
         json!({"version":env!("CARGO_PKG_VERSION"),"inference_configured":s.settings.inference_configured(),"inference_provider":s.settings.inference_provider.name(),"agent_roles":agent_roles(&s.settings),"worker_connected":connected,"runtime":"runsc","profiles":[{"id":"cli","available":connected && s.settings.inference_configured()},{"id":"nested-dev","available":false,"reason":"Not qualified"},{"id":"browser","available":false,"reason":"Not qualified"}],"reserved_memory_mb":s.ledger.reserved_memory().unwrap_or(0),"inference_accounted_usd":s.ledger.spend_total().unwrap_or(0.0),"cloud_status":"unverified","resources":{"controller_admission_capacity_mb":s.ledger.capacity_mb(),"max_concurrent_jobs":crate::resources::MAX_CONCURRENT,"cpu_scheduling":"equal weights, shared ceilings","memory_growth":"between sandbox attempts only","utilization":"not measured by this endpoint"}}),
     )

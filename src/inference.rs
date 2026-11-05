@@ -12,7 +12,8 @@ use std::{sync::Arc, time::Duration};
 pub const ENDPOINT: &str = "https://api.vultrinference.com/v1/chat/completions";
 pub const ANTHROPIC_ENDPOINT: &str = "https://api.anthropic.com/v1/messages";
 const INPUT_BYTES: usize = 32000;
-const OUTPUT_TOKENS: u64 = 4096;
+/// Vultr output ceiling. GLM reasoning tokens count against it, so it leaves room for both.
+const OUTPUT_TOKENS: u64 = 16384;
 /// Per-call output ceiling for every Claude role.
 pub const ANTHROPIC_MAX_TOKENS: u64 = 100_000;
 /// Haiku roles compact server-side once their input reaches this many tokens.
@@ -54,10 +55,24 @@ pub struct Completion {
     pub input_tokens: u64,
     pub output_tokens: u64,
 }
+/// Attach the role's reasoning effort to a Vultr request. Without it GLM 5.3 Flash may
+/// spend its whole output budget reasoning and return empty content.
+pub fn with_reasoning_effort(mut request: Value, role: Role) -> Value {
+    request["reasoning_effort"] = json!(anthropic_role(role).effort);
+    request
+}
 pub fn decode_response(body: Value) -> Result<Completion> {
-    let content = body["choices"][0]["message"]["content"]
-        .as_str()
-        .context("provider returned no text completion")?;
+    let message = &body["choices"][0]["message"];
+    let content = message["content"].as_str().unwrap_or("");
+    ensure!(
+        !content.is_empty() || !message["reasoning"].is_string(),
+        "model returned reasoning but no answer (finish_reason {})",
+        body["choices"][0]["finish_reason"].as_str().unwrap_or("unknown")
+    );
+    ensure!(
+        message["content"].is_string(),
+        "provider returned no text completion"
+    );
     ensure!(
         !content.is_empty() && content.len() <= 32768,
         "invalid model output length"
@@ -298,7 +313,7 @@ impl InferenceGateway {
     pub async fn complete(&self, context: &AgentContext) -> Result<(String, Option<Value>, Value)> {
         match self.settings.inference_provider {
             Provider::Vultr => {
-                let (completion, receipt) = self.complete_vultr(&context.messages).await?;
+                let (completion, receipt) = self.complete_vultr(context).await?;
                 Ok((completion.content, None, receipt))
             }
             Provider::Anthropic => self.complete_anthropic(context).await,
@@ -400,7 +415,7 @@ impl InferenceGateway {
         });
         Ok((completion.text, completion.compaction, receipt))
     }
-    async fn complete_vultr(&self, messages: &[Value]) -> Result<(Completion, Value)> {
+    async fn complete_vultr(&self, context: &AgentContext) -> Result<(Completion, Value)> {
         ensure!(
             self.settings.inference_configured(),
             "Vultr inference key, model and verified pricing must be configured"
@@ -414,7 +429,10 @@ impl InferenceGateway {
             .inference_output_per_million
             .context("output price required")?;
         validate_pricing(input, output)?;
-        let request = build_request(&self.settings.inference_model, messages)?;
+        let request = with_reasoning_effort(
+            build_request(&self.settings.inference_model, &context.messages)?,
+            context.role,
+        );
         let call_id = uuid::Uuid::new_v4().to_string();
         // Reserve the complete maximum accepted usage, including unexpected provider accounting.
         let reservation = (64000.0 * input + OUTPUT_TOKENS as f64 * output) / 1_000_000.0;
@@ -446,7 +464,7 @@ impl InferenceGateway {
             "provider usage exceeds cost reservation; stop and reconcile billing"
         );
         self.ledger.settle_spend(&call_id, cost)?;
-        let receipt = json!({"call_id":call_id,"provider":"Vultr Serverless Inference","origin":"https://api.vultrinference.com/v1","model":completion.model,"provider_request_id":completion.provider_id,"input_tokens":completion.input_tokens,"output_tokens":completion.output_tokens,"accounted_usd":cost,"at":crate::domain::now()});
+        let receipt = json!({"call_id":call_id,"provider":"Vultr Serverless Inference","origin":"https://api.vultrinference.com/v1","role":context.role,"effort":anthropic_role(context.role).effort,"model":completion.model,"provider_request_id":completion.provider_id,"input_tokens":completion.input_tokens,"output_tokens":completion.output_tokens,"accounted_usd":cost,"at":crate::domain::now()});
         Ok((completion, receipt))
     }
 }

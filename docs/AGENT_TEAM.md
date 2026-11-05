@@ -11,6 +11,8 @@ With `AR_INFERENCE_PROVIDER=anthropic` (and with `vultr`, where every role uses 
 
 Every call sets `max_tokens` to 100,000. The worker and coder use server-side threshold compaction (`compact_20260112`, beta `compact-2026-01-12`). Haiku summarizes its own conversation, and the engine then resets that context to its policy, its task and the summary turn, so the stored history stays bounded.
 
+With `AR_INFERENCE_PROVIDER=vultr`, every role uses `glm-5.3-flash`, and the same effort column is sent as `reasoning_effort` with a 16k output budget. The setting is required: without it GLM can spend all of its output on hidden reasoning and return no answer.
+
 ## Flow
 
 1. The orchestrator plans and delegates. It cannot run code: a `sandbox` call from the orchestrator is rejected and the rejection is logged.

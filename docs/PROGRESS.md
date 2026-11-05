@@ -94,3 +94,8 @@ Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
   - Originality against Agent Zero: no shared text found. Removed the Agent Zero envelope decoder and aliases, and replaced `call_subordinate` with `follow_up`.
   - Code review fixes: requalification no longer restarts the worker. Review failures are advisory. A final rejection fails the job. Reviewer prompts fit the compact budget.
   - Stale documentation corrected.
+- Completion pass:
+  - Vultr path verified live with GLM 5.3 Flash. Pricing ($0.10/$0.35 per million tokens) read from Vultr's catalog. Per-role `reasoning_effort` fixes empty answers. Job `2fd5b26f`: 33 s, $0.003.
+  - Overlapping sandboxes verified, with 429 backpressure.
+  - `/api/status` went from 31 to 460 req/s (health caching, no idle worker polling).
+  - Playwright 2/2 and `cargo audit` clean.

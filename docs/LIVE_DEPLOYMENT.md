@@ -94,9 +94,57 @@ Finding: `--pids-limit 64` stops process creation (the qualification run was den
 
 **Model refusals:** two earlier attempts that asked the agents to deliberately probe or exceed the sandbox were declined by Opus 5.5's safety classifier (`stop_reason: refusal`, category `cyber`) on the orchestrator's first call. Before a fix in this branch, a refusal kept its worst-case reservation (about $2.02, still counted in the live ledger). Refusals and structured API errors now settle at their actual cost.
 
+### Vultr Serverless Inference path (job `2fd5b26f`)
+
+GLM 5.3 Flash pricing comes from Vultr's own model catalog (`GET https://api.vultrinference.com/v1/models`): **$0.10 per million input tokens, $0.35 per million output tokens**.
+
+A temporary second control instance (loopback only, its own data directory, `AR_INFERENCE_PROVIDER=vultr`) ran the same primes task as job `2f6bd23b`. All four roles used `glm-5.3-flash`.
+
+| | Claude team (`2f6bd23b`) | Vultr GLM team (`2fd5b26f`) |
+| --- | --- | --- |
+| Result | 200 primes, sum 111587, largest 1223 | same |
+| Review | approved after one rejection | approved |
+| Model calls | 7 | 5 |
+| End to end | 138 s | **33 s** |
+| Model cost | $0.196 | **$0.003** |
+
+Every model call in `2fd5b26f` went to Vultr Serverless Inference. Raw evidence: `evidence/live/vultr/`.
+
+The first Vultr attempt (`826c79d5`) failed, and that failure is kept as evidence. Without a reasoning effort, GLM 5.3 Flash can spend its whole output budget on hidden reasoning and return empty content. The gateway now sends each role's `reasoning_effort` (the same table as the Claude roles) and allows 16k output tokens. A reasoning-only reply now produces a clear error. Measured per call: 3–6 s at medium, high and xhigh effort, against 10–26 s with no effort set.
+
+### Overlapping sandboxes
+
+`qa/overlap_test.py` sent three 4-second CPU-bound runs to the worker API at the same moment over mTLS. Raw data: `evidence/live/load/overlap-*`.
+- **Two ran together for 4.7 s**, each held at about one core. The cgroups read `memory.max` 512 MiB, `cpu.max 100000 100000` and 42 PIDs each.
+- **The third was refused with HTTP 429.** The worker admits at most two concurrent runs, so excess work is pushed back to the controller's queue.
+- All runs completed with cleanup verified, and no containers were left.
+
+### Performance
+
+`qa/api_bench.py`, 400 requests at concurrency 16, measured on the control VM loopback:
+
+| Path | Before | After |
+| --- | --- | --- |
+| `/api/status` | 31 req/s, p50 494 ms | **460 req/s, p50 8 ms** |
+| `/`, `/assets/app.js` | ~1,500 req/s, p50 9 ms | unchanged |
+
+Cause: each anonymous status request made the worker run `docker info` over mTLS, and the scheduler also polled the worker twice a second while idle. Three changes fixed it:
+- The worker caches runtime health for 5 s.
+- The controller caches reachability for 5 s, with one refresh in flight at a time.
+- The scheduler only contacts the worker when jobs are queued.
+
+Worker health calls fell to 14 over the benchmark plus 20 s of idle time. Over the public internet, all paths run at about 64 ms median from the operator's location, which is network round-trip time.
+
+Most of a job's time is model time. Sandbox execution took 0.8–0.9 s, or about 1.3 s including container start and verified cleanup.
+
+### Browser and dependency checks
+
+- The Playwright suite passed in the official `mcr.microsoft.com/playwright:v1.64.1-noble` container on the worker. It covers desktop login, a real queued job, evidence export and cancel, plus the mobile layout. A new assertion checks the live provider and worker status in the sidebar.
+- `cargo audit` checked 228 crates against 1,403 RustSec advisories and found no vulnerabilities.
+
 ## Not yet done
 
-- The live deployment uses the `anthropic` provider. The Blast Radius Zero rules require Vultr Serverless Inference for every agent call. Switching needs verified GLM 5.3 Flash pricing (`AR_INPUT_USD_PER_MILLION`, `AR_OUTPUT_USD_PER_MILLION`, `AR_PRICING_VERIFIED=true`) and `AR_INFERENCE_PROVIDER=vultr`.
+- The public deployment still uses the `anthropic` provider, by owner decision. The Vultr path is verified live (above). Switching the public instance means setting `AR_INFERENCE_PROVIDER=vultr`, `AR_INFERENCE_MODEL=glm-5.3-flash`, `AR_INPUT_USD_PER_MILLION=0.10`, `AR_OUTPUT_USD_PER_MILLION=0.35` and `AR_PRICING_VERIFIED=true` in the control env file, then restarting the service.
 - No recorded demo video yet. The slide deck is in `presentation/deck/`; a PDF export is pending.
 - Security-flavoured tasks can be declined by the Opus classifier. Anthropic's server-side `fallbacks` option would reroute those calls to another model; it is off because it substitutes models outside the configured role table.
 - The private mTLS certificates expire 2026-11-11 04:31 UTC and must be regenerated if the demo runs past that.

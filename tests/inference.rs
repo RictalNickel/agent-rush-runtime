@@ -1,5 +1,6 @@
 use agent_rush::{
-    inference::{build_request, decode_response, validate_pricing},
+    agent::Role,
+    inference::{build_request, decode_response, validate_pricing, with_reasoning_effort},
     ledger::Ledger,
 };
 use serde_json::json;
@@ -35,7 +36,13 @@ fn invalid_pricing_and_oversized_prompts_fail_closed() {
         &[json!({"role":"user","content":"Compute totals"})],
     )
     .unwrap();
-    assert_eq!(r["max_tokens"], 4096);
+    assert_eq!(r["max_tokens"], 16384);
+    let r = with_reasoning_effort(r, Role::Coder);
+    assert_eq!(r["reasoning_effort"], "xhigh");
+    assert_eq!(
+        with_reasoning_effort(r.clone(), Role::Orchestrator)["reasoning_effort"],
+        "medium"
+    );
     assert_eq!(r["stream"], false);
 }
 
@@ -46,4 +53,12 @@ fn missing_usage_or_empty_choices_cannot_be_claimed_as_success() {
     let r=decode_response(json!({"id":"real-provider-id","model":"test","choices":[{"message":{"content":"hello"}}],"usage":{"prompt_tokens":30,"completion_tokens":10}})).unwrap();
     assert_eq!(r.content, "hello");
     assert_eq!(r.input_tokens, 30);
+}
+
+#[test]
+fn reasoning_without_an_answer_is_a_clear_failure() {
+    // Observed live from GLM 5.3 Flash without a reasoning effort: all tokens spent reasoning.
+    let body = json!({"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"","reasoning":"long chain"}}],"usage":{"prompt_tokens":86,"completion_tokens":2454}});
+    let error = decode_response(body).unwrap_err().to_string();
+    assert!(error.contains("reasoning but no answer"), "{error}");
 }

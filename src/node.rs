@@ -34,7 +34,10 @@ pub struct NodeState {
     qualification_expires_at: Arc<AtomicI64>,
     draining: Arc<AtomicBool>,
     io_lock: Arc<Mutex<()>>,
+    health_cache: Arc<tokio::sync::Mutex<Option<(std::time::Instant, Value)>>>,
 }
+/// Runtime health (a `docker info` call) is reused for this long; reservations stay live.
+const HEALTH_TTL: std::time::Duration = std::time::Duration::from_secs(5);
 #[derive(Clone)]
 struct ActiveLease {
     memory_mb: u32,
@@ -77,6 +80,7 @@ impl NodeState {
             qualification_expires_at: Arc::new(AtomicI64::new(0)),
             draining: Arc::new(AtomicBool::new(false)),
             io_lock: Arc::new(Mutex::new(())),
+            health_cache: Arc::new(tokio::sync::Mutex::new(None)),
         })
     }
     fn auth(&self, headers: &HeaderMap) -> Result<(), NodeError> {
@@ -106,6 +110,18 @@ impl NodeState {
     }
     pub fn qualification_expiry(&self) -> i64 {
         self.qualification_expires_at.load(Ordering::SeqCst)
+    }
+    /// Docker-derived health, cached for `HEALTH_TTL`; concurrent callers share one refresh.
+    async fn runtime_health(&self) -> Result<Value> {
+        let mut cache = self.health_cache.lock().await;
+        if let Some((at, value)) = cache.as_ref()
+            && at.elapsed() < HEALTH_TTL
+        {
+            return Ok(value.clone());
+        }
+        let value = self.runner.health().await?;
+        *cache = Some((std::time::Instant::now(), value.clone()));
+        Ok(value)
     }
     fn qualification_expired(&self) -> bool {
         let expires_at = self.qualification_expiry();
@@ -227,7 +243,7 @@ async fn health(State(s): State<NodeState>, headers: HeaderMap) -> Result<Json<V
             "Worker is draining".into(),
         ));
     }
-    let mut health = s.runner.health().await.map_err(|_| {
+    let mut health = s.runtime_health().await.map_err(|_| {
         NodeError(
             StatusCode::SERVICE_UNAVAILABLE,
             "Sandbox runtime unavailable".into(),

@@ -1,0 +1,12 @@
+{"at":"2026-11-05T06:20:22Z","load1":1.34,"mem_available_kb":7426548,"sandboxes":[]}
+{"at":"2026-11-05T06:20:23Z","load1":1.34,"mem_available_kb":7438248,"sandboxes":[]}
+{"at":"2026-11-05T06:20:25Z","load1":1.34,"mem_available_kb":7437344,"sandboxes":[]}
+{"at":"2026-11-05T06:20:26Z","load1":1.64,"mem_available_kb":7337840,"sandboxes":[{"id":"823aa9dba6c6","memory_current":17317888,"memory_max":"536870912","cpu_max":"100000 100000","cpu_usage_usec":950032,"pids":42},{"id":"0981ae0f7f53","memory_current":17395712,"memory_max":"536870912","cpu_max":"100000 100000","cpu_usage_usec":1006820,"pids":42}]}
+{"at":"2026-11-05T06:20:27Z","load1":1.64,"mem_available_kb":7362664,"sandboxes":[{"id":"823aa9dba6c6","memory_current":17301504,"memory_max":"536870912","cpu_max":"100000 100000","cpu_usage_usec":2085983,"pids":42},{"id":"0981ae0f7f53","memory_current":17379328,"memory_max":"536870912","cpu_max":"100000 100000","cpu_usage_usec":2142046,"pids":42}]}
+{"at":"2026-11-05T06:20:28Z","load1":1.64,"mem_available_kb":7379872,"sandboxes":[{"id":"823aa9dba6c6","memory_current":17301504,"memory_max":"536870912","cpu_max":"100000 100000","cpu_usage_usec":3220941,"pids":42},{"id":"0981ae0f7f53","memory_current":17379328,"memory_max":"536870912","cpu_max":"100000 100000","cpu_usage_usec":3275795,"pids":42}]}
+{"at":"2026-11-05T06:20:29Z","load1":1.64,"mem_available_kb":7350160,"sandboxes":[{"id":"823aa9dba6c6","memory_current":17301504,"memory_max":"536870912","cpu_max":"100000 100000","cpu_usage_usec":4352968,"pids":42},{"id":"0981ae0f7f53","memory_current":17379328,"memory_max":"536870912","cpu_max":"100000 100000","cpu_usage_usec":4401046,"pids":42}]}
+{"at":"2026-11-05T06:20:30Z","load1":1.51,"mem_available_kb":7443404,"sandboxes":[]}
+{"at":"2026-11-05T06:20:31Z","load1":1.51,"mem_available_kb":7439208,"sandboxes":[]}
+{"at":"2026-11-05T06:20:32Z","load1":1.51,"mem_available_kb":7447548,"sandboxes":[]}
+{"at":"2026-11-05T06:20:33Z","load1":1.51,"mem_available_kb":7435660,"sandboxes":[]}
+{"at":"2026-11-05T06:20:34Z","load1":1.51,"mem_available_kb":7443992,"sandboxes":[]}

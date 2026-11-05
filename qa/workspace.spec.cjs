@@ -4,6 +4,9 @@ test('workspace, operator login, real queued job, evidence and cancellation',asy
   await page.goto('/');await expect(page).toHaveTitle('Agent Rush · Workspace');
   await expect(page.getByRole('heading',{name:'Give every agent a world.'})).toBeVisible();
   await expect(page.locator('#empty-state')).toBeVisible();
+  // The sidebar reports the configured provider and live worker reachability (none in QA).
+  await expect(page.locator('#deploy-label')).toHaveText('Inference: vultr');
+  await expect(page.locator('#deploy-status')).toHaveText('Worker unavailable');
   await page.screenshot({path:'/tmp/agent-rush-workspace-desktop.png',fullPage:true});
   await page.getByRole('button',{name:'Safety & limits'}).click();
   await expect(page.getByText('Authority stays outside the agent.',{exact:false})).toBeVisible();

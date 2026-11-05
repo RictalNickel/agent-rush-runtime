@@ -1,0 +1,61 @@
+{
+  "submitted": 3,
+  "wall_s": 5.5,
+  "all_runs_overlap_s": 4.68,
+  "runs": [
+    {
+      "i": 0,
+      "admitted": true,
+      "id": "overlap-ffbf3c09-74db-4916-94b7-40d4b40e4aa5",
+      "reason": "completed",
+      "exit": 0,
+      "cleanup": "verified",
+      "start": "2026-11-05T06:20:25.194Z",
+      "end": "2026-11-05T06:20:29.893Z",
+      "exec_ms": 4699,
+      "duration_ms": 5170,
+      "result": {
+        "rounds": 2829,
+        "x": 9844261590006344167
+      },
+      "cpu_samples": [
+        "99.50%",
+        "99.50%",
+        "99.50%",
+        "99.50%",
+        "100.08%",
+        "100.08%"
+      ]
+    },
+    {
+      "i": 1,
+      "admitted": true,
+      "id": "overlap-23b8b992-0d6e-432b-a7d3-7b58ee2fa062",
+      "reason": "completed",
+      "exit": 0,
+      "cleanup": "verified",
+      "start": "2026-11-05T06:20:25.169Z",
+      "end": "2026-11-05T06:20:29.871Z",
+      "exec_ms": 4701,
+      "duration_ms": 5158,
+      "result": {
+        "rounds": 2839,
+        "x": 10396547242332906753
+      },
+      "cpu_samples": [
+        "99.19%",
+        "99.19%",
+        "99.19%",
+        "99.19%",
+        "99.52%",
+        "99.52%"
+      ]
+    },
+    {
+      "i": 2,
+      "admitted": false,
+      "http": 429,
+      "detail": "{\"error\":\"Worker capacity exhausted\"}"
+    }
+  ]
+}

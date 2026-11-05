@@ -124,11 +124,15 @@ pub async fn run_once(state: &AppState) -> Result<usize> {
     if !state.settings.inference_configured() || state.settings.worker_url.is_none() {
         return Ok(0);
     }
+    // Ask the database first: an idle controller should not poll the worker twice a second.
+    let jobs = state.ledger.scheduling_candidates()?;
+    if jobs.is_empty() {
+        return Ok(0);
+    }
     let node = NodeClient::new(state)?;
     let Some(node_capacity) = node.ready().await else {
         return Ok(0);
     };
-    let jobs = state.ledger.scheduling_candidates()?;
     for job in &jobs {
         if let Some(job) = state.ledger.claim_with_capacity(&job.id, node_capacity)? {
             let state = state.clone();
