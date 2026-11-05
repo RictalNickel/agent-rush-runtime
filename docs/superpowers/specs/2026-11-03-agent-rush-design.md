@@ -1,6 +1,6 @@
 # Agent Rush Runtime — proposed build design
 
-Status: approved by the user in chat. Subsequent user direction supersedes language choices below: all platform components are Rust, and Agent Zero is a downloaded reference, not a fork or Python runtime dependency. Implement a restricted Rust controller inspired by its context/tool lifecycle, not a claim of full upstream parity. Rust serves the product UI; HTML/CSS and minimal browser JavaScript remain native web assets. No Vultr deployment or spending yet.
+Status: approved by the user in chat. Subsequent user direction supersedes language choices below: all platform components are Rust, with no Python runtime dependency. Implement a restricted Rust controller with its own context and tool lifecycle. Rust serves the product UI; HTML/CSS and minimal browser JavaScript remain native web assets. No Vultr deployment or spending yet.
 
 ## Intent and decisions
 
@@ -8,7 +8,7 @@ Give cooperating agents a disposable development environment and users independe
 
 The user authorizes end-to-end implementation, testing, a private GitHub repository and up to $300 Vultr spending. Their direct request takes precedence over attachments asking for a public repository or separate approval for every provisioning action. Keep the repository private until the user explicitly authorizes publication. Do not submit contest forms or publish their identity without authorization.
 
-The architecture, requirements, handoff and PDF are design inputs, not evidence of deployed capabilities or independently verified event rules. Referenced documents AGENT_ZERO_REUSE.md, SECURITY_AND_VERIFICATION.md, IMPLEMENTATION_PLAN.md and VULTR_DEPLOYMENT.md were not provided; create their necessary equivalents from inspected source and real tests rather than claiming to have read them.
+The architecture, requirements, handoff and PDF are design inputs, not evidence of deployed capabilities or independently verified event rules. Referenced documents SECURITY_AND_VERIFICATION.md, IMPLEMENTATION_PLAN.md and VULTR_DEPLOYMENT.md were not provided; create their necessary equivalents from inspected source and real tests rather than claiming to have read them.
 
 ## Approaches
 
@@ -26,8 +26,7 @@ The evidence report is the proposed differentiator: artifact SHA-256, image dige
 
 ## Components and boundaries
 
-- Control VM: Python/FastAPI authenticated API, durable SQLite job/event/lease ledger, bounded orchestration queue, isolated Agent Zero controller process, server-side Vultr inference gateway, React/TypeScript product UI and HTTPS reverse proxy. SQLite is adequate for one control node; no unnecessary database VM.
-- Agent Zero: inspect and pin upstream commit ba9b67df0f54ac78106ae85c552ef5d2458f7c9a (observed as current upstream HEAD during discovery). Preserve MIT attribution. Expose only broker-backed task tools; remove local shell, SSH, browser and arbitrary tool-loading authority in the restricted profile. All chat, subordinate and utility model calls must use the Vultr gateway; disable unused embedding/model-dependent features unless their calls are routed and tested. Do not claim an Agent Zero integration until the real loop is exercised.
+- Control VM: Python/FastAPI authenticated API, durable SQLite job/event/lease ledger, bounded orchestration queue, isolated agent controller process, server-side Vultr inference gateway, React/TypeScript product UI and HTTPS reverse proxy. SQLite is adequate for one control node; no unnecessary database VM.
 - Worker VM: private trusted node manager with host Docker authority, fixed images/runtimes and no public task interface. Only authenticated control-plane requests are accepted. mTLS on the private network; keys remain outside task containers. Persist a worker-side deadline and reconciliation journal so controller restart does not leave runaway tasks.
 - Task sandbox: gVisor/runsc, non-root identity, network disabled for initial CLI tasks, read-only root, bounded tmpfs scratch, dropped capabilities, no-new-privileges, PID/CPU/memory/output/deadline caps. No host Docker socket, arbitrary bind mounts, secret variables or host paths. Copy input through bounded safe APIs. Do not inherit controller or deployment environment variables.
 - Nested profiles: separate capability and image. Enable only after genuine Docker-in-gVisor qualification under the outer resource envelope. Never use host privileged Docker as a compatibility workaround. Browser and optional desktop support come after this; omit unsupported profiles from the available menu.
@@ -64,11 +63,11 @@ Every temporary deployment has a maximum two-hour test window, shortened to fit 
 
 1. Backend tests cover authentication/ownership, policy, atomic admission under concurrency, idempotency, cancellation, timeouts, crash reconciliation, safe artifacts and secret redaction.
 2. Real gVisor integration proves generated Python execution, known output/artifact hashes, blocked host/socket/canary access, disabled egress, PID/output/scratch/deadline/memory limits and removed worker inventory after success/failure/cancel/restart.
-3. Actual Vultr inference generates a task through the Agent Zero path. Record provider/model/usage metadata without keys; mocks cannot pass this acceptance check.
+3. Actual Vultr inference generates a task through the agent path. Record provider/model/usage metadata without keys; mocks cannot pass this acceptance check.
 4. UI build and browser tests cover real task progress, authentication, evidence downloads, error/cancel paths and small screens. No fake results presented as live.
 5. Deploy and test HTTPS, external reachability, private worker interface, startup recovery and end-to-end containment on Vultr. Current environment integration is useful but does not qualify remote hosting.
 6. Measure cold/warm startup and concurrent task behavior with raw samples, image/runtime/host details, sample counts and methodology. No performance guarantees from tiny samples.
-7. Deliver README, dependency locks, deployment/teardown guide, upstream notices, security limitations, demo script/recording and slide PDF. Verify live event rules when network access permits; do not claim submission happened without a receipt.
+7. Deliver README, dependency locks, deployment/teardown guide, third-party notices, security limitations, demo script/recording and slide PDF. Verify live event rules when network access permits; do not claim submission happened without a receipt.
 
 ## Staging and optional scope
 

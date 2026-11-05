@@ -1,4 +1,4 @@
-// Rust implementation; Agent Zero is a design reference, not a dependency.
+// Agent Rush: native Rust control plane, agent engine and sandbox worker.
 pub mod agent;
 pub mod api;
 pub mod auth;

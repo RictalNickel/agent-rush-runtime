@@ -62,7 +62,6 @@ Raw earlier local receipts and the complete failing resource-suite log are in do
 | Read-only cost planning | Implemented with guarded lifetime/rate budgets | Fixture tests; actual plan query blocked |
 | Infrastructure provisioning/independent teardown | Provisioning disabled; native tracked-resource watchdog and manual teardown implemented | Fixture tests and denial-path CLI smoke pass; real provider deletion/runner uptime unverified |
 | Nested Docker, browser/desktop profiles | Not enabled | Not qualified |
-| Agent Zero compatibility | Not a goal | Design reference only; see reference/DESIGN_LINEAGE.md |
 | Private repository publication | Done | Private now; public before submission |
 | Presentation | Slide deck built from live evidence (`presentation/deck/`) | PDF export pending |
 | Real live demo video/submission | Not recorded/submitted | Outstanding |

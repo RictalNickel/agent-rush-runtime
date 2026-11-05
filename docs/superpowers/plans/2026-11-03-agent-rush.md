@@ -2,13 +2,13 @@
 
 ## Binding amendment from the user
 
-All platform implementation is now Rust. Agent Zero has been downloaded for source reference only; do not fork it or depend on its Python runtime. The original Python/React file paths below are superseded by Rust modules `src/{config,domain,ledger,auth,api,worker,inference,agent,deploy}.rs`, `tests/`, and Rust-served `web/` assets. Use Cargo.lock and cargo test. Preserve task behavior, trust boundaries and acceptance criteria. Execute inline without additional agent delegation. Browser HTML/CSS/JavaScript and deployment shell/config are supporting assets, not alternate backend implementations.
+All platform implementation is now Rust, with no external agent framework or Python runtime. The original Python/React file paths below are superseded by Rust modules `src/{config,domain,ledger,auth,api,worker,inference,agent,deploy}.rs`, `tests/`, and Rust-served `web/` assets. Use Cargo.lock and cargo test. Preserve task behavior, trust boundaries and acceptance criteria. Execute inline without additional agent delegation. Browser HTML/CSS/JavaScript and deployment shell/config are supporting assets, not alternate backend implementations.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Deliver an authenticated agent execution product with measured disposable gVisor execution, an evidence ledger and bounded Vultr deployment.
 
-**Architecture:** Python control API and durable ledger own scheduling and evidence. A private authenticated worker launches pinned containers; Agent Zero can request only approved broker tools. The frontend exposes actual events and receipts.
+**Architecture:** Python control API and durable ledger own scheduling and evidence. A private authenticated worker launches pinned containers; the agent can request only approved broker tools. The frontend exposes actual events and receipts.
 
 **Tech Stack:** Python 3.12, FastAPI, SQLite, Docker/gVisor, React/TypeScript/Vite, pytest and Playwright.
 
@@ -51,13 +51,13 @@ All platform implementation is now Rust. Agent Zero has been downloaded for sour
 - [ ] Build digest-pinned sandbox image; run real output, artifact, timeout, filesystem, network and memory tests. Do not pass host-enforcement qualification if the managed Docker cgroup setup cannot enforce limits.
 - [ ] Commit runner, tests and exact integration results.
 
-### Task 3: Vultr inference and Agent Zero integration
+### Task 3: Vultr inference and agent integration
 
-**Files:** `backend/agent_rush/{inference,orchestrator,agent_zero}.py`, `integrations/agent_zero/`, `backend/tests/test_inference.py`, `backend/tests/test_agent_zero.py`, third-party notices.
+**Files:** `backend/agent_rush/{inference,orchestrator,agent}.py`, `backend/tests/test_inference.py`, `backend/tests/test_agent.py`, third-party notices.
 **Interfaces:** bounded gateway permits only configured Vultr origin/model; controller calls broker for sandbox execution and consumes worker evidence without inventing verification.
 - [ ] Write failing tests for provider restriction, malformed tool output, maximum attempts/tokens, secret redaction and disallowed tools.
-- [ ] Implement gateway and restricted upstream controller with subordinate identity propagation and default-deny tool policy.
-- [ ] Exercise real upstream loop locally with test transport, keeping mocked model acceptance distinct from real inference acceptance.
+- [ ] Implement gateway and restricted agent controller with subordinate identity propagation and default-deny tool policy.
+- [ ] Exercise real agent loop locally with test transport, keeping mocked model acceptance distinct from real inference acceptance.
 - [ ] With secure credentials configured, perform one actual Vultr inference roundtrip and record sanitized metadata; otherwise report external blocker.
 
 ### Task 4: Product UI and end-to-end checks

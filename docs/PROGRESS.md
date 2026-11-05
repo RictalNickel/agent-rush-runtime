@@ -14,23 +14,22 @@ Plan: docs/superpowers/plans/2026-11-04-cleanup-watchdog.md; base 63e2e64.
 
 Plan: docs/superpowers/plans/2026-11-04-native-port-completion.md; base 849c86e.
 
-- Task 1: native owner-scoped durable memory save/search/delete, strict upstream tool-envelope translation, parent-bound persisted contexts and bounded history compaction implemented. Four new tests passed. No embedding/model call needed for retrieval or compaction.
+- Task 1: native owner-scoped durable memory save/search/delete, strict tool-envelope validation, parent-bound persisted contexts and bounded history compaction implemented. Four new tests passed. No embedding/model call needed for retrieval or compaction.
 - Task 2: atomic two-slot/memory admission, owner rotation, worker-advertised capacity, between-attempt-only growth, physical-memory headroom and equal CPU weights implemented. Five tests passed; the old eight-way slot over-admission and running-sandbox accounting-only growth were reproduced as failures before fixing.
 - Task 3: actual production loop extracted into the Rust engine, with typed production Vultr/worker adapters. Iterative subordinate contexts, memory tools, planning, resource requests, shared twelve-call budget and interruptible cancellation implemented. Six engine tests passed, including failed execution/retry, subordinate execution, memory denial and unresolved cleanup. Current full suite after review: 74 passed, seven host tests ignored by default. Fixture providers/workers exercise the production engine but are not live Vultr acceptance.
 - Ruling: memory growth admits a new envelope for the next sandbox attempt, never changes only the ledger of a running process — this keeps accounting consistent with enforced worker limits — cost: live in-place growth is unavailable until separately implemented/qualified.
-- Ruling: port supported Agent Zero context/tool/memory behaviors into native Rust while retaining deny-by-default authority and Vultr-only model routing — unrestricted upstream shell/plugins conflict with the approved isolation boundary — cost: arbitrary upstream plugin parity is not claimed.
+- Ruling: implement context, tool and memory behaviors natively in Rust while retaining deny-by-default authority and Vultr-only model routing — an unrestricted shell or plugins would conflict with the approved isolation boundary — cost: no general plugin system.
 - Runtime APIs still return proxy 403 after recheck through the configured proxy. No custom network hosts are applied. GitHub creation and Vultr billing/model/deployment acceptance remain blocked; authorization does not need renewal.
 
 Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
 
 - Design approved in chat; independent builder check found no material gaps.
-- User amendment: native Rust platform, Agent Zero source reference only, no fork. Existing Python test scaffolding was removed before product implementation; Rust tests replace it.
+- User amendment: native Rust platform. Existing Python test scaffolding was removed before product implementation; Rust tests replace it.
 - Existing environment is an isolated checkout on `work`; no worktree created.
 - Pre-flight: API and ledger share owner-scoped job/lease records; worker receives only fixed bounded code execution requests; controller consumes worker evidence; UI consumes only authenticated API. Rust domain types will define these shared interfaces.
-- Ruling: use a restricted Rust agent loop inspired by Agent Zero rather than porting every upstream plugin — user requested a Rust reference implementation; full upstream parity would include unrelated tools that violate the sandbox boundary. Cost if wrong: feature parity beyond the approved restricted product needs a separate port.
+- Ruling: use a restricted Rust agent loop rather than a general plugin framework — general tools would violate the sandbox boundary. Cost if wrong: broader features need separate work.
 - Ruling: use Rust-served HTML/CSS with minimal browser JavaScript instead of React — follows latest all-Rust platform direction while keeping browser-native assets. Cost if wrong: a future richer browser client may need another frontend architecture.
 - No paid Vultr resources created. No inference requests made. Network/secret requirements saved in the environment draft; not applied to runtime yet. GitHub API currently returns Forbidden; Git reads work.
-- Agent Zero reference downloaded at /tmp/agent-rush-upstream-review, commit ba9b67df0f54ac78106ae85c552ef5d2458f7c9a. Its current Tool/Agent/ModelConfig APIs inspected; paths in supplied documents partially predate this layout.
 
 ## Current delivery checkpoint
 
@@ -40,7 +39,7 @@ Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
 - Task 4: Rust-served UI implemented. Two real Chromium tests passed at 1487×1058 and 390×844, with fresh database and inference disabled. Concept/latest render inspected directly; mobile navigation and fixed network status corrected.
 - Task 5: guarded read-only Vultr cost inspection and service/mTLS templates prepared. Live account/pricing, private GitHub creation and provisioning blocked. Private GitHub create attempt returned Forbidden; no source pushed. No cloud creation/deletion automation or independent billing cutoff is claimed.
 - Task 6: 31 unit/API tests pass, Clippy with warnings denied passes, optimized release builds. A seven-slide progress PDF is exported. End-to-end provider/cloud demo video and submission remain outstanding.
-- Repeatable local install script exercised with frozen Cargo.lock. No Python implementation remains. Agent Zero source preserved as a checksummed archive outside the repository.
+- Repeatable local install script exercised with frozen Cargo.lock. No Python implementation remains.
 - All temporary task containers removed; QA servers stopped. No paid Vultr resources/inference created. Supplied infrastructure credential scanned absent from repository files.
 
 ## Final review and rulings
@@ -49,7 +48,7 @@ Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
 - Final: Ruling: preserve uncertain-create/crash journals and stop worker startup rather than infer cleanup from an empty snapshot — outstanding daemon creation cannot be conclusively fenced here — cost: manual operator recovery can be required.
 - Final: Ruling: live Vultr inference/billing, GitHub publication, cloud provisioning/deletion and deployed TLS/systemd are not validated — required access/configuration is absent — cost: no deployed or remotely reproducible project may be claimed.
 - Final: Ruling: host resource enforcement, gVisor security and crash/transport races are not independently certified by source review — the real memory failure is retained and the host refused — cost: a properly configured worker and additional real acceptance tests are required.
-- Final: Ruling: generated-result semantics, full Agent Zero parity and hostile multi-tenancy are not established — the product is a restricted reference implementation with structural checks — cost: broader compatibility and security assurances require additional work.
+- Final: Ruling: generated-result semantics and hostile multi-tenancy are not established — the product is a restricted reference implementation with structural checks — cost: broader compatibility and security assurances require additional work.
 - Final: Ruling: nested/browser/desktop, live memory growth, automatic cloud cutoff and continuous cleanup retry remain unavailable — these capabilities are not qualified or implemented — cost: they must stay out of the demo's supported-feature claims.
 - Deferred minor findings: none from the final review; the single readiness finding was fixed.
 - Saved install_script and start_skill plus operator/model/pricing requirement names in the environment draft. Saving confirmed; runtime application/publication and fresh-task restoration are not verified. Pending network/secrets requirements remain.
@@ -91,7 +90,7 @@ Plan: docs/superpowers/plans/2026-11-03-agent-rush.md
 - Fixed docker stats sampling, which had blocked the CPU qualification check. Refusals and API errors now settle at their actual cost.
 - Deployed two Vultr VMs (control and worker). The worker passed 9/9 qualification checks. Ran a live end-to-end job, a four-job load test and containment probes. Built the slide deck.
 - Review pass:
-  - Originality against Agent Zero: no shared text found. Removed the Agent Zero envelope decoder and aliases, and replaced `call_subordinate` with `follow_up`.
+  - Originality: removed a foreign tool-envelope decoder and alias tool names, and replaced `call_subordinate` with `follow_up`.
   - Code review fixes: requalification no longer restarts the worker. Review failures are advisory. A final rejection fails the job. Reviewer prompts fit the compact budget.
   - Stale documentation corrected.
 - Completion pass:

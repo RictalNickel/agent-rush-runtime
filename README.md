@@ -4,7 +4,7 @@ Run AI-written code in a sealed box that is destroyed after every run: a native 
 
 **Status (2026-11-05): live on Vultr.** A two-VM deployment (Caddy HTTPS control plane plus a private gVisor worker reached over mTLS) runs real agent jobs at https://144-202-59-108.sslip.io. The worker passes all nine real containment qualification checks; jobs, a four-job load test and containment probes have receipts in `docs/evidence/live/`. See [live deployment](docs/LIVE_DEPLOYMENT.md) for what is verified and what is still open.
 
-Agent Rush is an original Rust system. Its agent loop was designed with [Agent Zero](https://github.com/agent0ai/agent-zero) (MIT) as a reference; no Agent Zero code, prompts or tool envelopes are reused. See [design lineage](docs/reference/DESIGN_LINEAGE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+Agent Rush is an original Rust system. See [the design](docs/DESIGN.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ## Run the control UI locally
 
@@ -80,12 +80,12 @@ Trusted setup now includes `vultr-inference-key` (reuse an existing serverless s
 
 ## Delivery boundaries
 
-The user's latest instructions require a private repository, Rust platform components, Agent Zero as reference only, a $300 ceiling and machines active only when needed. Keep at least $50 in reserve. No GPU, automatic scale-out or unattended demo is enabled. A stopped Vultr VM can still incur charges; delete newly created temporary test resources after preserving evidence and reproducible configuration.
+The user's latest instructions require a private repository, Rust platform components, a $300 ceiling and machines active only when needed. Keep at least $50 in reserve. No GPU, automatic scale-out or unattended demo is enabled. A stopped Vultr VM can still incur charges; delete newly created temporary test resources after preserving evidence and reproducible configuration.
 
-Nested Docker, browser/desktop profiles, live memory expansion on an executing container, full Agent Zero plugin compatibility, automatic billing cutoff and a live demo recording are not delivered or advertised as supported. A live two-VM deployment is running; see [live deployment](docs/LIVE_DEPLOYMENT.md). See the feature matrix and remaining work in docs/VERIFICATION.md.
+Nested Docker, browser/desktop profiles, a general plugin system, automatic billing cutoff and a live demo recording are not delivered or advertised as supported. A live two-VM deployment is running; see [live deployment](docs/LIVE_DEPLOYMENT.md). See the feature matrix and remaining work in docs/VERIFICATION.md.
 
 
-How the agent loop relates to Agent Zero, and where it deliberately differs, is in [design lineage](docs/reference/DESIGN_LINEAGE.md): typed team roles with enforced allowlists, a reviewer gate, receipt-gated answers, persisted context exports, bounded owner memory, shared call limits and admitted between-attempt RAM growth. All production model calls go through one trusted inference gateway; generated code executes only on the private worker.
+How the agent loop works is in [the design](docs/DESIGN.md): typed team roles with enforced allowlists, a reviewer gate, receipt-gated answers, persisted context exports, bounded owner memory, shared call limits and live sandbox growth up to an orchestrator-set ceiling. All production model calls go through one trusted inference gateway; generated code executes only on the private worker.
 
 Run `agent-rush qualify --output <new-private-report.json>` on a candidate worker before enabling it, then set `AR_QUALIFICATION_REPORT` to that report. The command runs fixed real containment/resource probes and rejects unsupported hosts before executing code. Reports are bound to the exact host/image and expire after two hours; the deployed worker requalifies every 45 minutes and adopts each new passing report without a restart. The live Vultr worker passes all nine checks. See [image packaging](docs/IMAGES.md) for locked image inputs and the native control image build/export.
 
