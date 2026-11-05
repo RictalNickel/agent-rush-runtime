@@ -1,0 +1,1593 @@
+{
+  "checks": [
+    {
+      "name": "containment",
+      "passed": true,
+      "receipt": {
+        "artifacts": [
+          {
+            "bytes": 29,
+            "data_base64": "eyJjb250YWluZWQiOnRydWUsInRvdGFsIjo0Mn0=",
+            "name": "result.json",
+            "sha256": "c78f71cd8e6dc6e8763ddbcc58e2eb5ddbf6859bd3cc485ba062c3f45c7c1af0"
+          }
+        ],
+        "checks": [
+          {
+            "name": "process_exit_zero",
+            "passed": true
+          },
+          {
+            "name": "result_json_is_object",
+            "passed": true
+          },
+          {
+            "name": "output_within_limit",
+            "passed": true
+          },
+          {
+            "name": "output_capture_complete",
+            "passed": true
+          }
+        ],
+        "checks_passed": true,
+        "cleanup_state": "verified",
+        "creation_uncertain": false,
+        "duration_ms": 1148,
+        "execution_finished_at": "2026-11-05T03:51:13.500Z",
+        "execution_ms": 747,
+        "execution_started_at": "2026-11-05T03:51:12.753Z",
+        "exit_code": 0,
+        "finished_at": "2026-11-05T03:51:13.675Z",
+        "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+        "job_id": "qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-containment",
+        "limits": {
+          "cpu_millis": 1000,
+          "memory_mb": 512,
+          "timeout_seconds": 60
+        },
+        "output_truncated": false,
+        "reason": "completed",
+        "resource_samples": [
+          {
+            "at": "2026-11-05T03:51:13.279Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-containment",
+              "ID": "f9705d741976c29616a4585af81a68664c4574cca55e8aee68307cab2784a50e",
+              "MemPerc": "1.67%",
+              "MemUsage": "8.57MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-containment",
+              "NetIO": "0B / 0B",
+              "PIDs": "26"
+            }
+          }
+        ],
+        "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+        "result": {
+          "contained": true,
+          "total": 42
+        },
+        "runtime": "runsc",
+        "started_at": "2026-11-05T03:51:12.526Z",
+        "stderr": "",
+        "stdout": "Containment probes passed; total=42\n"
+      }
+    },
+    {
+      "name": "timeout",
+      "passed": true,
+      "receipt": {
+        "artifacts": [],
+        "checks": [
+          {
+            "name": "process_exit_zero",
+            "passed": false
+          },
+          {
+            "name": "result_json_is_object",
+            "passed": false
+          },
+          {
+            "name": "output_within_limit",
+            "passed": true
+          },
+          {
+            "name": "output_capture_complete",
+            "passed": true
+          }
+        ],
+        "checks_passed": false,
+        "cleanup_state": "verified",
+        "creation_uncertain": false,
+        "duration_ms": 5364,
+        "execution_finished_at": "2026-11-05T03:51:18.993Z",
+        "execution_ms": 5021,
+        "execution_started_at": "2026-11-05T03:51:13.971Z",
+        "exit_code": null,
+        "finished_at": "2026-11-05T03:51:19.145Z",
+        "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+        "job_id": "qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+        "limits": {
+          "cpu_millis": 1000,
+          "memory_mb": 512,
+          "timeout_seconds": 5
+        },
+        "output_truncated": false,
+        "reason": "timeout",
+        "resource_samples": [
+          {
+            "at": "2026-11-05T03:51:14.495Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "ID": "db5eaef56f9451b5c7b014622918e457c22e52bc980bfafb2b1b6e30adb99a0a",
+              "MemPerc": "1.65%",
+              "MemUsage": "8.465MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "NetIO": "0B / 0B",
+              "PIDs": "26"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:14.994Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "ID": "db5eaef56f9451b5c7b014622918e457c22e52bc980bfafb2b1b6e30adb99a0a",
+              "MemPerc": "1.65%",
+              "MemUsage": "8.465MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "NetIO": "0B / 0B",
+              "PIDs": "26"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:15.495Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "99.23%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "ID": "db5eaef56f9451b5c7b014622918e457c22e52bc980bfafb2b1b6e30adb99a0a",
+              "MemPerc": "3.34%",
+              "MemUsage": "17.08MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "NetIO": "0B / 0B",
+              "PIDs": "41"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:15.995Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "99.23%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "ID": "db5eaef56f9451b5c7b014622918e457c22e52bc980bfafb2b1b6e30adb99a0a",
+              "MemPerc": "3.34%",
+              "MemUsage": "17.08MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "NetIO": "0B / 0B",
+              "PIDs": "41"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:16.495Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "100.64%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "ID": "db5eaef56f9451b5c7b014622918e457c22e52bc980bfafb2b1b6e30adb99a0a",
+              "MemPerc": "3.23%",
+              "MemUsage": "16.56MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "NetIO": "0B / 0B",
+              "PIDs": "41"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:16.995Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "100.64%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "ID": "db5eaef56f9451b5c7b014622918e457c22e52bc980bfafb2b1b6e30adb99a0a",
+              "MemPerc": "3.23%",
+              "MemUsage": "16.56MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "NetIO": "0B / 0B",
+              "PIDs": "41"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:17.496Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "100.22%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "ID": "db5eaef56f9451b5c7b014622918e457c22e52bc980bfafb2b1b6e30adb99a0a",
+              "MemPerc": "3.23%",
+              "MemUsage": "16.56MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "NetIO": "0B / 0B",
+              "PIDs": "41"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:17.995Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "100.22%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "ID": "db5eaef56f9451b5c7b014622918e457c22e52bc980bfafb2b1b6e30adb99a0a",
+              "MemPerc": "3.23%",
+              "MemUsage": "16.56MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "NetIO": "0B / 0B",
+              "PIDs": "41"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:18.495Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "100.34%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "ID": "db5eaef56f9451b5c7b014622918e457c22e52bc980bfafb2b1b6e30adb99a0a",
+              "MemPerc": "3.23%",
+              "MemUsage": "16.56MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-timeout",
+              "NetIO": "0B / 0B",
+              "PIDs": "41"
+            }
+          }
+        ],
+        "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+        "result": null,
+        "runtime": "runsc",
+        "started_at": "2026-11-05T03:51:13.781Z",
+        "stderr": "",
+        "stdout": ""
+      }
+    },
+    {
+      "name": "output",
+      "passed": true,
+      "receipt": {
+        "artifacts": [],
+        "checks": [
+          {
+            "name": "process_exit_zero",
+            "passed": false
+          },
+          {
+            "name": "result_json_is_object",
+            "passed": false
+          },
+          {
+            "name": "output_within_limit",
+            "passed": false
+          },
+          {
+            "name": "output_capture_complete",
+            "passed": true
+          }
+        ],
+        "checks_passed": false,
+        "cleanup_state": "verified",
+        "creation_uncertain": false,
+        "duration_ms": 993,
+        "execution_finished_at": "2026-11-05T03:51:20.101Z",
+        "execution_ms": 654,
+        "execution_started_at": "2026-11-05T03:51:19.446Z",
+        "exit_code": null,
+        "finished_at": "2026-11-05T03:51:20.247Z",
+        "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+        "job_id": "qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-output",
+        "limits": {
+          "cpu_millis": 1000,
+          "memory_mb": 512,
+          "timeout_seconds": 60
+        },
+        "output_truncated": true,
+        "reason": "output_limit",
+        "resource_samples": [
+          {
+            "at": "2026-11-05T03:51:19.971Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-output",
+              "ID": "7495ac5e9c73a6924a5cd673574ad8904cab9368aa506c967f46870f55c13d36",
+              "MemPerc": "1.65%",
+              "MemUsage": "8.469MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-output",
+              "NetIO": "0B / 0B",
+              "PIDs": "27"
+            }
+          }
+        ],
+        "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+        "result": null,
+        "runtime": "runsc",
+        "started_at": "2026-11-05T03:51:19.253Z",
+        "stderr": "",
+        "stdout": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    },
+    {
+      "name": "memory",
+      "passed": true,
+      "receipt": {
+        "artifacts": [],
+        "checks": [
+          {
+            "name": "process_exit_zero",
+            "passed": false
+          },
+          {
+            "name": "result_json_is_object",
+            "passed": false
+          },
+          {
+            "name": "output_within_limit",
+            "passed": true
+          },
+          {
+            "name": "output_capture_complete",
+            "passed": true
+          }
+        ],
+        "checks_passed": false,
+        "cleanup_state": "verified",
+        "creation_uncertain": false,
+        "duration_ms": 1272,
+        "execution_finished_at": "2026-11-05T03:51:21.533Z",
+        "execution_ms": 997,
+        "execution_started_at": "2026-11-05T03:51:20.536Z",
+        "exit_code": 128,
+        "finished_at": "2026-11-05T03:51:21.623Z",
+        "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+        "job_id": "qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-memory",
+        "limits": {
+          "cpu_millis": 1000,
+          "memory_mb": 256,
+          "timeout_seconds": 60
+        },
+        "output_truncated": false,
+        "reason": "execution_failed",
+        "resource_samples": [
+          {
+            "at": "2026-11-05T03:51:21.062Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-memory",
+              "ID": "06acf7b738dae09b3b52e742b0e2097322e608ab9335e33423ac2931b623fd09",
+              "MemPerc": "3.30%",
+              "MemUsage": "8.457MiB / 256MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-memory",
+              "NetIO": "0B / 0B",
+              "PIDs": "27"
+            }
+          }
+        ],
+        "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+        "result": null,
+        "runtime": "runsc",
+        "started_at": "2026-11-05T03:51:20.351Z",
+        "stderr": "waiting on pid 2: waiting on PID 2 in sandbox \"06acf7b738dae09b3b52e742b0e2097322e608ab9335e33423ac2931b623fd09\": urpc method \"containerManager.WaitPID\" failed: EOF\n",
+        "stdout": "allocating\n"
+      }
+    },
+    {
+      "name": "scratch",
+      "passed": true,
+      "receipt": {
+        "artifacts": [
+          {
+            "bytes": 24,
+            "data_base64": "eyJzY3JhdGNoX2xpbWl0ZWQiOnRydWV9",
+            "name": "result.json",
+            "sha256": "916cc63eea93222840769e33b20eaabae80b8056aa6abccdaf23c1909864206c"
+          }
+        ],
+        "checks": [
+          {
+            "name": "process_exit_zero",
+            "passed": true
+          },
+          {
+            "name": "result_json_is_object",
+            "passed": true
+          },
+          {
+            "name": "output_within_limit",
+            "passed": true
+          },
+          {
+            "name": "output_capture_complete",
+            "passed": true
+          }
+        ],
+        "checks_passed": true,
+        "cleanup_state": "verified",
+        "creation_uncertain": false,
+        "duration_ms": 1124,
+        "execution_finished_at": "2026-11-05T03:51:22.690Z",
+        "execution_ms": 779,
+        "execution_started_at": "2026-11-05T03:51:21.911Z",
+        "exit_code": 0,
+        "finished_at": "2026-11-05T03:51:22.852Z",
+        "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+        "job_id": "qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-scratch",
+        "limits": {
+          "cpu_millis": 1000,
+          "memory_mb": 512,
+          "timeout_seconds": 60
+        },
+        "output_truncated": false,
+        "reason": "completed",
+        "resource_samples": [
+          {
+            "at": "2026-11-05T03:51:22.434Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-scratch",
+              "ID": "61bb0e3df9150b11a4dfdf46c372b4dda543c6ad018306f718b2771c383a041e",
+              "MemPerc": "1.66%",
+              "MemUsage": "8.512MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-scratch",
+              "NetIO": "0B / 0B",
+              "PIDs": "27"
+            }
+          }
+        ],
+        "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+        "result": {
+          "scratch_limited": true
+        },
+        "runtime": "runsc",
+        "started_at": "2026-11-05T03:51:21.727Z",
+        "stderr": "",
+        "stdout": ""
+      }
+    },
+    {
+      "name": "pids",
+      "passed": true,
+      "receipt": {
+        "artifacts": [
+          {
+            "bytes": 35,
+            "data_base64": "eyJwaWRzX2xpbWl0ZWQiOnRydWUsImNoaWxkcmVuIjoxNn0=",
+            "name": "result.json",
+            "sha256": "692a0facabb9740674ec2d5ecd6676aa55fdeeba5a44ec17c94fc4c10be4261d"
+          }
+        ],
+        "checks": [
+          {
+            "name": "process_exit_zero",
+            "passed": true
+          },
+          {
+            "name": "result_json_is_object",
+            "passed": true
+          },
+          {
+            "name": "output_within_limit",
+            "passed": true
+          },
+          {
+            "name": "output_capture_complete",
+            "passed": true
+          }
+        ],
+        "checks_passed": true,
+        "cleanup_state": "verified",
+        "creation_uncertain": false,
+        "duration_ms": 1235,
+        "execution_finished_at": "2026-11-05T03:51:24.014Z",
+        "execution_ms": 872,
+        "execution_started_at": "2026-11-05T03:51:23.141Z",
+        "exit_code": 0,
+        "finished_at": "2026-11-05T03:51:24.187Z",
+        "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+        "job_id": "qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-pids",
+        "limits": {
+          "cpu_millis": 1000,
+          "memory_mb": 512,
+          "timeout_seconds": 60
+        },
+        "output_truncated": false,
+        "reason": "completed",
+        "resource_samples": [
+          {
+            "at": "2026-11-05T03:51:23.666Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-pids",
+              "ID": "1c6a776d52a5d5c22e203c8743e3a6b4faba2b7d8da1221a961d9131b6da3f48",
+              "MemPerc": "1.65%",
+              "MemUsage": "8.453MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-pids",
+              "NetIO": "0B / 0B",
+              "PIDs": "27"
+            }
+          }
+        ],
+        "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+        "result": {
+          "children": 16,
+          "pids_limited": true
+        },
+        "runtime": "runsc",
+        "started_at": "2026-11-05T03:51:22.952Z",
+        "stderr": "",
+        "stdout": ""
+      }
+    },
+    {
+      "name": "cpu",
+      "passed": true,
+      "receipt": {
+        "artifacts": [
+          {
+            "bytes": 18,
+            "data_base64": "eyJjcHVfcHJvYmUiOnRydWV9",
+            "name": "result.json",
+            "sha256": "90622c8dc3ed40fb932d53b06bc20284688cbefaf53ca27b4f4f1396b9c66ed6"
+          }
+        ],
+        "checks": [
+          {
+            "name": "process_exit_zero",
+            "passed": true
+          },
+          {
+            "name": "result_json_is_object",
+            "passed": true
+          },
+          {
+            "name": "output_within_limit",
+            "passed": true
+          },
+          {
+            "name": "output_capture_complete",
+            "passed": true
+          }
+        ],
+        "checks_passed": true,
+        "cleanup_state": "verified",
+        "creation_uncertain": false,
+        "duration_ms": 8149,
+        "execution_finished_at": "2026-11-05T03:51:32.237Z",
+        "execution_ms": 7764,
+        "execution_started_at": "2026-11-05T03:51:24.472Z",
+        "exit_code": 0,
+        "finished_at": "2026-11-05T03:51:32.437Z",
+        "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+        "job_id": "qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+        "limits": {
+          "cpu_millis": 250,
+          "memory_mb": 512,
+          "timeout_seconds": 60
+        },
+        "output_truncated": false,
+        "reason": "completed",
+        "resource_samples": [
+          {
+            "at": "2026-11-05T03:51:25.001Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "1.67%",
+              "MemUsage": "8.547MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "27"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:25.502Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "1.67%",
+              "MemUsage": "8.547MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "27"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:26.001Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "25.11%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.58%",
+              "MemUsage": "18.3MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "35"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:26.501Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "25.11%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.58%",
+              "MemUsage": "18.3MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "35"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:27.002Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "24.72%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "8.92%",
+              "MemUsage": "45.67MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "41"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:27.501Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "24.72%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "8.92%",
+              "MemUsage": "45.67MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "41"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:28.001Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "24.95%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.24%",
+              "MemUsage": "16.59MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "42"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:28.501Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "24.95%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.24%",
+              "MemUsage": "16.59MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "42"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:29.001Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "25.11%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.24%",
+              "MemUsage": "16.58MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "42"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:29.501Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "25.11%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.24%",
+              "MemUsage": "16.58MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "42"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:30.001Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "25.02%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.24%",
+              "MemUsage": "16.59MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "42"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:30.502Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "25.02%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.24%",
+              "MemUsage": "16.59MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "42"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:31.001Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "25.04%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.24%",
+              "MemUsage": "16.58MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "42"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:31.501Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "25.04%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.24%",
+              "MemUsage": "16.58MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "42"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:32.001Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "25.13%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "ID": "59446dbc412cc3f05f0f50d5b6d5c2115ad2a4be9749d8fac905b8157227bb2f",
+              "MemPerc": "3.24%",
+              "MemUsage": "16.59MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cpu",
+              "NetIO": "0B / 0B",
+              "PIDs": "42"
+            }
+          }
+        ],
+        "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+        "result": {
+          "cpu_probe": true
+        },
+        "runtime": "runsc",
+        "started_at": "2026-11-05T03:51:24.288Z",
+        "stderr": "",
+        "stdout": ""
+      }
+    },
+    {
+      "name": "cancel",
+      "passed": true,
+      "receipt": {
+        "artifacts": [],
+        "checks": [
+          {
+            "name": "process_exit_zero",
+            "passed": false
+          },
+          {
+            "name": "result_json_is_object",
+            "passed": false
+          },
+          {
+            "name": "output_within_limit",
+            "passed": true
+          },
+          {
+            "name": "output_capture_complete",
+            "passed": true
+          }
+        ],
+        "checks_passed": false,
+        "cleanup_state": "verified",
+        "creation_uncertain": false,
+        "duration_ms": 2067,
+        "execution_finished_at": "2026-11-05T03:51:34.473Z",
+        "execution_ms": 1746,
+        "execution_started_at": "2026-11-05T03:51:32.726Z",
+        "exit_code": null,
+        "finished_at": "2026-11-05T03:51:34.608Z",
+        "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+        "job_id": "qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cancel",
+        "limits": {
+          "cpu_millis": 1000,
+          "memory_mb": 512,
+          "timeout_seconds": 60
+        },
+        "output_truncated": false,
+        "reason": "cancelled",
+        "resource_samples": [
+          {
+            "at": "2026-11-05T03:51:33.251Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cancel",
+              "ID": "70c8de046553ceae7e358d2332eb2dcd8bc9375e3b730f7457dfba1f184d85e4",
+              "MemPerc": "1.66%",
+              "MemUsage": "8.508MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cancel",
+              "NetIO": "0B / 0B",
+              "PIDs": "27"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:33.751Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "0.01%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cancel",
+              "ID": "70c8de046553ceae7e358d2332eb2dcd8bc9375e3b730f7457dfba1f184d85e4",
+              "MemPerc": "1.66%",
+              "MemUsage": "8.508MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cancel",
+              "NetIO": "0B / 0B",
+              "PIDs": "27"
+            }
+          },
+          {
+            "at": "2026-11-05T03:51:34.251Z",
+            "docker_stats": {
+              "BlockIO": "0B / 0B",
+              "CPUPerc": "100.92%",
+              "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cancel",
+              "ID": "70c8de046553ceae7e358d2332eb2dcd8bc9375e3b730f7457dfba1f184d85e4",
+              "MemPerc": "3.24%",
+              "MemUsage": "16.57MiB / 512MiB",
+              "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-cancel",
+              "NetIO": "0B / 0B",
+              "PIDs": "42"
+            }
+          }
+        ],
+        "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+        "result": null,
+        "runtime": "runsc",
+        "started_at": "2026-11-05T03:51:32.541Z",
+        "stderr": "",
+        "stdout": ""
+      }
+    },
+    {
+      "name": "concurrency",
+      "passed": true,
+      "receipt": {
+        "receipts": [
+          {
+            "artifacts": [
+              {
+                "bytes": 27,
+                "data_base64": "eyJuZWlnaGJvcl9jb250YWluZWQiOnRydWV9",
+                "name": "result.json",
+                "sha256": "10cc3177e62a79bf51dd7309da352baaf8b0d811d2517cd5e3a60b7e8cdbbd11"
+              }
+            ],
+            "checks": [
+              {
+                "name": "process_exit_zero",
+                "passed": true
+              },
+              {
+                "name": "result_json_is_object",
+                "passed": true
+              },
+              {
+                "name": "output_within_limit",
+                "passed": true
+              },
+              {
+                "name": "output_capture_complete",
+                "passed": true
+              }
+            ],
+            "checks_passed": true,
+            "cleanup_state": "verified",
+            "creation_uncertain": false,
+            "duration_ms": 11177,
+            "execution_finished_at": "2026-11-05T03:51:45.700Z",
+            "execution_ms": 10772,
+            "execution_started_at": "2026-11-05T03:51:34.927Z",
+            "exit_code": 0,
+            "finished_at": "2026-11-05T03:51:45.899Z",
+            "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+            "job_id": "qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+            "limits": {
+              "cpu_millis": 1000,
+              "memory_mb": 256,
+              "timeout_seconds": 60
+            },
+            "output_truncated": false,
+            "reason": "completed",
+            "resource_samples": [
+              {
+                "at": "2026-11-05T03:51:35.455Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.01%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "3.31%",
+                  "MemUsage": "8.473MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "27"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:35.955Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.01%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "3.31%",
+                  "MemUsage": "8.473MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "27"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:36.455Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "71.44%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.75%",
+                  "MemUsage": "48MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:36.955Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "71.44%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.75%",
+                  "MemUsage": "48MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:37.455Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.03%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:37.954Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.03%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:38.455Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:38.955Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:39.455Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:39.955Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:40.454Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:40.955Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:41.455Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:41.955Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:42.455Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:42.955Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:43.454Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:43.955Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:44.454Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:44.955Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:45.455Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "ID": "b10d0fb53cb65cd32b65c39a1e15f25c0623528d8b5f5ad218504f8df09c74bb",
+                  "MemPerc": "18.74%",
+                  "MemUsage": "47.98MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-a",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              }
+            ],
+            "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+            "result": {
+              "neighbor_contained": true
+            },
+            "runtime": "runsc",
+            "started_at": "2026-11-05T03:51:34.721Z",
+            "stderr": "",
+            "stdout": ""
+          },
+          {
+            "artifacts": [
+              {
+                "bytes": 27,
+                "data_base64": "eyJuZWlnaGJvcl9jb250YWluZWQiOnRydWV9",
+                "name": "result.json",
+                "sha256": "10cc3177e62a79bf51dd7309da352baaf8b0d811d2517cd5e3a60b7e8cdbbd11"
+              }
+            ],
+            "checks": [
+              {
+                "name": "process_exit_zero",
+                "passed": true
+              },
+              {
+                "name": "result_json_is_object",
+                "passed": true
+              },
+              {
+                "name": "output_within_limit",
+                "passed": true
+              },
+              {
+                "name": "output_capture_complete",
+                "passed": true
+              }
+            ],
+            "checks_passed": true,
+            "cleanup_state": "verified",
+            "creation_uncertain": false,
+            "duration_ms": 11159,
+            "execution_finished_at": "2026-11-05T03:51:45.676Z",
+            "execution_ms": 10747,
+            "execution_started_at": "2026-11-05T03:51:34.928Z",
+            "exit_code": 0,
+            "finished_at": "2026-11-05T03:51:45.879Z",
+            "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+            "job_id": "qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+            "limits": {
+              "cpu_millis": 1000,
+              "memory_mb": 256,
+              "timeout_seconds": 60
+            },
+            "output_truncated": false,
+            "reason": "completed",
+            "resource_samples": [
+              {
+                "at": "2026-11-05T03:51:36.460Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.10%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.09MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:36.960Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.10%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.09MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:37.459Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.03%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:37.960Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.03%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:38.460Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:38.959Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:39.459Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:39.960Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:40.460Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:40.959Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:41.459Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:41.959Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:42.459Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:42.960Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:43.459Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:43.960Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:44.460Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:44.959Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              },
+              {
+                "at": "2026-11-05T03:51:45.460Z",
+                "docker_stats": {
+                  "BlockIO": "0B / 0B",
+                  "CPUPerc": "0.00%",
+                  "Container": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "ID": "6c253d1d60a11c59773525da42f7c8ca3a49380f3fdb02907c168c49d08b28ea",
+                  "MemPerc": "18.78%",
+                  "MemUsage": "48.07MiB / 256MiB",
+                  "Name": "ar-task-qualify-4acba3e6-76e0-4534-b627-e302ae8f06f1-concurrency-b",
+                  "NetIO": "0B / 0B",
+                  "PIDs": "42"
+                }
+              }
+            ],
+            "resource_sampling_note": "Observed Docker samples when available, not peak-memory attestation",
+            "result": {
+              "neighbor_contained": true
+            },
+            "runtime": "runsc",
+            "started_at": "2026-11-05T03:51:34.720Z",
+            "stderr": "",
+            "stdout": ""
+          }
+        ]
+      }
+    }
+  ],
+  "finished_at": "2026-11-05T03:51:45.899Z",
+  "health": {
+    "cpu_quota_supported": true,
+    "host_fingerprint": "b8a8c5d6eb30a63cc688a11717ee8b7c49a4b290f33b245f6e5a4dbce5c926f7",
+    "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+    "local_image_id": "sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+    "memory_limit_supported": true,
+    "note": "Availability check only; run containment qualification before public deployment",
+    "runtime": "runsc",
+    "security_qualified": false
+  },
+  "measurement_note": "CPU probe requests 0.25 vCPU; requires at least two actual samples, positive load and no sample above 50% of one core. A bounded enforcement probe, not a peak-memory/CPU performance guarantee.",
+  "qualified": true,
+  "schema": "agent-rush.qualification.v1",
+  "started_at": "2026-11-05T03:51:12.299Z"
+}

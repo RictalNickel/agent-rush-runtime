@@ -435,7 +435,10 @@ impl DockerRunner {
                 if samples.len() >= 128 {
                     break;
                 }
-                if let Ok(value) = serde_json::from_str::<Value>(&line) {
+                // Streaming `docker stats` prefixes each frame with terminal escape codes
+                // (e.g. ESC[H); parse from the JSON object itself.
+                let json = line.find('{').map_or("", |start| &line[start..]);
+                if let Ok(value) = serde_json::from_str::<Value>(json) {
                     samples.push(json!({"at":now(),"docker_stats":value}));
                 }
             }

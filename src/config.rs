@@ -11,6 +11,30 @@ pub fn provider_rate(raw: Option<&str>) -> Result<Option<f64>> {
     Ok(Some(rate))
 }
 
+/// Which inference service every agent role uses. Selected by the operator, never by a model.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Provider {
+    /// Vultr Serverless Inference (OpenAI-compatible); required by the Blast Radius Zero track.
+    Vultr,
+    /// Anthropic Messages API with per-role Claude models.
+    Anthropic,
+}
+impl Provider {
+    pub fn parse(raw: &str) -> Result<Self> {
+        match raw.trim() {
+            "" | "vultr" => Ok(Provider::Vultr),
+            "anthropic" => Ok(Provider::Anthropic),
+            other => anyhow::bail!("unknown inference provider {other:?}"),
+        }
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Provider::Vultr => "vultr",
+            Provider::Anthropic => "anthropic",
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Settings {
     pub data_dir: PathBuf,
@@ -21,6 +45,8 @@ pub struct Settings {
     pub worker_token: String,
     pub worker_ca_path: Option<PathBuf>,
     pub worker_identity_path: Option<PathBuf>,
+    pub inference_provider: Provider,
+    pub anthropic_key: String,
     pub inference_key: String,
     pub inference_model: String,
     pub inference_input_per_million: Option<f64>,
@@ -42,6 +68,8 @@ impl Settings {
             worker_token: String::new(),
             worker_ca_path: None,
             worker_identity_path: None,
+            inference_provider: Provider::Vultr,
+            anthropic_key: String::new(),
             inference_key: String::new(),
             inference_model: String::new(),
             inference_input_per_million: None,
@@ -81,6 +109,9 @@ impl Settings {
         s.worker_token = env::var("AR_WORKER_TOKEN").unwrap_or_default();
         s.worker_ca_path = env::var("AR_WORKER_CA_PATH").ok().map(PathBuf::from);
         s.worker_identity_path = env::var("AR_WORKER_IDENTITY_PATH").ok().map(PathBuf::from);
+        s.inference_provider =
+            Provider::parse(&env::var("AR_INFERENCE_PROVIDER").unwrap_or_default())?;
+        s.anthropic_key = env::var("ANTHROPIC_API_KEY").unwrap_or_default();
         s.inference_key = env::var("VULTR_INFERENCE_API_KEY").unwrap_or_default();
         s.inference_model = env::var("AR_INFERENCE_MODEL").unwrap_or_default();
         s.inference_input_per_million =
@@ -115,6 +146,10 @@ impl Settings {
         Ok(s)
     }
     pub fn inference_configured(&self) -> bool {
+        if self.inference_provider == Provider::Anthropic {
+            // Claude roles are priced from Anthropic's published list prices.
+            return self.anthropic_key.len() >= 20;
+        }
         !self.inference_key.is_empty()
             && !self.inference_model.is_empty()
             && self.inference_input_per_million.is_some()

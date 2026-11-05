@@ -2,7 +2,7 @@ use crate::{
     agent::AgentContext,
     api::AppState,
     domain::{Job, Limits},
-    engine::{Backend, Engine},
+    engine::{Backend, Engine, Profile},
     inference::InferenceGateway,
 };
 use anyhow::{Context, Result, ensure};
@@ -192,8 +192,15 @@ struct RuntimeBackend<'a> {
 }
 impl Backend for RuntimeBackend<'_> {
     async fn complete(&self, context: &AgentContext) -> Result<(String, Value)> {
-        let (completion, usage) = self.gateway.complete(&context.messages).await?;
-        Ok((completion.content, usage))
+        let (text, compaction, mut usage) = self.gateway.complete(context).await?;
+        if let Some(block) = compaction {
+            // Handed to the engine, which swaps it into the context and strips it from receipts.
+            usage["compaction"] = block;
+        }
+        Ok((text, usage))
+    }
+    fn profile(&self) -> Profile {
+        Profile::team(self.gateway.context_budget())
     }
     async fn execute(&self, id: &str, code: &str, limits: Limits) -> Result<Value> {
         *self.active_run.lock().unwrap() = Some(id.into());
@@ -265,6 +272,7 @@ async fn run_job(state: &AppState, node: &NodeClient, job: &Job, node_capacity: 
     receipt["inference_calls"] = json!(outcome.inference_calls);
     receipt["model_calls"] = json!(outcome.model_calls);
     receipt["explanation"] = json!(outcome.final_message);
+    receipt["review"] = json!(outcome.review);
     state.ledger.finish(&job.id, receipt)?;
     Ok(())
 }

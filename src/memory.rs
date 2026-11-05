@@ -83,7 +83,11 @@ impl Ledger {
     pub fn save_context(&self, owner: &str, context: &AgentContext) -> Result<()> {
         context.validate()?;
         let data = serde_json::to_string(context)?;
-        ensure!(data.len() <= 32768, "context snapshot exceeds bound");
+        // validate() already bounds the messages by the context's own (capped) budget.
+        ensure!(
+            data.len() <= context.max_bytes.max(28000) + 8192,
+            "context snapshot exceeds bound"
+        );
         let mut db = self.db.lock().unwrap();
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         let owned: bool = tx.query_row(
@@ -106,7 +110,8 @@ impl Ledger {
                 [&context.task_id],
                 |r| r.get(0),
             )?;
-            ensure!(count < 3, "context count limit reached");
+            // Root, two subordinates and up to two independent reviewer passes.
+            ensure!(count < 5, "context count limit reached");
             tx.execute(
                 "INSERT INTO agent_contexts VALUES(?1,?2,?3,?4)",
                 params![context.agent_id, context.task_id, owner, data],

@@ -68,17 +68,18 @@ The worker requires a random `AR_WORKER_TOKEN` of at least 32 characters. Start 
 
 Control settings:
 
-Chosen model: **GLM 5.3 Flash**. The exact Vultr API identifier and pricing still require catalog verification; no alternative model is selected. See [configuration choices](docs/CONFIGURATION.md) and the private credential-record location listed there.
-
+- `AR_INFERENCE_PROVIDER`: `anthropic` (Claude agent team) or `vultr` (Vultr Serverless Inference, the default). Every role uses the selected provider; model output never chooses it. See [the agent team](docs/AGENT_TEAM.md).
+- `ANTHROPIC_API_KEY`: server-only key for the `anthropic` provider. Calls are priced from Anthropic's published list prices.
 - `AR_WORKER_URL`, `AR_WORKER_TOKEN`: private worker route and authentication.
 - `AR_WORKER_CA_PATH`, `AR_WORKER_IDENTITY_PATH`: server trust and combined client certificate/private key PEM for mTLS.
-- `VULTR_INFERENCE_API_KEY`, `AR_INFERENCE_MODEL`: server-only Vultr inference binding and selected model.
-- `AR_INPUT_USD_PER_MILLION`, `AR_OUTPUT_USD_PER_MILLION`: internal provider-rate metadata filled by trusted setup, not user-selected prices. Blank/missing values disable paid inference; setup obtains the actual rates for GLM 5.3 Flash.
-- `AR_PRICING_VERIFIED`: internal setup attestation, false by default. Set true only after checking the actual provider/model tariff and units; rate numbers alone do not activate calls.
-- `AR_INFERENCE_BUDGET_USD`: persisted inference budget, default $5, hard maximum $25.
+- `VULTR_INFERENCE_API_KEY`, `AR_INFERENCE_MODEL`: server-only Vultr inference binding. The catalog lists `glm-5.3-flash`.
+- `AR_INPUT_USD_PER_MILLION`, `AR_OUTPUT_USD_PER_MILLION`, `AR_PRICING_VERIFIED`: Vultr tariff metadata. Blank or unverified values keep the `vultr` provider disabled rather than assuming a zero price.
+- `AR_INFERENCE_BUDGET_USD`: persisted inference budget, default $5, hard maximum $25. Each call reserves its worst case before it is sent and settles to actual usage.
 - `AR_DATA_DIR`, `AR_CAPACITY_MB`: trusted state directory and admission capacity; reserve node headroom when choosing capacity.
 
-All agent roles use the fixed `https://api.vultrinference.com/v1/chat/completions` endpoint. No alternate model provider or local-shell tool exists. Logical subordinate contexts share task identity; they are not OS sandboxes. The controller permits four main turns and at most one bounded subordinate model request. Unresolved usage keeps its conservative cost reservation.
+**Hackathon note:** the Blast Radius Zero track requires Vultr Serverless Inference for every agent LLM call. The live demo currently runs on the `anthropic` provider for development; switch to `AR_INFERENCE_PROVIDER=vultr` with verified GLM 5.3 Flash pricing before submitting.
+
+Logical subordinate contexts share task identity; they are not OS sandboxes. Unresolved usage keeps its conservative cost reservation.
 
 The Vultr infrastructure API key is used **only by trusted deployment tooling**, not the web server, agent contexts or worker tasks. `agent-rush vultr-plan --credential-file <owner-only-file>` performs read-only pricing/account inspection; it does not create machines. No actual prices have been verified yet.
 
@@ -88,12 +89,12 @@ Trusted setup now includes `vultr-inference-key` (reuse an existing serverless s
 
 The user's latest instructions require a private repository, Rust platform components, Agent Zero as reference only, a $300 ceiling and machines active only when needed. Keep at least $50 in reserve. No GPU, automatic scale-out or unattended demo is enabled. A stopped Vultr VM can still incur charges; delete newly created temporary test resources after preserving evidence and reproducible configuration.
 
-Nested Docker, browser/desktop profiles, live memory expansion on an executing container, full Agent Zero plugin compatibility, cloud provisioning/automatic billing cutoff, an independently validated public deployment and a live demo recording are not delivered or advertised as supported. See the feature matrix and remaining work in docs/VERIFICATION.md.
+Nested Docker, browser/desktop profiles, live memory expansion on an executing container, full Agent Zero plugin compatibility, automatic billing cutoff and a live demo recording are not delivered or advertised as supported. A live two-VM deployment is running; see [live deployment](docs/LIVE_DEPLOYMENT.md). See the feature matrix and remaining work in docs/VERIFICATION.md.
 
 
-Native Agent Zero behavior is mapped in [the Rust port record](docs/reference/NATIVE_PORT.md): iterative child contexts and continuation, persisted context exports, bounded owner memory, strict tools, shared call limits and admitted between-attempt RAM growth. All production model calls still use one Vultr gateway; generated code executes only on the private worker.
+Native Agent Zero behavior is mapped in [the Rust port record](docs/reference/NATIVE_PORT.md): iterative child contexts and continuation, persisted context exports, bounded owner memory, strict tools, shared call limits and admitted between-attempt RAM growth. All production model calls go through one trusted inference gateway; generated code executes only on the private worker.
 
-Run `agent-rush qualify --output <new-private-report.json>` on a candidate worker before enabling it, then set `AR_QUALIFICATION_REPORT` to that report. The command runs fixed real containment/resource probes and rejects unsupported hosts before executing code. Reports are bound to the exact host/image and expire after two hours. The current managed host is refused. See [image packaging](docs/IMAGES.md) for locked image inputs and the native control image build/export.
+Run `agent-rush qualify --output <new-private-report.json>` on a candidate worker before enabling it, then set `AR_QUALIFICATION_REPORT` to that report. The command runs fixed real containment/resource probes and rejects unsupported hosts before executing code. Reports are bound to the exact host/image and expire after two hours; the deployed worker requalifies on a 90-minute timer. The live Vultr worker passes all nine checks. See [image packaging](docs/IMAGES.md) for locked image inputs and the native control image build/export.
 
 
 Independent tracked-resource cleanup is implemented by `vultr-watch` ([operations and limits](docs/CLEANUP_WATCHDOG.md)). It previews by default; an executing watcher authenticates the account scope, watches the fixed deadline, persists progress, and closes tracking before cleanup. Run it only on an appropriate trusted management runner. It has not been qualified against live Vultr and does not implement automatic VM creation or recover unknown creation requests.
