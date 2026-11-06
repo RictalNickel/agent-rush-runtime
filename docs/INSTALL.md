@@ -42,7 +42,7 @@ Inference runs on Vultr Serverless Inference by default. `setup.sh --provider an
 
 - **`all`** (default): control and worker on one host. This is a weaker separation than two VMs. The control plane and the sandboxes share one kernel and one disk. Use it for development and demos.
 - **`control`**: the public control plane. Set `AR_WORKER_TOKEN` to the worker's token, and `AR_WORKER_PRIVATE_IP` to the worker's private address. Place the mTLS files `ca.crt` and `control-client.pem` in `/etc/agent-rush/tls` first. See [DEPLOYMENT.md](DEPLOYMENT.md).
-- **`worker`**: the private execution node. It applies the box egress filter (`deploy/box-network.sh`, when present), runs qualification, and starts the worker service. The installer does not apply the private mTLS ingress. Apply `deploy/worker-nginx.conf.example` by hand after the mTLS tests pass.
+- **`worker`**: the private execution node. It installs the box firewall unit (`deploy/box-network.sh`, reapplied at every boot), builds and pins the workspace image, runs both qualifications, and starts the worker service. The installer does not apply the private mTLS ingress. Apply `deploy/worker-nginx.conf.example` by hand after the mTLS tests pass.
 
 ## What gets installed
 
