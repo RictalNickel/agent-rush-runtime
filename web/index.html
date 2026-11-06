@@ -47,9 +47,14 @@
     <div class="chat-head" id="chat-head" hidden>
       <h2 id="session-title">New session</h2>
       <span class="state" id="session-state"></span>
+      <span class="model-tag" id="session-model" hidden></span>
       <div class="head-actions">
         <button class="icon-button" id="speaker-button" type="button" aria-pressed="false" aria-label="Read replies aloud" hidden>
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zM16.5 9a4 4 0 0 1 0 6M19.5 6a8 8 0 0 1 0 12"/></svg>
+        </button>
+        <button class="button small download" id="archive-button" type="button" aria-label="Download files" title="Download the workspace as a .tar.gz">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>
+          <span class="label">Download files</span>
         </button>
         <button class="button small" id="files-button" type="button">Files</button>
       </div>
@@ -85,6 +90,10 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
         </button>
       </form>
+      <div class="model-pick" id="model-pick" hidden>
+        <label for="model-select">Model</label>
+        <select id="model-select"></select>
+      </div>
       <p class="composer-note" id="readiness">Sign in as the operator to start a session.</p>
     </footer>
   </section>

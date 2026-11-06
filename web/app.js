@@ -5,7 +5,7 @@ const ui = {
   csrf: null, status: null, v1: null, sessions: [], current: null,
   lastSeq: 0, replayUntil: 0, source: null, sseErrors: 0, poll: null, pollBusy: false,
   pending: [], urls: [], speak: false, audio: null, recorder: null, sending: false,
-  filesPath: '.', refreshing: false,
+  filesPath: '.', refreshing: false, models: null,
   // Sessions deleted here: a list refresh already in flight must not bring them back.
   deleted: new Set(),
 };
@@ -55,6 +55,7 @@ const baseName = path => String(path).split('/').filter(Boolean).pop() || 'file'
 const filesUrl = (id, path) => `/v1/sessions/${enc(id)}/files?path=${enc(path)}`;
 const isImage = path => /\.(png|jpe?g|gif|webp)$/i.test(path);
 const bytes = n => n < 1024 ? `${n} bytes` : n < 1048576 ? `${(n / 1024).toFixed(n < 10240 ? 1 : 0)} KB` : `${(n / 1048576).toFixed(1)} MB`;
+const usd = n => `$${Number(n).toFixed(2)}`;
 
 function el(tag, { dataset, ...props } = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
@@ -189,7 +190,7 @@ function updateSession() {
   $('#run-button').disabled = !signedIn;
   if (!signedIn) {
     stopLive();
-    ui.v1 = null; ui.sessions = []; ui.current = null;
+    ui.v1 = null; ui.models = null; ui.sessions = []; ui.current = null;
     revokeUrls();
     $('#log').replaceChildren();
   }
@@ -219,10 +220,37 @@ function updateChrome() {
     const state = $('#session-state');
     state.className = `state ${s.status}`;
     state.textContent = STATE_LABEL[s.status] || s.status;
+    $('#session-model').textContent = s.model || '';
+    $('#session-model').title = s.model ? `Every call of this session runs on ${s.model}` : '';
   }
+  $('#session-model').hidden = !s?.model;
+  // A closed session's workspace is gone; there is nothing to download.
+  $('#archive-button').hidden = !s || s.status === 'closed';
+  // The picker chooses the model of the next new session.
+  $('#model-pick').hidden = !signedIn || !canPickModel() || Boolean(s && s.status !== 'closed');
   $('#stop-button').hidden = !running;
   $('#working').hidden = !running;
   updateReadiness();
+}
+
+// Model picker: shown only when the operator allows more than one model per session.
+
+function canPickModel() {
+  return Boolean(ui.models?.per_session && ui.models.models?.length > 1);
+}
+
+function renderModels() {
+  const select = $('#model-select');
+  const models = canPickModel() ? ui.models.models : [];
+  const signature = JSON.stringify(models);
+  if (select.dataset.signature === signature) return;
+  select.dataset.signature = signature;
+  const chosen = select.value;
+  select.replaceChildren(...models.map(m => el('option', {
+    value: m.id,
+    textContent: `${m.id} (${usd(m.input_usd_per_million)} in, ${usd(m.output_usd_per_million)} out per M tokens)`,
+  })));
+  select.value = models.some(m => m.id === chosen) ? chosen : ui.models?.default || '';
 }
 
 // Session drawer.
@@ -455,6 +483,10 @@ function renderEvent(event, live) {
   const log = $('#log');
   switch (event.kind) {
     case 'user':
+      // A fork starts with the requests and replies of the session it came from.
+      if (p.forked_from && !log.querySelector('.note.fork')) {
+        log.append(note('Forked from an earlier session: its requests and replies come first, and its files are in this workspace.', 'fork'));
+      }
       log.append(el('li', { className: 'msg you' }, el('p', { textContent: p.text })));
       break;
     case 'interjection':
@@ -775,7 +807,9 @@ async function send() {
   ui.sending = true;
   try {
     if (!ui.current || ui.current.status === 'closed') {
-      const created = await api('/v1/sessions', { method: 'POST', body: JSON.stringify({ message: text }) });
+      const body = { message: text };
+      if (!$('#model-pick').hidden && $('#model-select').value) body.model = $('#model-select').value;
+      const created = await api('/v1/sessions', { method: 'POST', body: JSON.stringify(body) });
       upsertSession(created.session);
       openSession(created.session, { fresh: true });
     } else {
@@ -805,7 +839,28 @@ async function stopTurn() {
   }
 }
 
-// Files panel.
+// Files panel and the whole-workspace download.
+
+async function downloadArchive() {
+  if (!ui.current) return;
+  const button = $('#archive-button');
+  const { id } = ui.current;
+  button.disabled = true;
+  try {
+    const blob = await fetchBlob(`/v1/sessions/${enc(id)}/archive`);
+    const url = URL.createObjectURL(blob);
+    const link = el('a', { href: url, download: `workspace-${id.slice(0, 8)}.tar.gz`, hidden: true });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 
 async function showFiles(path = '.') {
   if (!ui.current) return;
@@ -917,14 +972,14 @@ async function transcribe(audio) {
 async function loadSessions() {
   if (!ui.csrf) return;
   // Voice and session availability rarely change: re-read them only until sessions work.
-  if (!ui.v1?.sessions_available) { ui.v1 = await api('/v1/status'); updateVoice(); }
+  if (!ui.v1?.sessions_available) { ui.v1 = await api('/v1/status'); ui.models = ui.v1.models || null; updateVoice(); renderModels(); }
   if (!ui.v1.sessions_available) { ui.sessions = []; renderSessions(); updateChrome(); return; }
   const { sessions } = await api('/v1/sessions');
   // Events are the authority for the open session's status.
   ui.sessions = sessions.filter(s => !ui.deleted.has(s.id)).map(s => s.id === ui.current?.id ? { ...s, status: ui.current.status } : s);
   if (ui.current) {
     const fresh = ui.sessions.find(s => s.id === ui.current.id);
-    if (fresh) ui.current.title = fresh.title;
+    if (fresh) { ui.current.title = fresh.title; ui.current.model = fresh.model; }
   }
   renderSessions();
   updateChrome();
@@ -956,6 +1011,7 @@ $('#prompt').addEventListener('keydown', event => {
 });
 $('#stop-button').addEventListener('click', stopTurn);
 $('#files-button').addEventListener('click', () => showFiles('.'));
+$('#archive-button').addEventListener('click', downloadArchive);
 $('#files-up').addEventListener('click', () => showFiles(ui.filesPath.split('/').slice(0, -1).join('/') || '.'));
 $('#new-session').addEventListener('click', () => { if (!ui.csrf) { openLogin(); return; } newSession(); });
 $('#clear-closed').addEventListener('click', clearClosed);
