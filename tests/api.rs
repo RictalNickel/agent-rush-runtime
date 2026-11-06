@@ -488,3 +488,158 @@ async fn a_task_larger_than_the_deployment_can_admit_is_rejected_not_queued_fore
     .await;
     assert_eq!(status, StatusCode::CREATED);
 }
+
+/// A login from `peer`, optionally behind a proxy that sent `forwarded` as X-Forwarded-For.
+async fn login_from(
+    app: &axum::Router,
+    peer: &str,
+    forwarded: Option<&str>,
+    password: &str,
+) -> StatusCode {
+    let mut request = Request::builder()
+        .method("POST")
+        .uri("/api/login")
+        .header("content-type", "application/json")
+        .extension(axum::extract::ConnectInfo(
+            peer.parse::<std::net::SocketAddr>().unwrap(),
+        ));
+    if let Some(forwarded) = forwarded {
+        request = request.header("x-forwarded-for", forwarded);
+    }
+    app.clone()
+        .oneshot(
+            request
+                .body(Body::from(json!({ "password": password }).to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap()
+        .status()
+}
+const RIGHT: &str = "test-password-long-enough";
+
+#[tokio::test]
+async fn one_address_failing_logins_does_not_lock_out_another() {
+    use agent_rush::api::LOGIN_FAILURES_PER_ADDRESS;
+    let app = app();
+    for _ in 0..LOGIN_FAILURES_PER_ADDRESS {
+        assert_eq!(
+            login_from(&app, "203.0.113.5:4000", None, "wrong").await,
+            StatusCode::UNAUTHORIZED
+        );
+    }
+    // The per-address limit still holds, even for the right password.
+    for password in ["wrong", RIGHT] {
+        assert_eq!(
+            login_from(&app, "203.0.113.5:4001", None, password).await,
+            StatusCode::TOO_MANY_REQUESTS
+        );
+    }
+    // Another address is unaffected.
+    assert_eq!(
+        login_from(&app, "203.0.113.6:4000", None, "wrong").await,
+        StatusCode::UNAUTHORIZED
+    );
+    assert_eq!(
+        login_from(&app, "203.0.113.6:4000", None, RIGHT).await,
+        StatusCode::OK
+    );
+}
+
+#[tokio::test]
+async fn behind_the_proxy_the_last_forwarded_address_is_limited() {
+    let app = app();
+    for _ in 0..10 {
+        login_from(&app, "127.0.0.1:5000", Some("198.51.100.1"), "wrong").await;
+    }
+    assert_eq!(
+        login_from(&app, "127.0.0.1:5000", Some("198.51.100.1"), "wrong").await,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+    // Entries before the last one come from the client; changing them does not help.
+    assert_eq!(
+        login_from(
+            &app,
+            "127.0.0.1:5000",
+            Some("1.2.3.4, 198.51.100.1"),
+            "wrong"
+        )
+        .await,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+    // A different client behind the same proxy is unaffected.
+    assert_eq!(
+        login_from(&app, "127.0.0.1:5000", Some("198.51.100.2"), "wrong").await,
+        StatusCode::UNAUTHORIZED
+    );
+}
+
+#[tokio::test]
+async fn a_direct_client_cannot_dodge_the_limit_with_forwarded_for() {
+    let app = app();
+    for i in 0..10 {
+        let spoofed = format!("192.0.2.{i}");
+        login_from(&app, "203.0.113.9:4000", Some(&spoofed), "wrong").await;
+    }
+    assert_eq!(
+        login_from(&app, "203.0.113.9:4000", Some("192.0.2.200"), "wrong").await,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+}
+
+#[tokio::test]
+async fn an_ipv6_client_is_limited_by_its_slash_64() {
+    let app = app();
+    for i in 1..=10 {
+        login_from(&app, &format!("[2001:db8::{i}]:4000"), None, "wrong").await;
+    }
+    assert_eq!(
+        login_from(&app, "[2001:db8::ffff]:4000", None, "wrong").await,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+    assert_eq!(
+        login_from(&app, "[2001:db8:0:1::1]:4000", None, "wrong").await,
+        StatusCode::UNAUTHORIZED
+    );
+}
+
+#[tokio::test]
+async fn successful_logins_do_not_count_towards_the_limit() {
+    let app = app();
+    for _ in 0..3 {
+        login_from(&app, "203.0.113.7:4000", None, "wrong").await;
+    }
+    for _ in 0..20 {
+        assert_eq!(
+            login_from(&app, "203.0.113.7:4000", None, RIGHT).await,
+            StatusCode::OK
+        );
+    }
+    for _ in 0..7 {
+        assert_eq!(
+            login_from(&app, "203.0.113.7:4000", None, "wrong").await,
+            StatusCode::UNAUTHORIZED
+        );
+    }
+    assert_eq!(
+        login_from(&app, "203.0.113.7:4000", None, "wrong").await,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+}
+
+#[tokio::test]
+async fn many_addresses_together_hit_the_global_ceiling() {
+    use agent_rush::api::LOGIN_FAILURES_GLOBAL;
+    let app = app();
+    for i in 0..LOGIN_FAILURES_GLOBAL {
+        let peer = format!("10.0.{}.{}:4000", i / 250, i % 250 + 1);
+        assert_eq!(
+            login_from(&app, &peer, None, "wrong").await,
+            StatusCode::UNAUTHORIZED
+        );
+    }
+    assert_eq!(
+        login_from(&app, "10.9.9.9:4000", None, "wrong").await,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+}
