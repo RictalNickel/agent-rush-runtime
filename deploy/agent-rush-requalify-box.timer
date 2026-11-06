@@ -1,0 +1,9 @@
+[Unit]
+Description=Requalify Agent Rush session boxes every 45 minutes (reports last two hours, and one boot)
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=45min
+
+[Install]
+WantedBy=timers.target

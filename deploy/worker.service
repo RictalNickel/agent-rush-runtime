@@ -1,13 +1,15 @@
 [Unit]
 Description=Agent Rush private Rust execution node
-After=network-online.target docker.service
-Requires=docker.service
+After=network-online.target docker.service agent-rush-box-network.service
+Requires=docker.service agent-rush-box-network.service
 
 [Service]
 Type=simple
 User=agent-rush
 Group=agent-rush
-SupplementaryGroups=docker
+# disk: attach each box's workspace image to a loop device (losetup), which Docker then
+# mounts. Like docker, it is root-equivalent; the worker already holds the Docker socket.
+SupplementaryGroups=docker disk
 EnvironmentFile=/etc/agent-rush/worker.env
 ExecStart=/opt/agent-rush/agent-rush worker --bind 127.0.0.1:8090
 Restart=on-failure

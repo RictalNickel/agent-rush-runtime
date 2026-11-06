@@ -52,8 +52,9 @@ enum Commands {
         #[arg(long)]
         output: PathBuf,
     },
-    /// Start a session box, prove its eight containment checks, destroy it, and write the
+    /// Start a session box, prove its nine containment checks, destroy it, and write the
     /// report that `POST /v1/boxes` requires. Refuses to write a failing report as passing.
+    /// The report is written to a temporary file beside the output and renamed over it.
     QualifyBox {
         #[command(flatten)]
         boxes: BoxArgs,
@@ -166,6 +167,16 @@ struct BoxArgs {
     box_idle_seconds: u64,
     #[arg(long, env = "AR_BOX_CEILING_MB", default_value_t = agent_rush::boxes::DEFAULT_CEILING_MB)]
     box_ceiling_mb: u32,
+    /// Hard size of each box's /workspace (a sparse ext4 image), in MiB.
+    #[arg(long, env = "AR_BOX_DISK_MB", default_value_t = agent_rush::boxes::DEFAULT_DISK_MB)]
+    box_disk_mb: u32,
+    /// A parked workspace (its box idle past AR_BOX_IDLE_SECONDS) is deleted after this
+    /// long without a call.
+    #[arg(long, env = "AR_BOX_RETENTION_SECONDS", default_value_t = agent_rush::boxes::DEFAULT_RETENTION_SECONDS)]
+    box_retention_seconds: u64,
+    /// Marker written by deploy/box-network.sh once the box network filter is in place.
+    #[arg(long, env = "AR_BOX_GUARD_MARKER", default_value = agent_rush::boxes::DEFAULT_GUARD_MARKER)]
+    box_guard_marker: PathBuf,
 }
 impl BoxArgs {
     fn config(&self, settings: &Settings) -> Option<BoxConfig> {
@@ -176,6 +187,9 @@ impl BoxArgs {
             state_dir: settings.data_dir.join("boxes"),
             idle_seconds: self.box_idle_seconds,
             ceiling_mb: self.box_ceiling_mb,
+            disk_mb: self.box_disk_mb,
+            retention_seconds: self.box_retention_seconds,
+            guard_marker: self.box_guard_marker.clone(),
         })
     }
 }
@@ -372,20 +386,9 @@ async fn main() -> Result<()> {
             private_probe,
             listener_port,
         } => {
-            use std::io::Write;
             let config = boxes
                 .config(&settings)
                 .context("set --box-image or AR_BOX_IMAGE to the pinned workspace image")?;
-            let mut options = std::fs::OpenOptions::new();
-            options.create_new(true).write(true);
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::OpenOptionsExt;
-                options.mode(0o600);
-            }
-            let mut file = options
-                .open(&output)
-                .context("Box qualification output must be a new private file")?;
             let capacity = agent_rush::resources::ResourcePolicy::detect(settings.capacity_mb)?
                 .usable_memory_mb;
             let image = if settings.sandbox_image.is_empty() {
@@ -400,8 +403,11 @@ async fn main() -> Result<()> {
                 worker_token: Some(settings.worker_token.clone()),
             };
             let report = agent_rush::qualification::run_box(&manager, &probes).await?;
-            file.write_all(&serde_json::to_vec_pretty(&report)?)?;
-            file.sync_all()?;
+            agent_rush::qualification::write_report_atomically(
+                &output,
+                &serde_json::to_vec_pretty(&report)?,
+            )
+            .context("writing the box qualification report")?;
             println!(
                 "{}",
                 serde_json::json!({"qualified":report.qualified,"output":output,"checks":report.checks.iter().map(|c|serde_json::json!({"name":c.name,"passed":c.passed})).collect::<Vec<_>>()})

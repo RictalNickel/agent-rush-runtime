@@ -271,16 +271,23 @@ pub async fn run(runner: &DockerRunner, cancel: Arc<AtomicBool>) -> Value {
     json!({"schema":"agent-rush.qualification.v1","qualified":checks.iter().all(|v|v["passed"]==true),"health":health,"started_at":started,"finished_at":now(),"checks":checks,"measurement_note":"CPU probe requests 0.25 vCPU; requires at least two actual samples, positive load and no sample above 50% of one core. A bounded enforcement probe, not a peak-memory/CPU performance guarantee."})
 }
 
-pub const BOX_CHECKS: [&str; 8] = [
+pub const BOX_CHECKS: [&str; 9] = [
     "metadata_blocked",
     "private_blocked",
-    "worker_listener_blocked",
+    "host_services_blocked",
     "smtp_blocked",
     "public_https_allowed",
     "no_credentials",
     "non_root_readonly",
+    "disk_quota_enforced",
     "volume_destroyed",
 ];
+/// Host ports probed from the box on every host address, beyond the worker's listeners:
+/// SSH, DNS, HTTP(S), Docker's TCP API, Postgres, Redis and node-exporter. Most are closed
+/// on a worker; the host input guard must refuse every one of them all the same.
+pub const HOST_PROBE_PORTS: [u16; 9] = [22, 53, 80, 443, 2375, 2376, 5432, 6379, 9100];
+/// Size of the qualification box's workspace; the probe writes past it.
+pub const QUALIFY_DISK_MB: u32 = 512;
 pub const BOX_REPORT_SCHEMA: &str = "agent-rush.box-qualification.v1";
 /// A box report admits boxes for two hours, like the job report.
 pub const BOX_REPORT_TTL_SECONDS: i64 = 7200;
@@ -317,9 +324,10 @@ impl BoxReport {
         );
         Ok(serde_json::from_slice(&std::fs::read(path)?)?)
     }
-    /// Fails unless the report is for this host and image, current at `at` (unix seconds),
-    /// and every one of the eight checks is present exactly once and passed.
-    pub fn assess(&self, host: &str, image: &str, at: i64) -> Result<()> {
+    /// Fails unless the report is for this host (and boot), image and network, current at
+    /// `at` (unix seconds), and every one of the nine checks is present exactly once and
+    /// passed.
+    pub fn assess(&self, host: &str, image: &str, network: &str, at: i64) -> Result<()> {
         ensure!(
             self.schema == BOX_REPORT_SCHEMA && self.qualified,
             "box qualification report is not passing"
@@ -328,6 +336,10 @@ impl BoxReport {
         ensure!(
             self.image == image,
             "box qualification is for another workspace image"
+        );
+        ensure!(
+            self.network == network,
+            "box qualification is for another box network"
         );
         ensure!(
             self.created_at <= at + 60
@@ -349,17 +361,51 @@ impl BoxReport {
         Ok(())
     }
 }
-/// This host's identity in box reports: a digest of its machine id.
+/// This host's identity in box reports: a digest of its machine id and the current boot
+/// id. A reboot drops the firewall rules boxes depend on, so it also voids the report.
 pub fn box_host_id() -> Result<String> {
     let id = std::fs::read_to_string("/etc/machine-id").context("machine id unavailable")?;
-    Ok(hex::encode(Sha256::digest(id.trim().as_bytes())))
+    Ok(box_host_digest(&id, &crate::boxes::boot_id()?))
+}
+pub fn box_host_digest(machine_id: &str, boot_id: &str) -> String {
+    hex::encode(Sha256::digest(
+        format!("{}\n{}", machine_id.trim(), boot_id.trim()).as_bytes(),
+    ))
+}
+/// Write a report beside `path` (mode 0600), then rename it over `path`, so an existing
+/// report is replaced whole or not at all.
+pub fn write_report_atomically(path: &std::path::Path, bytes: &[u8]) -> Result<()> {
+    use std::io::Write;
+    let name = path
+        .file_name()
+        .context("report path has no file name")?
+        .to_string_lossy();
+    let tmp = path.with_file_name(format!(".{name}.{}.tmp", std::process::id()));
+    let _ = std::fs::remove_file(&tmp);
+    let mut options = std::fs::OpenOptions::new();
+    options.create_new(true).write(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let written = options.open(&tmp).and_then(|mut file| {
+        file.write_all(bytes)?;
+        file.sync_all()
+    });
+    if let Err(e) = written.and_then(|()| std::fs::rename(&tmp, path)) {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(e.into());
+    }
+    Ok(())
 }
 
 /// What `qualify-box` probes beyond its fixed list.
 pub struct BoxProbes {
     /// Private endpoints (`ip:port`) the host itself can reach; a box must not.
     pub private: Vec<String>,
-    /// Ports the worker listens on; each is probed on every host address.
+    /// Ports the worker listens on; each is probed on every host address, with
+    /// `HOST_PROBE_PORTS`.
     pub listener_ports: Vec<u16>,
     /// The worker's bearer token, compared by digest with every box environment value.
     pub worker_token: Option<String>,
@@ -393,6 +439,33 @@ async fn host_reaches(target: &str) -> bool {
     )
 }
 
+/// Host endpoints `host_services_blocked` probes, one at a time (the kernel rate-limits the
+/// guard's ICMP answers): every `HOST_PROBE_PORTS` port and listener on the gateway, and
+/// SSH plus the listeners on every other host address.
+pub fn host_probe_targets(gateway: &str, addresses: &[String], listeners: &[u16]) -> Vec<String> {
+    let mut targets = Vec::new();
+    let mut add = |address: &str, ports: &mut dyn Iterator<Item = u16>| {
+        let mut ports: Vec<u16> = ports.collect();
+        ports.sort();
+        ports.dedup();
+        targets.extend(ports.into_iter().map(|p| format!("{address}:{p}")));
+    };
+    add(
+        gateway,
+        &mut HOST_PROBE_PORTS.iter().chain(listeners).copied(),
+    );
+    let mut others: Vec<&String> = addresses.iter().filter(|a| *a != gateway).collect();
+    others.sort();
+    others.dedup();
+    for address in others {
+        add(
+            address,
+            &mut std::iter::once(22).chain(listeners.iter().copied()),
+        );
+    }
+    targets
+}
+
 /// Start a box, run the fixed probes in it, destroy it, and check its volume is gone.
 pub async fn run_box(manager: &BoxManager, probes: &BoxProbes) -> Result<BoxReport> {
     let created_at = Utc::now().timestamp();
@@ -408,17 +481,13 @@ pub async fn run_box(manager: &BoxManager, probes: &BoxProbes) -> Result<BoxRepo
     addresses.push(gateway.clone());
     addresses.sort();
     addresses.dedup();
-    let listeners: Vec<String> = addresses
-        .iter()
-        .flat_map(|a| {
-            probes
-                .listener_ports
-                .iter()
-                .map(move |p| format!("{a}:{p}"))
-        })
-        .collect();
+    let host_targets = host_probe_targets(&gateway, &addresses, &probes.listener_ports);
+    // The marker says the root unit installed the guard this boot; the probes say it is in
+    // force: only the guard's REJECT reaches a box as "no route to host" from the host.
+    let guard_marker = manager.guard_marker_check();
     let mut notes = vec![
-        "Box traffic to the host's own addresses is delivered locally and governed by the host firewall, not by DOCKER-USER; worker_listener_blocked observes that firewall.".to_string(),
+        "Box traffic to the host's own addresses is delivered locally (INPUT), not forwarded, so DOCKER-USER does not see it; the host input guard (deploy/box-network.sh) refuses all of it, and host_services_blocked requires every probed host port, open or closed, to be refused by that guard.".to_string(),
+        format!("disk_quota_enforced runs on a {QUALIFY_DISK_MB} MiB workspace; boxes get the same mechanism at the configured {} MiB.", manager.disk_mb()),
     ];
     let mut private_controls = Vec::new();
     for target in &probes.private {
@@ -442,15 +511,17 @@ pub async fn run_box(manager: &BoxManager, probes: &BoxProbes) -> Result<BoxRepo
         memory_mb: 1024,
         cpu_millis: 1000,
     };
-    let box_id = manager.create_for_qualification(&spec).await?;
+    let box_id = manager
+        .create_for_qualification(&spec, QUALIFY_DISK_MB)
+        .await?;
     let probe = manager
         .exec_box(
             &box_id,
             &ExecRequest {
                 command: format!(
-                    "bash -s -- --gateway {gateway} --private '{}' --listeners '{}'",
+                    "bash -s -- --gateway {gateway} --private '{}' --host '{}' --disk-mb {QUALIFY_DISK_MB}",
                     probes.private.join(","),
-                    listeners.join(",")
+                    host_targets.join(",")
                 ),
                 cwd: None,
                 timeout_seconds: Some(300),
@@ -458,7 +529,7 @@ pub async fn run_box(manager: &BoxManager, probes: &BoxProbes) -> Result<BoxRepo
             },
         )
         .await;
-    let (container_removed, volume_removed) =
+    let (container_removed, workspace_removed) =
         manager.destroy_box(&box_id).await.unwrap_or((false, false));
     let probe = probe?;
     let token_digest = probes
@@ -482,6 +553,13 @@ pub async fn run_box(manager: &BoxManager, probes: &BoxProbes) -> Result<BoxRepo
         }
         if check.name == "smtp_blocked" {
             check.detail["host_controls"] = json!(smtp_controls);
+        }
+        if check.name == "host_services_blocked" {
+            check.detail["guard_marker"] = match &guard_marker {
+                Ok(()) => json!("present for this boot and network"),
+                Err(e) => json!(format!("{e:#}")),
+            };
+            check.passed = check.passed && guard_marker.is_ok();
         }
         if check.name == "no_credentials" {
             // Compare digests here so neither the token nor its digest enters the box.
@@ -511,8 +589,8 @@ pub async fn run_box(manager: &BoxManager, probes: &BoxProbes) -> Result<BoxRepo
     }
     checks.push(BoxCheck {
         name: "volume_destroyed".into(),
-        passed: container_removed && volume_removed,
-        detail: json!({"box_id":box_id,"container_removed":container_removed,"volume_removed":volume_removed}),
+        passed: container_removed && workspace_removed,
+        detail: json!({"box_id":box_id,"container_removed":container_removed,"workspace_removed":workspace_removed}),
     });
     checks.sort_by_key(|c| BOX_CHECKS.iter().position(|n| *n == c.name));
     Ok(BoxReport {

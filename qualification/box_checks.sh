@@ -3,21 +3,25 @@
 # box user, and prints one JSON object per check: {"name","passed","detail"}. It is
 # compiled into the binary; nothing in a box can change it.
 #
-#   bash -s -- --gateway <ip> --private <ip:port,...> --listeners <ip:port,...>
+#   bash -s -- --gateway <ip> --private <ip:port,...> --host <ip:port,...> --disk-mb <n>
 #
-# --gateway:   the box network's gateway, which is the host
-# --private:   private-network endpoints the host itself can reach (the box must not)
-# --listeners: the worker's own listener on each host address
-# The eighth check, volume_destroyed, is observed on the host after the box is removed.
+# --gateway: the box network's gateway, which is the host
+# --private: private-network endpoints the host itself can reach (the box must not)
+# --host:    ports on every host address: the worker's listeners plus common services,
+#            open or closed; the host input guard must refuse each one
+# --disk-mb: the size of this box's /workspace
+# The ninth check, volume_destroyed, is observed on the host after the box is removed.
 set -u
 gateway=""
 private=""
-listeners=""
+host=""
+disk_mb=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --gateway) gateway="${2:-}"; shift 2 ;;
     --private) private="${2:-}"; shift 2 ;;
-    --listeners) listeners="${2:-}"; shift 2 ;;
+    --host) host="${2:-}"; shift 2 ;;
+    --disk-mb) disk_mb="${2:-0}"; shift 2 ;;
     *) shift ;;
   esac
 done
@@ -56,6 +60,18 @@ probe_all() {
   cat "$dir"/* 2>/dev/null | jq -cs '.'
   rm -rf "$dir"
 }
+# probe_seq <ip:port,...>: the same, one at a time. The kernel rate-limits the ICMP errors
+# REJECT sends to one box (about one a second after a burst of six), so parallel probes of
+# rejected ports mostly time out; one at a time, a TCP retry gets each its answer.
+probe_seq() {
+  local target
+  IFS=',' read -ra targets <<< "$1"
+  for target in "${targets[@]}"; do
+    [ -n "$target" ] || continue
+    probe "${target%:*}" "${target##*:}"
+  done | jq -cs '.'
+}
+all_rejected() { jq -e 'length > 0 and all(.result == "rejected")' <<< "$1" >/dev/null && echo true || echo false; }
 none_open() { jq -e 'length > 0 and all(.result != "open")' <<< "$1" >/dev/null && echo true || echo false; }
 report() { jq -cn --arg name "$1" --argjson passed "$2" --argjson detail "$3" '{name:$name,passed:$passed,detail:$detail}'; }
 
@@ -71,12 +87,13 @@ report metadata_blocked "$passed" "$(jq -cn --argjson probes "$probes" --argjson
 probes=$(probe_all "10.0.0.1:80,172.16.0.1:80,192.168.0.1:80,100.64.0.1:80,172.17.0.1:80${private:+,$private}")
 report private_blocked "$(none_open "$probes")" "$(jq -cn --argjson probes "$probes" '{probes:$probes}')"
 
-# 3. The worker's own listener, on every host address. SSH on the host is recorded too:
-# it is open to the internet anyway, but box traffic to the host is local delivery that
-# only the host firewall governs, so the report shows what that firewall allows.
-probes=$(probe_all "$listeners")
-ssh=$(probe "$gateway" 22)
-report worker_listener_blocked "$(none_open "$probes")" "$(jq -cn --argjson probes "$probes" --argjson host_ssh "$ssh" '{probes:$probes,host_ssh_informational:$host_ssh}')"
+# 3. Host services: every probed port on every host address (the gateway included) must be
+# refused by the host input guard. Box traffic to the host is local delivery that
+# DOCKER-USER never sees; a closed port answering "refused", or an open one answering at
+# all, shows the guard is missing, and a silent drop (timeout) is the host firewall's
+# doing, not the guard's. Only "rejected" (ICMP admin-prohibited) passes.
+probes=$(probe_seq "$host")
+report host_services_blocked "$(all_rejected "$probes")" "$(jq -cn --arg gateway "$gateway" --argjson probes "$probes" '{gateway:$gateway,probes:$probes}')"
 
 # 4. SMTP submission and relay, on IPv4 addresses (the box has no IPv6 route, so a name
 # could otherwise fail on IPv6 alone and prove nothing about the filter).
@@ -129,3 +146,21 @@ command -v sudo >/dev/null && sudo=true
 passed=$(jq -n --argjson uid "$uid" --arg nnp "$nnp" --arg cap "$capeff" --argjson w "$rootfs_writes" --argjson ws "$workspace" --argjson sudo "$sudo" \
   '$uid != 0 and $nnp == "1" and ($cap | test("^0+$")) and ($w | length) == 0 and $ws and ($sudo | not)')
 report non_root_readonly "$passed" "$(jq -cn --argjson uid "$uid" --arg no_new_privs "$nnp" --arg cap_eff "$capeff" --argjson rootfs_writable "$rootfs_writes" --argjson workspace_writable "$workspace" --argjson sudo "$sudo" '{uid:$uid,no_new_privs:$no_new_privs,cap_eff:$cap_eff,rootfs_writable:$rootfs_writable,workspace_writable:$workspace_writable,sudo_present:$sudo}')"
+
+# 8. /workspace has a hard size: writing past it fails with ENOSPC, never grows the host's
+# disk, and the space comes back once the file is removed.
+limit=$(( disk_mb * 1048576 ))
+size=$(df -B1 --output=size /workspace 2>/dev/null | tail -n 1 | tr -d ' ')
+fill=/workspace/.ar-quota-probe
+dd if=/dev/zero of="$fill" bs=1M count=$(( disk_mb + 64 )) 2>/tmp/.ar-dd.err
+dd_rc=$?
+written=$(stat -c %s "$fill" 2>/dev/null || echo 0)
+enospc=false
+grep -q "No space left on device" /tmp/.ar-dd.err && enospc=true
+rm -f "$fill" /tmp/.ar-dd.err
+after=false
+head -c 1048576 /dev/zero > "$fill" 2>/dev/null && after=true
+rm -f "$fill"
+passed=$(jq -n --argjson mb "$disk_mb" --argjson rc "$dd_rc" --argjson enospc "$enospc" --argjson written "$written" --argjson limit "$limit" --arg size "$size" --argjson after "$after" \
+  '$mb > 0 and $rc != 0 and $enospc and $written <= $limit and (($size | tonumber? // 0) <= $limit) and $after')
+report disk_quota_enforced "$passed" "$(jq -cn --argjson disk_mb "$disk_mb" --argjson dd_exit "$dd_rc" --argjson enospc "$enospc" --argjson bytes_written "$written" --arg fs_size "$size" --argjson writable_after_cleanup "$after" '{disk_mb:$disk_mb,attempted_mb:($disk_mb + 64),dd_exit:$dd_exit,enospc:$enospc,bytes_written:$bytes_written,fs_size_bytes:$fs_size,writable_after_cleanup:$writable_after_cleanup}')"
