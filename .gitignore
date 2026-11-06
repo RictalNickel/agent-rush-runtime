@@ -11,6 +11,8 @@ runtime/
 !.env.example
 *.pem
 *.key
+# Operator voice clip: personal recording, never committed.
+voice/ref.wav
 test-results/
 playwright-report/
 /target/

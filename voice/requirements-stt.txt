@@ -1,0 +1,4 @@
+# Speech to text: Moonshine (MIT), ONNX runtime, base model on CPU.
+# Model weights (UsefulSensors/moonshine on Hugging Face) download on first start.
+# voice/install.sh installs ffmpeg with apt, because it converts uploads to 16 kHz mono.
+useful-moonshine-onnx==20251121

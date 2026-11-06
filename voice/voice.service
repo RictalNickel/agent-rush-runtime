@@ -1,0 +1,28 @@
+[Unit]
+Description=Agent Rush optional voice service (speech to text and speech output)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=agent-voice
+WorkingDirectory=/opt/agent-voice/app
+Environment=VOICE_REF_WAV=/opt/agent-voice/ref.wav
+Environment=VOICE_DEVICE=cpu
+Environment=HF_HOME=/var/lib/agent-voice/huggingface
+ExecStart=/opt/agent-voice/venv/bin/uvicorn server:app --host 127.0.0.1 --port 8790
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

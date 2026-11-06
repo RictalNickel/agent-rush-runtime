@@ -1,0 +1,35 @@
+health: {"stt":true,"tts":true}
+speak[short] http=200 seconds=5.431127 bytes=441388 audio_seconds=4.597333
+speak[short] format: pcm_s16le,48000,1 
+transcribe[short] wav pass=1 http=200 seconds=0.666489
+  got: The quick brown fox jumps over the lazy dog.
+  match: yes
+transcribe[short] wav pass=2 http=200 seconds=0.628278
+  got: The quick brown fox jumps over the lazy dog.
+  match: yes
+transcribe[short] webm http=200 seconds=0.633279
+  got: The quick brown fox jumps over the lazy dog.
+  match: yes
+transcribe[short] mp3 http=200 seconds=0.672978
+  got: The quick brown fox jumps over the lazy dog.
+  match: yes
+speak[agent] http=200 seconds=5.723178 bytes=528428 audio_seconds=5.504000
+speak[agent] format: pcm_s16le,48000,1 
+transcribe[agent] wav pass=1 http=200 seconds=0.639942
+  got: Agent Rush runs every tool call inside a sealed box.
+  match: yes
+transcribe[agent] wav pass=2 http=200 seconds=0.638574
+  got: Agent Rush runs every tool call inside a sealed box.
+  match: yes
+transcribe[agent] webm http=200 seconds=0.643786
+  got: Agent Rush runs every tool call inside a sealed box.
+  match: yes
+transcribe[agent] mp3 http=200 seconds=0.626568
+  got: Agent Rush runs every tool call inside a sealed box.
+  match: yes
+--- error paths
+empty upload: http=400
+garbage upload: http=422 {"detail":"Could not read that audio file. Send WAV, MP3, OGG, WebM or M4A."}
+empty text: http=422 {"detail":"The text is empty."}
+too long text: http=422
+server rss: 2235916 KiB
