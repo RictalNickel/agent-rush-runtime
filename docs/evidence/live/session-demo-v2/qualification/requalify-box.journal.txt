@@ -1,0 +1,11 @@
+2026-11-06T02:28:25+00:00 agent-rush-worker systemd[1]: Starting agent-rush-requalify-box.service - Agent Rush session box containment requalification...
+2026-11-06T02:28:25+00:00 agent-rush-worker requalify-box.sh[841745]: network ar-box present
+2026-11-06T02:28:25+00:00 agent-rush-worker requalify-box.sh[841745]: host input guard present
+2026-11-06T02:28:26+00:00 agent-rush-worker requalify-box.sh[841745]: egress rules present (18)
+2026-11-06T02:28:26+00:00 agent-rush-worker requalify-box.sh[841745]: marker written: /run/agent-rush/box-network.env
+2026-11-06T02:28:26+00:00 agent-rush-worker requalify-box.sh[841818]: 2026-11-06T02:28:26.563238Z  INFO agent_rush::boxes: box created box_id=d92d377b8a6b4fa295e1c2b6b50ad3e2 session=qualify-0758c907f6d54a4d8298594472db0f5e disk_mb=512
+2026-11-06T02:28:54+00:00 agent-rush-worker requalify-box.sh[841818]: 2026-11-06T02:28:54.653128Z  INFO agent_rush::boxes: box scaled up box_id=d92d377b8a6b4fa295e1c2b6b50ad3e2 memory_mb=2048 cpu_millis=1000
+2026-11-06T02:28:55+00:00 agent-rush-worker requalify-box.sh[841818]: 2026-11-06T02:28:55.376357Z  INFO agent_rush::boxes: box destroyed box_id=d92d377b8a6b4fa295e1c2b6b50ad3e2 container_removed=true workspace_removed=true
+2026-11-06T02:28:55+00:00 agent-rush-worker requalify-box.sh[841818]: {"checks":[{"name":"metadata_blocked","passed":true},{"name":"private_blocked","passed":true},{"name":"host_services_blocked","passed":true},{"name":"smtp_blocked","passed":true},{"name":"public_https_allowed","passed":true},{"name":"no_credentials","passed":true},{"name":"non_root_readonly","passed":true},{"name":"disk_quota_enforced","passed":true},{"name":"volume_destroyed","passed":true}],"output":"/var/lib/agent-rush/box-qualification.next.json","qualified":true}
+2026-11-06T02:28:55+00:00 agent-rush-worker systemd[1]: agent-rush-requalify-box.service: Deactivated successfully.
+2026-11-06T02:28:55+00:00 agent-rush-worker systemd[1]: Finished agent-rush-requalify-box.service - Agent Rush session box containment requalification.

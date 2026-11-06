@@ -1,0 +1,22 @@
+## binary
+86ce69f850dc4139581726224048bbd4378239da8c9d1435f6189da02416a73b  /opt/agent-rush/agent-rush
+## Caddyfile
+144-202-59-108.sslip.io {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+	# Session event streams (SSE): no compression, flush every event at once.
+	@stream path_regexp ^/v1/sessions/[^/]+/stream$
+	handle @stream {
+		reverse_proxy 127.0.0.1:8080 {
+			flush_interval -1
+		}
+	}
+	handle {
+		encode gzip
+		reverse_proxy 127.0.0.1:8080
+	}
+}

@@ -1,0 +1,104 @@
+## binary
+86ce69f850dc4139581726224048bbd4378239da8c9d1435f6189da02416a73b  /opt/agent-rush/agent-rush
+## workspace image
+sha256:34192dbfbea41e341a9a09db1dc234f244ccd746b7fa1850193b3ba1545313aa 2026-11-06T02:26:26.060340661Z
+## worker.env AR_BOX_* (other keys by name only)
+AR_BOX_QUALIFICATION_REPORT=/var/lib/agent-rush/box-qualification.json
+AR_BOX_IDLE_SECONDS=1800
+AR_BOX_CEILING_MB=4096
+AR_BOX_IMAGE=agent-rush-workspace@sha256:34192dbfbea41e341a9a09db1dc234f244ccd746b7fa1850193b3ba1545313aa
+AR_BOX_PRIVATE_PROBES=10.42.0.3:22
+AR_BOX_DISK_MB=4096
+AR_BOX_RETENTION_SECONDS=604800
+AR_WORKER_TOKEN AR_DATA_DIR AR_CAPACITY_MB AR_SANDBOX_IMAGE AR_QUALIFICATION_REPORT 
+## service user
+uid=996(agent-rush) gid=988(agent-rush) groups=988(agent-rush),6(disk),110(docker)
+## /run/agent-rush/box-network.env
+boot_id=a2db91e7-57a8-41df-b3d5-28f03bf45383
+network=ar-box
+subnet=172.30.0.0/24
+guard_host_input=1
+egress_rules=18
+installed_at=2026-11-06T02:28:26Z
+## systemctl is-enabled/is-active agent-rush-worker.service: enabled active
+## systemctl is-enabled/is-active agent-rush-box-network.service: enabled active
+## systemctl is-enabled/is-active agent-rush-requalify-box.service: static inactive
+## systemctl is-enabled/is-active agent-rush-requalify-box.timer: enabled active
+## /etc/systemd/system/agent-rush-worker.service
+[Unit]
+Description=Agent Rush private Rust execution node
+After=network-online.target docker.service agent-rush-box-network.service
+Requires=docker.service agent-rush-box-network.service
+
+[Service]
+Type=simple
+User=agent-rush
+Group=agent-rush
+# disk: attach each box's workspace image to a loop device (losetup), which Docker then
+# mounts. Like docker, it is root-equivalent; the worker already holds the Docker socket.
+SupplementaryGroups=docker disk
+EnvironmentFile=/etc/agent-rush/worker.env
+ExecStart=/opt/agent-rush/agent-rush worker --bind 127.0.0.1:8090
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/agent-rush
+UMask=0077
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
+## iptables DOCKER-USER / INPUT guard
+-N DOCKER-USER
+-A DOCKER-USER -s 172.30.0.0/24 -d 0.0.0.0/8 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 10.0.0.0/8 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 100.64.0.0/10 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 127.0.0.0/8 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 169.254.0.0/16 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 172.16.0.0/12 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 192.0.0.0/24 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 192.168.0.0/16 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 198.18.0.0/15 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 224.0.0.0/4 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 240.0.0.0/4 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d WORKER-PUBLIC-IP-REDACTED/32 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 10.42.0.4/32 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 172.17.0.1/32 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 172.30.0.1/32 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -p tcp -m multiport --dports 25,465,587 -m comment --comment ar-box-egress -j REJECT --reject-with tcp-reset
+-A DOCKER-USER -s 172.30.0.0/24 -m conntrack --ctstate NEW -m hashlimit --hashlimit-above 50/sec --hashlimit-burst 100 --hashlimit-mode srcip --hashlimit-name ar-box -m comment --comment ar-box-egress -j DROP
+-A DOCKER-USER -s 172.30.0.0/24 -m comment --comment ar-box-egress -j RETURN
+-A INPUT -s 172.30.0.0/24 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+## nginx
+server {
+    listen 10.42.0.4:8443 ssl;
+    server_name worker.agent-rush.internal;
+    ssl_certificate /etc/agent-rush/tls/worker.crt;
+    ssl_certificate_key /etc/agent-rush/tls/worker.key;
+    ssl_client_certificate /etc/agent-rush/tls/ca.crt;
+    ssl_verify_client on;
+    ssl_verify_depth 2;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    client_max_body_size 64k;
+    # Box calls carry files up to 25 MiB and commands that run up to 600 s.
+    location /v1/boxes {
+        client_max_body_size 26m;
+        proxy_pass http://127.0.0.1:8090;
+        proxy_set_header Host $host;
+        proxy_set_header Authorization $http_authorization;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 660s;
+        proxy_send_timeout 120s;
+    }
+    location / {
+        proxy_pass http://127.0.0.1:8090;
+        proxy_set_header Host $host;
+        proxy_set_header Authorization $http_authorization;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+}
