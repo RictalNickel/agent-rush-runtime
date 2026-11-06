@@ -86,9 +86,15 @@ pub fn decode_response(body: Value) -> Result<Completion> {
         message["content"].is_string(),
         "provider returned no text completion"
     );
+    // The same bound as the Anthropic path. 32 KiB was too small: a turn that writes a
+    // whole module and its tests in one tool call failed the session.
     ensure!(
-        !content.is_empty() && content.len() <= 32768,
-        "invalid model output length"
+        !content.is_empty() && content.len() <= 400_000,
+        "invalid model output length ({} bytes, finish_reason {})",
+        content.len(),
+        body["choices"][0]["finish_reason"]
+            .as_str()
+            .unwrap_or("unknown")
     );
     let input = body["usage"]["prompt_tokens"]
         .as_u64()

@@ -235,6 +235,16 @@ async fn the_budget_reservation_uses_the_session_models_tariff() {
 }
 
 #[test]
+fn a_long_answer_is_accepted_and_an_empty_one_says_why() {
+    let long = format!("{{\"text\":\"{}\"}}", "x".repeat(60_000));
+    let body = json!({"choices":[{"finish_reason":"stop","message":{"content":long}}],"usage":{"prompt_tokens":900,"completion_tokens":15000}});
+    assert_eq!(decode_response(body).unwrap().content.len(), long.len());
+    let body = json!({"choices":[{"finish_reason":"length","message":{"content":""}}],"usage":{"prompt_tokens":900,"completion_tokens":16384}});
+    let error = decode_response(body).unwrap_err().to_string();
+    assert!(error.contains("0 bytes, finish_reason length"), "{error}");
+}
+
+#[test]
 fn reasoning_without_an_answer_is_a_clear_failure() {
     // Observed live from GLM 5.3 Flash without a reasoning effort: all tokens spent reasoning.
     let body = json!({"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"","reasoning":"long chain"}}],"usage":{"prompt_tokens":86,"completion_tokens":2454}});
