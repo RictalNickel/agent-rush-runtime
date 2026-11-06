@@ -1,0 +1,12 @@
+== http://169.254.169.254/v1.json
+{"ok": false, "error": "Error: Page.goto: net::ERR_ADDRESS_UNREACHABLE at http://169.254.169.254/v1.json\nCall log:\n  - navigating to \"http://169.254.169.254/v1.json\", waiting until \"domcontentloaded\""}
+
+== http://10.42.0.3.sslip.io:443/
+{"ok": false, "error": "Error: Page.goto: net::ERR_ADDRESS_UNREACHABLE at http://10.42.0.3.sslip.io:443/\nCall log:\n  - navigating to \"http://10.42.0.3.sslip.io:443/\", waiting until \"domcontentloaded\""}
+
+== http://127.0.0.1.nip.io:8090/
+{"ok": false, "error": "Error: Page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1.nip.io:8090/\nCall log:\n  - navigating to \"http://127.0.0.1.nip.io:8090/\", waiting until \"domcontentloaded\""}
+
+== https://example.com
+{"ok": true, "url": "https://example.com/", "title": "Example Domain", "status": 200}
+

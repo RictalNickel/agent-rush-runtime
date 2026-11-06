@@ -1,0 +1,238 @@
+{
+ "sessions": [
+  "38339551-6070-413d-a57b-3d72adbb2887",
+  "21a352e2-7ade-4d48-9844-b0a464cfebd0"
+ ],
+ "box_b_ip": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "172.30.0.2 \n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "id_and_caps": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "uid=1000(agent) gid=1000(agent) groups=1000(agent)\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\n7:pids:/cb98780ca91e92cf22008f233382cd731c3b8bda31a77be70aa5c035390a3bdf\n6:memory:/cb98780ca91e92cf22008f233382cd731c3b8bda31a77be70aa5c035390a3bdf\n5:job:/cb98780ca91e92cf22008f233382cd731c3b8bda31a77be70aa5c035390a3bdf\nLinux box 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 x86_64 x86_64 GNU/Linux\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "env_secrets": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "CARGO_HOME DEBIAN_FRONTEND HOME HOSTNAME LANG LC_ALL MPLBACKEND NPM_CONFIG_PREFIX PATH PIP_BREAK_SYSTEM_PACKAGES PIP_NO_CACHE_DIR PLAYWRIGHT_BROWSERS_PATH PWD PYTHONDONTWRITEBYTECODE PYTHONUSERBASE RUSTUP_HOME SHLVL USER _ \n0\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "secret_files": {
+  "exit_code": 2,
+  "stderr": "",
+  "stdout": "lrwxrwxrwx 1 root root    4 Oct 24 14:05 /var/run -> /run\n\n/:\ntotal 66\ndrwxr-xr-x  1 root  root  4096 Nov  6 16:16 .\ndrwxr-xr-x  1 root  root  4096 Nov  6 16:16 ..\n-rwxr-xr-x  1 root  root     0 Nov  6 16:16 .dockerenv\nlrwxrwxrwx  1 root  root     7 Apr 22  2024 bin -> usr/bin\ndrwxr-xr-x  2 root  root  4096 Apr 22  2024 boot\ndrwxr-xr-x  6 root  root   360 Nov  6 16:16 dev\ndrwxr-xr-x  1 root  root  4096 Nov  6 16:16 etc\ndrwxr-xr-x  1 root  root  4096 Nov  6 03:24 home\nlrwxrwxrwx  1 root  root     7 Apr 22  2024 lib -> usr/lib\ndrwxr-xr-x  2 root  root  4096 Nov 14  2024 lib.usr-is-merged\nlrwxrwxrwx  1 root  root     9 Apr 22  2024 lib64 -> usr/lib64\ndrwxr-xr-x  2 root  root  4096 Oct 24 14:05 media\ndrwxr-xr-x  2 root  root  4096 Oct 24 14:05 mnt\ndrwxrwxrwx  1 root  root  4096 Nov  1 17:56 ms-playwright\ndrwxr-xr-x  1 root  root  4096 Nov  6 03:26 opt\ndr-xr-xr-x 14 root  root     0 Nov  6 16:16 proc\ndrwx------  1 root  root  4096 Nov  1 17:56 root\ndrwxr-xr-x  1 root  root  4096 Nov  1 17:55 run\nlrwxrwxrwx  1 root  root     8 Apr 22  2024 sbin -> usr/sbin\ndrwxr-xr-x  2 root  root  4096 Oct 24 14:05 srv\ndrwxr-xr-x 12 root  root     0 Nov  6 16:16 sys\ndrwxrwxrwt  3 root  root    60 Nov  6 16:16 tmp\ndrwxr-xr-x  1 root  root  4096 Oct 24 14:05 usr\ndrwxr-xr-x  1 root  root  4096 Oct 24 14:12 var\ndrwxr-xr-x  2 agent agent 4096 Nov  6 03:24 workspace\n\n/run:\ntotal 37\ndrwxr-xr-x 1 root root 4096 Nov  1 17:55 .\ndrwxr-xr-x 1 root root 4096 Nov  6 16:16 ..\n-rw-r--r-- 1 root root    0 Nov  1 17:53 adduser\ndrwxr-xr-x 3 root root 4096 Nov  1 17:55 dbus\ndrwxrwxrwt 1 root root 4096 Nov  1 17:55 lock\ndrwxr-xr-x 2 root root 4096 Nov  1 17:55 log\ndrwxr-xr-x 2 root root 4096 Nov  1 17:55 sendsigs.omit.d\ndrwxr-xr-x 2 root root 4096 Nov  1 17:55 setrans\nls: cannot access '/var/run/docker.sock': No such file or directory\nls: cannot access '/run/docker.sock': No such file or directory\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "mounts": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "none / 9p ro,trans=fd,rfdno=5,wfdno=5,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=fscache,disable_fifo_open,overlayfs_stale_read,directfs 0 0\nnone /dev dev rw,nosuid,mode=0755 0 0\nnone /tmp tmpfs rw,nosuid,size=1048576k,mode=1777 0 0\nnone /sys sysfs ro,nosuid,noexec,dentry_cache_limit=1000 0 0\nnone /proc proc rw,nosuid,noexec,dentry_cache_limit=1000 0 0\nnone /dev/shm tmpfs rw,nosuid,noexec,size=65536k,mode=1777 0 0\nnone /dev/pts devpts rw,nosuid,noexec 0 0\nnone /workspace 9p rw,trans=fd,rfdno=7,wfdno=7,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=remote_revalidating,disable_fifo_open,directfs 0 0\nnone /etc/hosts 9p ro,trans=fd,rfdno=10,wfdno=10,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=remote_revalidating,disable_fifo_open,directfs 0 0\nnone /home/agent tmpfs rw,nosuid,size=1048576k,mode=0755,uid=1000,gid=1000 0 0\nnone /etc/hostname 9p ro,trans=fd,rfdno=9,wfdno=9,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=remote_revalidating,disable_fifo_open,directfs 0 0\nnone /sys/fs/cgroup tmpfs ro,nosuid,noexec 0 0\nnone /sys/fs/cgroup/cpu cgroup rw,cpu 0 0\nnone /sys/fs/cgroup/cpuacct cgroup rw,cpuacct 0 0\nnone /sys/fs/cgroup/cpuset cgroup rw,cpuset 0 0\nnone /sys/fs/cgroup/devices cgroup rw,devices 0 0\nnone /sys/fs/cgroup/job cgroup rw,job 0 0\nnone /sys/fs/cgroup/memory cgroup rw,memory 0 0\nnone /sys/fs/cgroup/pids cgroup rw,pids 0 0\nnone /etc/resolv.conf 9p ro,trans=fd,rfdno=8,wfdno=8,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=remote_revalidating,disable_fifo_open,directfs 0 0\nnone /usr/sbin/docker-init 9p ro,trans=fd,rfdno=6,wfdno=6,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=remote_revalidating,disable_fifo_open,directfs 0 0\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "gvisor": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "[    0.000000] Starting gVisor...\n[    0.552222] Mounting deweydecimalfs...\n[    0.629368] Asking an AI agent to fix the bugs...\n[    0.639503] Forking spaghetti code...\n[    0.916582] Creating process schedule...\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "metadata_http": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "000 exit=7\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "metadata_tcp": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "bash: connect: No route to host\nbash: line 1: /dev/tcp/169.254.169.254/80: No route to host\nblocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "vpc_control_ssh": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "bash: connect: No route to host\nbash: line 1: /dev/tcp/10.42.0.3/22: No route to host\nblocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "vpc_control_https": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "bash: connect: No route to host\nbash: line 1: /dev/tcp/10.42.0.3/443: No route to host\nblocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "vpc_worker_api": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "bash: connect: No route to host\nbash: line 1: /dev/tcp/10.42.0.4/8443: No route to host\nblocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "vpc_worker_8090": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "bash: connect: No route to host\nbash: line 1: /dev/tcp/10.42.0.4/8090: No route to host\nblocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "worker_public_ssh": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "bash: connect: No route to host\nbash: line 1: /dev/tcp/108.61.119.145/22: No route to host\nblocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "control_public_ssh": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "blocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "gateway": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "Iface\tDestination\tGateway\tFlags\tRefCnt\tUse\tMetric\tMask\tMTU\tWindow\tIRTT                                                         \neth0\t00001EAC\t00000000\t0001\t0\t0\t0\t00FFFFFF\t0\t0\t0                                                                               \neth0\t00000000\t01001EAC\t0003\t0\t0\t0\t00000000\t0\t0\t0                                                                               \n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "gateway_ports": {
+  "exit_code": 0,
+  "stderr": "bash: line 1: ip: command not found\n",
+  "stdout": ":22 blocked\n:53 blocked\n:80 blocked\n:443 blocked\n:2375 blocked\n:8090 blocked\n:8443 blocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "box_to_box": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "bash: connect: No route to host\nbash: line 1: /dev/tcp/172.30.0.2/8000: No route to host\nblocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "localhost_loop": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "bash: connect: Connection refused\nbash: line 1: /dev/tcp/127.0.0.1/9: Connection refused\nblocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "dns_private_curl": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "000 exit=7\n000 exit=7\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "fetch_helper_private": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "fetch: http://169.254.169.254/v1.json: <urlopen error [Errno 113] No route to host>\nfetch: http://10.42.0.3.sslip.io/: <urlopen error [Errno 113] No route to host>\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "browse_private": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "{\"ok\": false, \"error\": \"unknown action None; actions: goto, snapshot, click, type, press, select, scroll, screenshot, eval, back, tabs, console, close\"}\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "smtp": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "bash: connect: Network is unreachable\nbash: line 1: /dev/tcp/smtp.gmail.com/25: Network is unreachable\nblocked\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "public_ok": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "200 exit=0\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "ipv6": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "00000000000000000000000000000001 01 80 00 00       lo\n000 exit=7\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "raw_socket": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "PermissionError: [Errno 1] Operation not permitted\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "pids_limit": {
+  "http": 502,
+  "body": "{\"error\":\"Workspace error: box worker returned HTTP 500: Box operation failed; consult worker logs\"}"
+ },
+ "write_rootfs": {
+  "http": 502,
+  "body": "{\"error\":\"Workspace error: box worker returned HTTP 500: Box operation failed; consult worker logs\"}"
+ },
+ "proc_sysrq": {
+  "exit_code": 0,
+  "stderr": "bash: line 1: /proc/sysrq-trigger: Permission denied\n",
+  "stdout": "exit=1\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "symlink_escape_setup": {
+  "exit_code": 0,
+  "stderr": "",
+  "stdout": "total 9\ndrwxr-xr-x 2 agent agent 4096 Nov  6 16:16 .\ndrwxr-xr-x 1 root  root  4096 Nov  6 16:16 ..\nlrwxrwxrwx 1 agent agent   11 Nov  6 16:16 pw -> /etc/passwd\nlrwxrwxrwx 1 agent agent    1 Nov  6 16:16 root -> /\n",
+  "timed_out": false,
+  "truncated": false
+ },
+ "files_/workspace/pw": [
+  400,
+  "{\"error\":\"Workspace: path resolves to /etc/passwd, outside /workspace and /tmp\"}"
+ ],
+ "files_/workspace/root/etc/hostname": [
+  400,
+  "{\"error\":\"Workspace: path resolves to /etc/hostname, outside /workspace and /tmp\"}"
+ ],
+ "files_/workspace/../etc/passwd": [
+  400,
+  "{\"error\":\"Workspace: path \\\"/workspace/../etc/passwd\\\" resolves to /etc/passwd, outside /workspace and /tmp\"}"
+ ],
+ "files_/etc/passwd": [
+  400,
+  "{\"error\":\"Workspace: path \\\"/etc/passwd\\\" resolves to /etc/passwd, outside /workspace and /tmp\"}"
+ ],
+ "files_/workspace/%2e%2e/etc/passwd": [
+  400,
+  "{\"error\":\"Workspace: path \\\"/workspace/../etc/passwd\\\" resolves to /etc/passwd, outside /workspace and /tmp\"}"
+ ],
+ "files_/proc/self/environ": [
+  400,
+  "{\"error\":\"Workspace: path \\\"/proc/self/environ\\\" resolves to /proc/self/environ, outside /workspace and /tmp\"}"
+ ],
+ "files_/tmp/../workspace": [
+  200,
+  "{'entries': [{'is_dir': False, 'name': 'pw', 'size': 11}, {'is_dir': False, 'name': 'root', 'size': 1}], 'path': '/tmp/../workspace'}"
+ ],
+ "put_via_symlink": [
+  200,
+  "{'bytes': 8, 'sha256': '613fe5aa65343dbb1b9abe6abac6773f5c91bd60d3f2ffb7e2eae69e1db8b227'}"
+ ],
+ "cross_session_same_owner": [
+  200
+ ]
+}

@@ -1,0 +1,24 @@
+== unauthenticated / bad key
+GET    /v1/status                 none=401 bad=401
+GET    /v1/sessions               none=401 bad=401
+POST   /v1/sessions               none=401 bad=401
+GET    /v1/keys                   none=401 bad=401
+POST   /v1/keys                   none=401 bad=401
+GET    /v1/skills                 none=401 bad=401
+GET    /v1/agent-config           none=401 bad=401
+PUT    /v1/agent-config           none=401 bad=401
+GET    /v1/webhooks               none=401 bad=401
+POST   /v1/webhooks               none=401 bad=401
+POST   /v1/sessions/purge-closed  none=401 bad=401
+POST   /mcp                       none=401 bad=401
+GET    /api/jobs                  none=401 bad=401
+POST   /api/jobs                  none=401 bad=401
+GET    /api/memories              none=400 bad=400
+GET    /api/session               none=401 bad=401
+POST   /v1/voice/speak            none=401 bad=401
+POST   /v1/voice/transcribe       none=401 bad=401
+== API key on operator-only routes (expect 403)
+POST /v1/keys -> 403
+POST /v1/webhooks -> 403
+== MCP without auth
+{"error":"API key required: send Authorization: Bearer ar_..."} 401

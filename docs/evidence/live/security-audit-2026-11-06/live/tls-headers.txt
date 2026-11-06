@@ -1,0 +1,22 @@
+== TLS versions
+tls1: New, (NONE), Cipher is (NONE) Protocol: TLSv1.3 
+tls1_1: New, (NONE), Cipher is (NONE) Protocol: TLSv1.3 
+tls1_2: New, TLSv1.2, Cipher is ECDHE-ECDSA-AES128-GCM-SHA256 Protocol: TLSv1.2     Protocol  : TLSv1.2 
+tls1_3: New, TLSv1.3, Cipher is TLS_AES_128_GCM_SHA256 Protocol: TLSv1.3     Protocol  : TLSv1.3 
+== headers
+content-security-policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
+permissions-policy: camera=(), microphone=(self), geolocation=()
+referrer-policy: no-referrer
+strict-transport-security: max-age=31536000
+x-content-type-options: nosniff
+x-frame-options: DENY
+== http->https
+== http->https
+HTTP/1.1 308 Permanent Redirect
+Connection: close
+Location: https://144.202.59.108/
+== oversized json body
+413
+== bogus session id
+ 404
+{"error":"Session not found"} 404

@@ -1,0 +1,11 @@
+{
+ "csrf_missing_key_create": 403,
+ "csrf_wrong_key_create": 403,
+ "new_key_works": 200,
+ "revoke_sec-probe-revoke": 200,
+ "revoke_sec-probe-owner2": 200,
+ "revoked_key_rejected": 401,
+ "purge_2fe3307a": 200,
+ "logout": 200,
+ "cookie_after_logout": 401
+}
