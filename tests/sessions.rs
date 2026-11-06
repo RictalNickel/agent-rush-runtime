@@ -1624,3 +1624,140 @@ async fn a_long_conversation_keeps_its_newest_turns_within_the_budget() {
     assert!(!last.contains("REQUEST-01") && !last.contains("REPLY-01"));
     assert!(last.contains("earlier messages"), "{last}");
 }
+
+fn is_not_found(e: anyhow::Error) -> bool {
+    matches!(
+        e.downcast_ref::<SessionError>(),
+        Some(SessionError::NotFound)
+    )
+}
+
+#[tokio::test]
+async fn delete_removes_the_session_its_events_and_its_box() {
+    let h = harness(vec![reply("hi")], SessionLimits::default());
+    let id = h.run("Hello").await;
+    h.sessions
+        .exec(
+            "alice",
+            &id,
+            ExecRequest {
+                command: "true".into(),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(h.boxes.boxes.lock().unwrap().len(), 1);
+    assert!(
+        !h.ledger
+            .recent_session_events(&id, 1000)
+            .unwrap()
+            .is_empty()
+    );
+    // Another owner cannot delete it, and a missing id is not found either.
+    assert!(is_not_found(
+        h.sessions.delete("bob", &id).await.unwrap_err()
+    ));
+    assert!(is_not_found(
+        h.sessions.delete("alice", "missing").await.unwrap_err()
+    ));
+    assert!(h.sessions.get("alice", &id).unwrap().is_some());
+    assert_eq!(h.boxes.boxes.lock().unwrap().len(), 1);
+
+    let mut live = h.sessions.subscribe();
+    h.sessions.delete("alice", &id).await.unwrap();
+    assert!(h.sessions.get("alice", &id).unwrap().is_none());
+    assert!(h.sessions.list("alice").unwrap().is_empty());
+    assert!(
+        h.ledger
+            .recent_session_events(&id, 1000)
+            .unwrap()
+            .is_empty()
+    );
+    assert!(h.ledger.take_pending(&id).unwrap().is_empty());
+    assert!(h.boxes.boxes.lock().unwrap().is_empty(), "box destroyed");
+    assert_eq!(h.sessions.tracked_box_locks(), 0);
+    // Live subscribers got the final `closed` status, which ends event streams.
+    let mut closed = false;
+    while let Ok(event) = live.try_recv() {
+        closed |= event.session_id == id && event.payload["status"] == "closed";
+    }
+    assert!(closed, "a closed status was broadcast");
+    // Every later call is NotFound, including a second delete.
+    assert!(is_not_found(
+        h.sessions.delete("alice", &id).await.unwrap_err()
+    ));
+    assert!(is_not_found(
+        h.sessions.send("alice", &id, "hi").unwrap_err()
+    ));
+    assert!(is_not_found(
+        h.sessions.read_file("alice", &id, "a").await.unwrap_err()
+    ));
+    assert_eq!(h.sessions.tracked_box_locks(), 0);
+}
+
+#[tokio::test]
+async fn deleting_a_running_session_cancels_the_turn_then_deletes_it() {
+    let h = harness(
+        vec![bash("block"), reply("never")],
+        SessionLimits::default(),
+    );
+    let session = h.sessions.create("alice", None).unwrap();
+    h.sessions.send("alice", &session.id, "Run it").unwrap();
+    h.boxes.exec_started.notified().await;
+    // An interjection is queued while the tool runs.
+    h.sessions.send("alice", &session.id, "and then").unwrap();
+    h.sessions.delete("alice", &session.id).await.unwrap();
+    assert!(h.sessions.get("alice", &session.id).unwrap().is_none());
+    assert!(h.boxes.boxes.lock().unwrap().is_empty());
+    // A wait in flight ends with NotFound instead of holding its slot.
+    assert!(is_not_found(
+        h.sessions
+            .wait_idle("alice", &session.id, WAIT)
+            .await
+            .unwrap_err()
+    ));
+    // The running tool finishes; the turn settles without recreating anything.
+    h.boxes.exec_release.notify_one();
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert!(h.sessions.get("alice", &session.id).unwrap().is_none());
+    assert!(
+        h.ledger
+            .recent_session_events(&session.id, 1000)
+            .unwrap()
+            .is_empty()
+    );
+    assert!(h.ledger.take_pending(&session.id).unwrap().is_empty());
+    assert!(h.boxes.boxes.lock().unwrap().is_empty(), "no box recreated");
+    assert_eq!(h.model.calls().len(), 1, "no model call after delete");
+    assert_eq!(h.sessions.tracked_box_locks(), 0);
+}
+
+#[tokio::test]
+async fn delete_closed_removes_only_the_owners_closed_sessions() {
+    let h = harness(vec![reply("one"), reply("two")], SessionLimits::default());
+    let closed = h.run("First").await;
+    let open = h.run("Second").await;
+    h.sessions.close("alice", &closed).await.unwrap();
+    let bobs = h.sessions.create("bob", None).unwrap();
+    h.sessions.close("bob", &bobs.id).await.unwrap();
+
+    assert_eq!(h.sessions.delete_closed("alice").unwrap(), 1);
+    assert!(h.sessions.get("alice", &closed).unwrap().is_none());
+    assert!(
+        h.ledger
+            .recent_session_events(&closed, 1000)
+            .unwrap()
+            .is_empty()
+    );
+    let kept = h.sessions.get("alice", &open).unwrap().unwrap();
+    assert_eq!(kept.status, SessionStatus::Idle);
+    assert!(
+        !h.events(&open).is_empty(),
+        "open session keeps its history"
+    );
+    let bob = h.sessions.get("bob", &bobs.id).unwrap().unwrap();
+    assert_eq!(bob.status, SessionStatus::Closed, "another owner's is kept");
+    assert_eq!(h.sessions.delete_closed("alice").unwrap(), 0);
+    assert_eq!(h.sessions.delete_closed("bob").unwrap(), 1);
+}

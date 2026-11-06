@@ -27,6 +27,8 @@ Amber comes from hazard tape, the vernacular of containment, and avoids the gene
 
 - **Bar:** wordmark, live worker signal and inference provider, a Safety link, and sign in or sign out. Below 860 px a menu button opens the drawer.
 - **Drawer** (248 px): New session, then the sessions newest first, each with a status dot (green ready, pulsing blue working, red failed, hollow closed).
+  - Each row has a trash button ("Delete session <title>"). It shows on hover or keyboard focus, and always on touch screens and in the narrow drawer. It asks first in a small dialog ("Delete this session?", Cancel focused, Delete in the bad red, not amber), then calls `DELETE /v1/sessions/{id}?purge=true`. Deleting the open session returns to the welcome.
+  - "Clear closed sessions" under the list (only while a closed session is listed) asks the same way, then calls `POST /v1/sessions/purge-closed`.
 - **Chat head:** the session title, its state, the speaker toggle (voice only) and Files.
 - **Thread** (760 px column): a welcome headline and four example tasks when no session is open. Then the session's events in order:
   - your messages right-aligned; an interjection gets a dashed amber edge and the tag "Sent while working"
@@ -67,5 +69,6 @@ Plain words, sentence case, active verbs. No all-caps labels. No middle-dot meta
 - send, tool rows, inline screenshot, interjection, Stop, a reply with attachments and the files panel, over a fake SSE stream
 - voice: the mic with a fake microphone, and the speaker
 - 390 px mobile, with the stream refused so the page falls back to polling
+- deleting a session through the confirm dialog, clearing closed sessions, and the always-visible delete button on mobile
 
 Screenshots are in `docs/evidence/ui/`.

@@ -40,6 +40,7 @@
     <h2 class="drawer-title">Sessions</h2>
     <ul class="sessions" id="session-list"></ul>
     <p class="drawer-note" id="drawer-note">Sign in to see your sessions.</p>
+    <button class="link clear-closed" id="clear-closed" type="button" hidden>Clear closed sessions</button>
   </aside>
 
   <section class="chat" aria-label="Chat">
@@ -101,6 +102,17 @@
     <code id="files-path">/workspace</code>
   </div>
   <ul class="files" id="files-list"></ul>
+</dialog>
+
+<dialog id="confirm-dialog" class="sheet narrow" role="alertdialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+  <div class="sheet-head">
+    <h2 id="confirm-title">Delete this session?</h2>
+  </div>
+  <p id="confirm-text">Its workspace files and history are removed for good.</p>
+  <form method="dialog" class="confirm-actions">
+    <button class="button" id="confirm-cancel" type="submit" value="cancel" autofocus>Cancel</button>
+    <button class="button danger" id="confirm-ok" type="submit" value="confirm">Delete</button>
+  </form>
 </dialog>
 
 <dialog id="login-dialog" class="sheet narrow" aria-labelledby="login-title">

@@ -6,6 +6,8 @@ const ui = {
   lastSeq: 0, replayUntil: 0, source: null, sseErrors: 0, poll: null, pollBusy: false,
   pending: [], urls: [], speak: false, audio: null, recorder: null, sending: false,
   filesPath: '.', refreshing: false,
+  // Sessions deleted here: a list refresh already in flight must not bring them back.
+  deleted: new Set(),
 };
 const KINDS = ['user', 'assistant', 'tool_call', 'tool_result', 'interjection', 'status', 'config_change', 'error'];
 const MAX_OUTPUT = 8000;
@@ -38,6 +40,7 @@ const ICONS = {
   gear: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1',
   alert: 'M12 3.5L21.5 20h-19zM12 10v4.5M12 17.2v.3',
   tool: 'M14.5 4.5a4 4 0 0 0-5 5L4 15l5 5 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-3-3z',
+  trash: 'M4 7h16M9.5 7V4.5h5V7M6 7l1 13h10l1-13M10 11v5.5M14 11v5.5',
 };
 const TOOL_ICON = {
   bash: 'terminal', read_file: 'file', write_file: 'edit', edit_file: 'edit', list_files: 'folder', grep: 'search', glob: 'folder',
@@ -230,15 +233,17 @@ function renderSessions() {
   note.textContent = !ui.csrf ? 'Sign in to see your sessions.'
     : ui.v1 && !ui.v1.sessions_available ? 'Sessions are unavailable until a worker is connected.'
       : 'No sessions yet. Your first message starts one.';
+  $('#clear-closed').hidden = !ui.csrf || !ui.sessions.some(s => s.status === 'closed');
   const list = $('#session-list');
   // The 5 s refresh must not rebuild an unchanged list: that would drop keyboard focus.
   const signature = JSON.stringify([ui.current?.id, ui.sessions.map(s => [s.id, s.title, s.status])]);
   if (list.dataset.signature === signature) return;
   list.dataset.signature = signature;
   list.replaceChildren(...ui.sessions.map(s => {
+    const title = s.title || 'New session';
     const button = el('button', { type: 'button', className: 'session' },
       el('span', { className: `dot ${s.status}`, ariaHidden: 'true' }),
-      el('span', { className: 'session-title', textContent: s.title || 'New session' }),
+      el('span', { className: 'session-title', textContent: title }),
       el('span', { className: 'sr-only', textContent: `, ${STATE_LABEL[s.status] || s.status}` }));
     if (s.id === ui.current?.id) button.setAttribute('aria-current', 'true');
     button.addEventListener('click', () => {
@@ -246,8 +251,77 @@ function renderSessions() {
       if (s.id !== ui.current?.id) openSession(ui.sessions.find(x => x.id === s.id) || s);
       closeDrawer();
     });
-    return el('li', {}, button);
+    const remove = el('button', { type: 'button', className: 'icon-button session-delete', ariaLabel: `Delete session ${title}` }, icon('trash'));
+    remove.addEventListener('click', () => deleteSession(s.id, remove));
+    return el('li', { className: 'session-row', dataset: { id: s.id } }, button, remove);
   }));
+}
+
+// Asks before a permanent delete. Cancel has the focus first; Escape also cancels.
+function confirmDelete(title, text) {
+  const dialog = $('#confirm-dialog');
+  if (dialog.open) return Promise.resolve(false);
+  $('#confirm-title').textContent = title;
+  $('#confirm-text').textContent = text;
+  dialog.returnValue = '';
+  dialog.showModal();
+  return new Promise(resolve => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true });
+  });
+}
+
+// Drops deleted sessions from the list; an open one gives way to the welcome.
+function forgetSessions(ids) {
+  for (const id of ids) ui.deleted.add(id);
+  ui.sessions = ui.sessions.filter(s => !ui.deleted.has(s.id));
+  if (ui.current && ui.deleted.has(ui.current.id)) {
+    stopLive();
+    ui.current = null; ui.lastSeq = 0; ui.pending = [];
+    revokeUrls();
+    $('#log').replaceChildren();
+    if ($('#files-dialog').open) $('#files-dialog').close();
+  }
+  renderSessions();
+  updateChrome();
+}
+
+// After a row disappears, keyboard focus moves to the row now in its place, or New session.
+function refocusList(index) {
+  const rows = $('#session-list').querySelectorAll('.session');
+  (rows[Math.min(index, rows.length - 1)] || $('#new-session')).focus();
+}
+
+async function deleteSession(id, trigger) {
+  if (!ui.csrf) { openLogin(); return; }
+  if (!await confirmDelete('Delete this session?', 'Its workspace files and history are removed for good.')) return;
+  const index = ui.sessions.findIndex(s => s.id === id);
+  trigger.disabled = true;
+  try {
+    await api(`/v1/sessions/${enc(id)}?purge=true`, { method: 'DELETE' });
+  } catch (error) {
+    trigger.disabled = false;
+    toast(error.message);
+    return;
+  }
+  forgetSessions([id]);
+  refocusList(Math.max(index, 0));
+  toast('Session deleted.');
+}
+
+async function clearClosed() {
+  if (!ui.csrf) { openLogin(); return; }
+  const closed = ui.sessions.filter(s => s.status === 'closed').map(s => s.id);
+  if (!closed.length) return;
+  const which = closed.length === 1 ? 'The closed session and its history are' : `All ${closed.length} closed sessions and their history are`;
+  if (!await confirmDelete('Clear closed sessions?', `${which} removed for good.`)) return;
+  try {
+    const { deleted } = await api('/v1/sessions/purge-closed', { method: 'POST', body: '{}' });
+    forgetSessions(closed);
+    refocusList(0);
+    toast(deleted === 1 ? 'Deleted 1 closed session.' : `Deleted ${deleted} closed sessions.`);
+  } catch (error) {
+    toast(error.message);
+  }
 }
 const signedInWithSessions = () => Boolean(ui.csrf && ui.sessions.length);
 
@@ -847,7 +921,7 @@ async function loadSessions() {
   if (!ui.v1.sessions_available) { ui.sessions = []; renderSessions(); updateChrome(); return; }
   const { sessions } = await api('/v1/sessions');
   // Events are the authority for the open session's status.
-  ui.sessions = sessions.map(s => s.id === ui.current?.id ? { ...s, status: ui.current.status } : s);
+  ui.sessions = sessions.filter(s => !ui.deleted.has(s.id)).map(s => s.id === ui.current?.id ? { ...s, status: ui.current.status } : s);
   if (ui.current) {
     const fresh = ui.sessions.find(s => s.id === ui.current.id);
     if (fresh) ui.current.title = fresh.title;
@@ -884,6 +958,7 @@ $('#stop-button').addEventListener('click', stopTurn);
 $('#files-button').addEventListener('click', () => showFiles('.'));
 $('#files-up').addEventListener('click', () => showFiles(ui.filesPath.split('/').slice(0, -1).join('/') || '.'));
 $('#new-session').addEventListener('click', () => { if (!ui.csrf) { openLogin(); return; } newSession(); });
+$('#clear-closed').addEventListener('click', clearClosed);
 $('#mic-button').addEventListener('click', toggleMic);
 $('#speaker-button').addEventListener('click', () => {
   setSpeak(!ui.speak);
@@ -891,7 +966,8 @@ $('#speaker-button').addEventListener('click', () => {
 });
 $('#drawer-button').addEventListener('click', () => $('#drawer').classList.contains('open') ? closeDrawer() : openDrawer());
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && $('#drawer').classList.contains('open')) { closeDrawer(); $('#drawer-button').focus(); }
+  // Escape in an open dialog closes only the dialog.
+  if (event.key === 'Escape' && $('#drawer').classList.contains('open') && !document.querySelector('dialog[open]')) { closeDrawer(); $('#drawer-button').focus(); }
 });
 
 $('#login-button').addEventListener('click', async () => {

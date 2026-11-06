@@ -34,6 +34,8 @@ fn key_scoped_routes(id: &str) -> Vec<(&'static str, String)> {
         ("POST", "/v1/sessions".into()),
         ("GET", format!("/v1/sessions/{id}")),
         ("DELETE", format!("/v1/sessions/{id}")),
+        ("DELETE", format!("/v1/sessions/{id}?purge=true")),
+        ("POST", "/v1/sessions/purge-closed".into()),
         ("POST", format!("/v1/sessions/{id}/messages")),
         ("POST", format!("/v1/sessions/{id}/cancel")),
         ("GET", format!("/v1/sessions/{id}/events")),
@@ -425,6 +427,7 @@ async fn another_owner_gets_404_on_every_session_route() {
                 format!("/v1/sessions/{target}/exec"),
                 Some(json!({"command":"id"})),
             ),
+            ("DELETE", format!("/v1/sessions/{target}?purge=true"), None),
             ("DELETE", format!("/v1/sessions/{target}"), None),
         ];
         for (method, path, body) in routes {
@@ -671,6 +674,194 @@ async fn files_exec_and_close() {
     )
     .await;
     assert_eq!(status, StatusCode::CONFLICT, "{body}");
+    // A plain DELETE keeps the closed session and its history.
+    let view = a.sessions.get("alice", &id).unwrap().unwrap();
+    assert_eq!(view.status, SessionStatus::Closed);
+    let (status, list) = call(&a.router, "GET", "/v1/sessions", Some(&alice), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(list["sessions"][0]["id"], id.as_str());
+    assert_eq!(list["sessions"][0]["status"], "closed");
+}
+
+#[tokio::test]
+async fn delete_with_purge_removes_the_session_and_ends_its_stream() {
+    let a = app(vec![reply("hi")]);
+    let alice = a.key("alice");
+    let bob = a.key("bob");
+    let (_, created) = call(
+        &a.router,
+        "POST",
+        "/v1/sessions",
+        Some(&alice),
+        Some(json!({"message":"hello"})),
+    )
+    .await;
+    let id = created["session"]["id"].as_str().unwrap().to_string();
+    a.sessions.wait_idle("alice", &id, WAIT).await.unwrap();
+    let (status, _) = call(
+        &a.router,
+        "POST",
+        &format!("/v1/sessions/{id}/exec"),
+        Some(&alice),
+        Some(json!({"command":"true"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(a.boxes.live(), 1);
+
+    // A live stream is open while the session is deleted.
+    let response = send(
+        &a.router,
+        Request::get(format!("/v1/sessions/{id}/stream"))
+            .header("authorization", format!("Bearer {alice}"))
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    let mut body = response.into_body().into_data_stream();
+    let (mut ids, mut kinds) = (Vec::new(), Vec::new());
+    read_sse(&mut body, &mut ids, &mut kinds, |k| {
+        k.iter().any(|k| k == "assistant")
+    })
+    .await;
+
+    let (status, body_bob) = call(
+        &a.router,
+        "DELETE",
+        &format!("/v1/sessions/{id}?purge=true"),
+        Some(&bob),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "{body_bob}");
+    let (status, deleted) = call(
+        &a.router,
+        "DELETE",
+        &format!("/v1/sessions/{id}?purge=true"),
+        Some(&alice),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{deleted}");
+    assert_eq!(deleted, json!({"closed": true, "deleted": true}));
+    assert_eq!(a.boxes.live(), 0);
+    assert!(
+        a.ledger()
+            .recent_session_events(&id, 1000)
+            .unwrap()
+            .is_empty()
+    );
+
+    // The stream delivers the closed status, then ends.
+    tokio::time::timeout(WAIT, async {
+        while let Some(chunk) = body.next().await {
+            let text = String::from_utf8_lossy(&chunk.unwrap()).to_string();
+            for line in text.lines() {
+                if let Some(kind) = line.strip_prefix("event: ") {
+                    kinds.push(kind.to_string());
+                }
+            }
+        }
+    })
+    .await
+    .expect("the stream did not end");
+    assert_eq!(kinds.last().map(String::as_str), Some("status"));
+
+    let (status, list) = call(&a.router, "GET", "/v1/sessions", Some(&alice), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(list["sessions"], json!([]));
+    let (status, _) = call(
+        &a.router,
+        "GET",
+        &format!("/v1/sessions/{id}"),
+        Some(&alice),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _) = call(
+        &a.router,
+        "DELETE",
+        &format!("/v1/sessions/{id}?purge=true"),
+        Some(&alice),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn purge_closed_removes_only_the_callers_closed_sessions() {
+    let a = app(vec![]);
+    let alice = a.key("alice");
+    let closed = a.sessions.create("alice", None).unwrap();
+    let open = a.sessions.create("alice", None).unwrap();
+    a.sessions.close("alice", &closed.id).await.unwrap();
+    let bobs = a.sessions.create("bob", None).unwrap();
+    a.sessions.close("bob", &bobs.id).await.unwrap();
+
+    let (status, body) = call(
+        &a.router,
+        "POST",
+        "/v1/sessions/purge-closed",
+        Some(&alice),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body, json!({"deleted": 1}));
+    assert!(a.sessions.get("alice", &closed.id).unwrap().is_none());
+    assert!(a.sessions.get("alice", &open.id).unwrap().is_some());
+    assert!(a.sessions.get("bob", &bobs.id).unwrap().is_some());
+
+    // The operator cookie works too, with the CSRF header.
+    let mine = a.sessions.create("operator", None).unwrap();
+    a.sessions.close("operator", &mine.id).await.unwrap();
+    let other = a.sessions.create("operator", None).unwrap();
+    let (cookie, csrf) = operator_login(&a.router).await;
+    let (status, _) = call_operator(
+        &a.router,
+        "POST",
+        "/v1/sessions/purge-closed",
+        &cookie,
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN, "CSRF header required");
+    let (status, body) = call_operator(
+        &a.router,
+        "POST",
+        "/v1/sessions/purge-closed",
+        &cookie,
+        Some(&csrf),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, json!({"deleted": 1}));
+    let (status, _) = call_operator(
+        &a.router,
+        "DELETE",
+        &format!("/v1/sessions/{}?purge=true", other.id),
+        &cookie,
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN, "CSRF header required");
+    let (status, body) = call_operator(
+        &a.router,
+        "DELETE",
+        &format!("/v1/sessions/{}?purge=true", other.id),
+        &cookie,
+        Some(&csrf),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert!(a.sessions.get("operator", &other.id).unwrap().is_none());
 }
 
 #[tokio::test]
