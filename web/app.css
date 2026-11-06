@@ -70,6 +70,8 @@ a { color: inherit; }
 .button.primary:hover { background: #f0c069; }
 .button.small { min-height: 32px; padding: 0 12px; font-size: 0.875rem; }
 .button:disabled { opacity: 0.5; cursor: not-allowed; }
+.button.danger { background: var(--bad); border-color: var(--bad); color: #2a0b0e; }
+.button.danger:hover { background: #f18a91; }
 .link {
   border: 0; background: none; padding: 2px 0; cursor: pointer; color: var(--muted);
   font-size: 0.875rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
@@ -108,6 +110,22 @@ a { color: inherit; }
 .dot.failed { background: var(--bad); }
 .dot.closed { background: transparent; border: 1px solid var(--faint); }
 .drawer-note { font-size: 0.8125rem; color: var(--faint); padding: 0 6px; }
+/* Each row: the session button, and a delete button over its right end. The delete button
+   shows on hover or keyboard focus; on touch screens and in the narrow drawer it always shows. */
+.session-row { position: relative; display: flex; }
+.session-row .session { padding-right: 40px; }
+.session-row:hover .session { background: var(--surface); color: var(--text); }
+.session-delete {
+  position: absolute; top: 50%; right: 4px; transform: translateY(-50%);
+  width: 30px; height: 30px; opacity: 0; transition: opacity 120ms ease;
+}
+.session-delete .ico { width: 16px; height: 16px; }
+.session-row:hover .session-delete, .session-row:focus-within .session-delete { opacity: 1; }
+.session-delete:hover, .session-delete:focus-visible { color: var(--bad); border-color: var(--bad); }
+.clear-closed { align-self: flex-start; margin: 2px 6px 0; font-size: 0.8125rem; }
+@media (hover: none) {
+  .session-delete { opacity: 1; }
+}
 
 .chat { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; min-width: 0; }
 .chat-head {
@@ -259,6 +277,7 @@ pre {
 #login-form label { font-weight: 600; }
 #login-form input { min-height: 42px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--rule); background: var(--ground); }
 .error { color: var(--bad); font-size: 0.875rem; min-height: 1.3em; }
+.confirm-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 20px; margin-bottom: 24px; }
 .rules { margin-top: 14px; margin-bottom: 24px; }
 .rules div { display: grid; grid-template-columns: 110px 1fr; gap: 14px; padding: 10px 0; border-top: 1px solid var(--rule); font-size: 0.9375rem; }
 .rules dt { font-weight: 650; }
@@ -288,6 +307,7 @@ a.entry { text-decoration: underline; text-underline-offset: 3px; text-decoratio
     display: flex; position: fixed; z-index: 5; top: 0; bottom: 0; left: 0; width: min(300px, 85vw);
     background: var(--ground); box-shadow: 12px 0 40px rgba(0, 0, 0, 0.5);
   }
+  .session-delete { opacity: 1; }
 }
 @media (max-width: 640px) {
   .bar { gap: 8px 14px; }

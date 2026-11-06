@@ -46,6 +46,7 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/v1/keys", get(list_keys).post(create_key))
         .route("/v1/keys/{id}", delete(revoke_key))
         .route("/v1/sessions", get(list_sessions).post(create_session))
+        .route("/v1/sessions/purge-closed", post(purge_closed_sessions))
         .route("/v1/sessions/{id}", get(get_session).delete(close_session))
         .route("/v1/sessions/{id}/messages", post(send_message))
         .route("/v1/sessions/{id}/cancel", post(cancel_session))
@@ -411,13 +412,37 @@ async fn get_session(
         .ok_or_else(|| session_status(&SessionError::NotFound))?;
     Ok(Json(json!(session)))
 }
+/// Unknown parameters are ignored, as they were before `purge` existed.
+#[derive(Deserialize)]
+struct CloseQuery {
+    #[serde(default)]
+    purge: Option<bool>,
+}
+/// Closes the session (box destroyed, history kept); with `?purge=true` deletes it for
+/// good: the session, its events and queued messages.
 async fn close_session(
     State(s): State<AppState>,
     Owner(owner): Owner,
     Path(id): Path<String>,
+    Query(q): Query<CloseQuery>,
 ) -> Result<Json<Value>, ApiError> {
-    engine(&s)?.close(&owner, &id).await.map_err(lookup_error)?;
+    let sessions = engine(&s)?;
+    if q.purge == Some(true) {
+        sessions.delete(&owner, &id).await.map_err(lookup_error)?;
+        return Ok(Json(json!({"closed": true, "deleted": true})));
+    }
+    sessions.close(&owner, &id).await.map_err(lookup_error)?;
     Ok(Json(json!({"closed": true})))
+}
+/// Deletes every closed session of the caller for good.
+async fn purge_closed_sessions(
+    State(s): State<AppState>,
+    Owner(owner): Owner,
+) -> Result<Json<Value>, ApiError> {
+    let deleted = engine(&s)?
+        .delete_closed(&owner)
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({"deleted": deleted})))
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

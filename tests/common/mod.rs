@@ -75,6 +75,13 @@ pub struct FakeBoxes {
     next: AtomicUsize,
     boxes: Mutex<HashMap<String, HashMap<String, Vec<u8>>>>,
 }
+impl FakeBoxes {
+    /// Boxes that exist now (created and not destroyed).
+    #[allow(dead_code)]
+    pub fn live(&self) -> usize {
+        self.boxes.lock().unwrap().len()
+    }
+}
 fn normalize(path: &str) -> String {
     path.trim_start_matches("/workspace/")
         .trim_start_matches("./")

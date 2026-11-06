@@ -61,7 +61,9 @@ All times are Unix milliseconds.
 | `POST /v1/sessions` | `{title?, message?}` | 201 `{session, sent}`; a `message` starts the first turn |
 | `GET /v1/sessions` | | `{sessions: [...]}`, newest first |
 | `GET /v1/sessions/{id}` | | the session: `{id, title, status, box_id, created_at, updated_at, spend_usd, last_seq}` |
-| `DELETE /v1/sessions/{id}` | | `{closed: true}`; stops any turn and deletes the workspace |
+| `DELETE /v1/sessions/{id}` | | `{closed: true}`; stops any turn and deletes the workspace. The closed session and its events stay listed |
+| `DELETE /v1/sessions/{id}?purge=true` | | `{closed: true, deleted: true}`; closes it as above, then removes the session, its events and queued messages for good. Its live streams end after the `closed` status; later calls get 404 |
+| `POST /v1/sessions/purge-closed` | | `{deleted: n}`; removes all of the caller's closed sessions and their events for good |
 | `POST /v1/sessions/{id}/messages` | `{text}` | 202 `{interjection, seq}` |
 | `POST /v1/sessions/{id}/cancel` | | `{cancelled: true}`; the turn stops after its current step |
 | `GET /v1/sessions/{id}/events?after=&limit=` | | `{events, next_after, more}`; `limit` is 1-1000 (default 200) |

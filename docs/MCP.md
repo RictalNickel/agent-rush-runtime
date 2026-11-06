@@ -42,7 +42,7 @@ Other clients that take a remote HTTP server work the same way: give them the UR
 | `write_file` | `session_id`, `path`, `content`, `encoding?` (`utf8` or `base64`) | Creates or replaces a file. |
 | `list_files` | `session_id`, `path?` | Lists a directory. |
 | `cancel` | `session_id` | Stops the current turn after its current step. |
-| `close_session` | `session_id` | Closes the session and deletes its workspace. |
+| `close_session` | `session_id`, `delete?` | Closes the session and deletes its workspace. With `delete: true` it also removes the session and its event history for good (like `DELETE /v1/sessions/{id}?purge=true`). |
 | `list_sessions` | | Lists your sessions. |
 | `manage_skills` | `action` (`list`, `get`, `save`, `delete`), `name?`, `description?`, `body?`, `markdown?` | Manages the skills the agent can load. |
 

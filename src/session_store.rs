@@ -184,6 +184,52 @@ impl Ledger {
         let rows = statement.query_map([owner], view)?;
         rows.map(|row| Ok(row?)).collect()
     }
+    /// Permanently removes the owner's session with its events and queued messages, in
+    /// one transaction. Returns false when the owner has no such session.
+    pub fn delete_agent_session(&self, owner: &str, id: &str) -> Result<bool> {
+        let mut db = self.db.lock().unwrap();
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let owned = tx
+            .query_row(
+                "SELECT 1 FROM agent_sessions WHERE id=?1 AND owner=?2",
+                params![id, owner],
+                |_| Ok(()),
+            )
+            .optional()?
+            .is_some();
+        if !owned {
+            return Ok(false);
+        }
+        tx.execute("DELETE FROM session_events WHERE session_id=?1", [id])?;
+        tx.execute("DELETE FROM pending_messages WHERE session_id=?1", [id])?;
+        tx.execute(
+            "DELETE FROM agent_sessions WHERE id=?1 AND owner=?2",
+            params![id, owner],
+        )?;
+        tx.commit()?;
+        Ok(true)
+    }
+    /// Permanently removes every closed session of the owner, with their events and
+    /// queued messages, in one transaction. Returns how many sessions were removed.
+    pub fn delete_closed_agent_sessions(&self, owner: &str) -> Result<usize> {
+        const CLOSED: &str = "SELECT id FROM agent_sessions WHERE owner=?1 AND status='closed'";
+        let mut db = self.db.lock().unwrap();
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        tx.execute(
+            &format!("DELETE FROM session_events WHERE session_id IN ({CLOSED})"),
+            [owner],
+        )?;
+        tx.execute(
+            &format!("DELETE FROM pending_messages WHERE session_id IN ({CLOSED})"),
+            [owner],
+        )?;
+        let deleted = tx.execute(
+            "DELETE FROM agent_sessions WHERE owner=?1 AND status='closed'",
+            [owner],
+        )?;
+        tx.commit()?;
+        Ok(deleted)
+    }
     /// Sessions left `running` by a previous process; the caller marks them interrupted.
     pub fn running_agent_sessions(&self) -> Result<Vec<SessionView>> {
         let db = self.db.lock().unwrap();

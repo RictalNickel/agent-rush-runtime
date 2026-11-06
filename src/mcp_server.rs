@@ -225,6 +225,13 @@ impl Args<'_> {
                 .ok_or_else(|| ToolError::Params(format!("{key} must be a non-negative integer"))),
         }
     }
+    fn opt_bool(&self, key: &str) -> Result<Option<bool>, ToolError> {
+        match self.0.get(key) {
+            None | Some(Value::Null) => Ok(None),
+            Some(Value::Bool(v)) => Ok(Some(*v)),
+            Some(_) => Err(ToolError::Params(format!("{key} must be a boolean"))),
+        }
+    }
 }
 
 fn text(value: impl Into<String>) -> Vec<Value> {
@@ -300,8 +307,8 @@ fn tool_definitions() -> Value {
         ),
         tool(
             "close_session",
-            "Close the session and delete its workspace.",
-            json!({"session_id": session_id}),
+            "Close the session and delete its workspace. With delete: true, also remove the session and its history for good.",
+            json!({"session_id": session_id, "delete": {"type": "boolean", "default": false, "description": "Also delete the session and its event history permanently."}}),
             &["session_id"]
         ),
         tool(
@@ -456,6 +463,12 @@ async fn call_tool(s: &AppState, owner: &str, name: &str, args: Args<'_>) -> Too
             ))
         }
         "close_session" => {
+            if args.opt_bool("delete")?.unwrap_or(false) {
+                sessions.delete(owner, id).await.map_err(lookup_error)?;
+                return Ok(text(
+                    "Session deleted: its workspace and history are removed for good.",
+                ));
+            }
             sessions.close(owner, id).await.map_err(lookup_error)?;
             Ok(text("Session closed and its workspace deleted."))
         }

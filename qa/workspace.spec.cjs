@@ -31,7 +31,7 @@ async function signIn(page){
 // page has to fall back to polling /events. `throttleImages` refuses the first request for
 // each screenshot with 429, the way the server does past its per-session limit.
 async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false}={}){
-  const st={sessions:[],events:new Map(),csrf:[],streams:0,polls:0,speak:0,transcribe:0,cancelled:0,images:{inFlight:0,maxInFlight:0,requests:{}}};
+  const st={sessions:[],events:new Map(),csrf:[],deletes:[],purges:[],streams:0,polls:0,speak:0,transcribe:0,cancelled:0,images:{inFlight:0,maxInFlight:0,requests:{}}};
   const emit=(id,kind,payload)=>{const log=st.events.get(id);const event={session_id:id,seq:log.length+1,kind,payload,at:Date.now()};log.push(event);st.sessions.find(s=>s.id===id).last_seq=event.seq;return event;};
   const status=(id,value,reason)=>{st.sessions.find(s=>s.id===id).status=value;emit(id,'status',reason?{status:value,reason}:{status:value});};
   st.emit=emit;st.status=status;
@@ -69,6 +69,20 @@ async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false}=
       const {message}=req.postDataJSON();const s=create(`s${st.sessions.length+1}`,message.slice(0,80));
       emit(s.id,'user',{text:message});firstTurn(s.id);
       return route.fulfill({status:201,json:{session:{...s},sent:{interjection:false,seq:1}}});
+    }
+    if(path==='/v1/sessions/purge-closed'&&method==='POST'){
+      const gone=st.sessions.filter(s=>s.status==='closed');
+      st.sessions=st.sessions.filter(s=>s.status!=='closed');
+      for(const s of gone)st.events.delete(s.id);
+      st.purges.push(gone.map(s=>s.id));
+      return route.fulfill({json:{deleted:gone.length}});
+    }
+    if(match&&!sub&&method==='DELETE'){
+      const s=st.sessions.find(x=>x.id===id);
+      if(!s)return route.fulfill({status:404,json:{error:'Session not found'}});
+      if(url.searchParams.get('purge')!=='true'){status(id,'closed');return route.fulfill({json:{closed:true}});}
+      st.sessions=st.sessions.filter(x=>x.id!==id);st.events.delete(id);st.deletes.push(id);
+      return route.fulfill({json:{closed:true,deleted:true}});
     }
     if(sub==='/messages'){
       const {text}=req.postDataJSON();const s=st.sessions.find(x=>x.id===id);
@@ -351,5 +365,119 @@ test('eight browser screenshots: 429s are retried, at most two load at once, all
   expect(api.images.maxInFlight).toBeLessThanOrEqual(2);
   expect(Object.keys(api.images.requests).sort()).toEqual([...paths].sort());
   for(const path of paths)expect(api.images.requests[path]).toBe(2);
+  expect(errors).toEqual([]);
+});
+
+const DELETE_SEED=[
+  {id:'old1',title:'Old closed one',status:'closed',events:[['user',{text:'Hi'}],['status',{status:'closed'}]]},
+  {id:'old2',title:'Another closed one',status:'closed',events:[['user',{text:'Hey'}],['status',{status:'closed'}]]},
+  {id:'keep',title:'Keep this session',events:[['user',{text:'Keep'}],['assistant',{text:'Kept.',attachments:[]}]]},
+  {id:'gone',title:'Delete me',events:[['user',{text:'Hello'}],['assistant',{text:'Hi there.',attachments:[]}]]},
+];
+
+test('deleting sessions: confirm dialog, the open session returns to the welcome, clear closed',async({page})=>{
+  const errors=watchErrors(page);
+  const api=await fakeApi(page,{seed:DELETE_SEED});
+  await page.goto('/');
+  await signIn(page);
+  const rows=page.locator('#session-list .session');
+  await expect(rows).toHaveCount(4);
+  await rows.filter({hasText:'Delete me'}).click();
+  await expect(page.locator('#log .answer')).toHaveText('Hi there.');
+  const clear=page.getByRole('button',{name:'Clear closed sessions'});
+  await expect(clear).toBeVisible();
+
+  // The delete button is hidden until the row is hovered or the button has keyboard focus.
+  const remove=page.getByRole('button',{name:'Delete session Delete me'});
+  await page.locator('#thread').focus();
+  await page.mouse.move(900,500);
+  await expect(remove).toHaveCSS('opacity','0');
+  await page.locator('#session-list li',{hasText:'Delete me'}).hover();
+  await expect(remove).toHaveCSS('opacity','1');
+  await page.mouse.move(900,500);
+  await expect(remove).toHaveCSS('opacity','0');
+  await rows.filter({hasText:'Delete me'}).focus();
+  await page.keyboard.press('Tab');
+  await expect(remove).toBeFocused();
+  await expect(remove).toHaveCSS('opacity','1');
+  expect(await remove.evaluate(b=>getComputedStyle(b).outlineStyle)).toBe('solid');
+
+  // Enter opens the confirm dialog with Cancel focused; Escape cancels and nothing is deleted.
+  await page.keyboard.press('Enter');
+  const dialog=page.getByRole('alertdialog',{name:'Delete this session?'});
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Its workspace files and history are removed for good.');
+  await expect(dialog.getByRole('button',{name:'Cancel'})).toBeFocused();
+  const confirm=dialog.getByRole('button',{name:'Delete',exact:true});
+  await expect(confirm).toHaveCSS('background-color','rgb(236, 110, 118)');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  expect(api.deletes).toEqual([]);
+  await expect(rows).toHaveCount(4);
+  await expect(page.locator('#log .answer')).toHaveText('Hi there.');
+
+  // Cancel also keeps it.
+  await remove.click();
+  await dialog.getByRole('button',{name:'Cancel'}).click();
+  await expect(dialog).toBeHidden();
+  expect(api.deletes).toEqual([]);
+
+  // Delete removes it for good; it was open, so the chat returns to the welcome.
+  await remove.click();
+  await expect(dialog).toBeVisible();
+  await page.screenshot({path:'/tmp/agent-rush-qa/session-delete.png'});
+  await confirm.click();
+  await expect(dialog).toBeHidden();
+  await expect(rows).toHaveCount(3);
+  await expect(page.locator('#session-list')).not.toContainText('Delete me');
+  expect(api.deletes).toEqual(['gone']);
+  await expect(page.getByRole('heading',{level:1})).toHaveText('What should the agent work on?');
+  await expect(page.locator('#chat-head')).toBeHidden();
+  await expect(page.locator('#log li')).toHaveCount(0);
+  await expect(page.locator('#toast')).toHaveText('Session deleted.');
+  // Focus moves to the row that took its place.
+  await expect(rows.filter({hasText:'Keep this session'})).toBeFocused();
+
+  // Clear closed sessions removes both closed ones, after the same confirmation.
+  await clear.click();
+  const clearDialog=page.getByRole('alertdialog',{name:'Clear closed sessions?'});
+  await expect(clearDialog).toContainText('All 2 closed sessions and their history are removed for good.');
+  await clearDialog.getByRole('button',{name:'Delete',exact:true}).click();
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('Keep this session');
+  await expect(clear).toBeHidden();
+  expect(api.purges).toEqual([['old2','old1']]);
+  await expect(page.locator('#toast')).toHaveText('Deleted 2 closed sessions.');
+  // The 5 s list refresh does not bring anything back.
+  await page.waitForTimeout(5500);
+  await expect(rows).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test('mobile at 390 px: the delete button always shows and the dialog fits',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  const errors=watchErrors(page);
+  const api=await fakeApi(page,{seed:DELETE_SEED});
+  await page.goto('/');
+  await signIn(page);
+  await page.getByRole('button',{name:'Show sessions'}).click();
+  const remove=page.getByRole('button',{name:'Delete session Keep this session'});
+  await expect(remove).toBeVisible();
+  await expect(remove).toHaveCSS('opacity','1');
+  const box=await remove.boundingBox();
+  expect(box.x+box.width).toBeLessThanOrEqual(390);
+  await remove.click();
+  const dialog=page.getByRole('alertdialog',{name:'Delete this session?'});
+  await expect(dialog).toBeVisible();
+  const sheet=await dialog.boundingBox();
+  expect(sheet.x).toBeGreaterThanOrEqual(0);
+  expect(sheet.x+sheet.width).toBeLessThanOrEqual(390);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:'/tmp/agent-rush-qa/mobile-session-delete.png'});
+  await dialog.getByRole('button',{name:'Delete',exact:true}).click();
+  await expect(page.locator('#session-list .session')).toHaveCount(3);
+  expect(api.deletes).toEqual(['keep']);
+  // The drawer stays open after the delete.
+  await expect(page.locator('#drawer')).toBeVisible();
   expect(errors).toEqual([]);
 });

@@ -489,6 +489,37 @@ impl Sessions {
         inner.emit(id, "status", json!({"status":"closed"}))?;
         Ok(())
     }
+    /// Permanently deletes a session: cancels any turn, closes it (destroying its box)
+    /// unless already closed, then removes the session, its events and queued messages.
+    ///
+    /// Closing emits the final `closed` status event, which ends live event streams of
+    /// the session (and so gives back their stream slots); waits and direct workspace
+    /// calls still in flight end with `NotFound` once the rows are gone. A turn still
+    /// finishing its current step sees the session missing and settles quietly.
+    pub async fn delete(&self, owner: &str, id: &str) -> Result<()> {
+        let inner = &self.inner;
+        let session = inner.owned(owner, id)?;
+        if session.status != SessionStatus::Closed || session.box_id.is_some() {
+            self.close(owner, id).await?;
+        }
+        {
+            // Ordered against `send`, which checks the session under this lock.
+            let _turns = inner.lock_turns();
+            if !inner.ledger.delete_agent_session(owner, id)? {
+                return Err(SessionError::NotFound.into());
+            }
+        }
+        inner.box_locks.lock().unwrap().remove(id);
+        inner.session_box_calls.lock().unwrap().remove(id);
+        Ok(())
+    }
+    /// Permanently deletes every closed session of the owner; returns how many.
+    /// Closed sessions have no box (closing destroyed it); a turn still finishing its
+    /// last step after the close settles quietly once the rows are gone.
+    pub fn delete_closed(&self, owner: &str) -> Result<usize> {
+        let _turns = self.inner.lock_turns();
+        self.inner.ledger.delete_closed_agent_sessions(owner)
+    }
     /// Box locks currently tracked (one per session that used its box and is not closed).
     #[doc(hidden)]
     pub fn tracked_box_locks(&self) -> usize {
@@ -1444,13 +1475,16 @@ impl Inner {
     async fn ensure_box(&self, owner: &str, id: &str) -> Result<String> {
         let lock = self.box_lock(id);
         let guard = lock.lock().await;
-        let session = self.owned(owner, id)?;
-        if session.status == SessionStatus::Closed {
-            drop(guard);
-            self.box_locks.lock().unwrap().remove(id);
-            self.session_box_calls.lock().unwrap().remove(id);
-            return Err(SessionError::Closed.into());
-        }
+        // A closed or deleted session never uses its box lock or call limit again.
+        let session = match self.owned(owner, id) {
+            Ok(s) if s.status != SessionStatus::Closed => s,
+            other => {
+                drop(guard);
+                self.box_locks.lock().unwrap().remove(id);
+                self.session_box_calls.lock().unwrap().remove(id);
+                return Err(other.err().unwrap_or_else(|| SessionError::Closed.into()));
+            }
+        };
         if let Some(box_id) = session.box_id {
             return Ok(box_id);
         }

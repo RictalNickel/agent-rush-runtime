@@ -353,6 +353,7 @@ async fn another_owners_session_is_not_found_on_every_session_tool() {
             ("list_files", json!({})),
             ("cancel", json!({})),
             ("close_session", json!({})),
+            ("close_session", json!({"delete": true})),
         ] {
             let mut args = extra.as_object().unwrap().clone();
             args.insert("session_id".into(), json!(target));
@@ -367,6 +368,78 @@ async fn another_owners_session_is_not_found_on_every_session_tool() {
     let view = a.sessions.get("alice", &id).unwrap().unwrap();
     assert_eq!(view.last_seq, 0);
     assert!(view.box_id.is_none());
+}
+
+#[tokio::test]
+async fn close_session_with_delete_removes_the_session_for_good() {
+    let a = app(vec![reply("hi")]);
+    let key = a.key("alice");
+    let (_, started) = tool(&a, &key, "start_session", json!({"message":"hello"})).await;
+    let id = started["session_id"].as_str().unwrap().to_string();
+    a.sessions
+        .wait_idle("alice", &id, std::time::Duration::from_secs(10))
+        .await
+        .unwrap();
+    let (error, _) = tool(
+        &a,
+        &key,
+        "run_command",
+        json!({"session_id": id, "command": "true"}),
+    )
+    .await;
+    assert!(!error);
+    assert_eq!(a.boxes.live(), 1);
+    // A non-boolean `delete` is refused as bad params and changes nothing.
+    let (_, refused) = rpc(
+        &a,
+        Some(&key),
+        json!({"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"close_session","arguments":{"session_id": id, "delete": "yes"}}}),
+    )
+    .await;
+    assert!(
+        refused["error"]["message"]
+            .as_str()
+            .unwrap_or("")
+            .contains("delete must be a boolean"),
+        "{refused}"
+    );
+    assert_eq!(a.boxes.live(), 1);
+    // `delete: false` closes as before: the history is kept.
+    let other = a.sessions.create("alice", None).unwrap();
+    let (error, _) = tool(
+        &a,
+        &key,
+        "close_session",
+        json!({"session_id": other.id, "delete": false}),
+    )
+    .await;
+    assert!(!error);
+    assert!(a.sessions.get("alice", &other.id).unwrap().is_some());
+
+    let (error, text) = tool(
+        &a,
+        &key,
+        "close_session",
+        json!({"session_id": id, "delete": true}),
+    )
+    .await;
+    assert!(!error, "{text}");
+    assert_eq!(a.boxes.live(), 0);
+    assert!(a.sessions.get("alice", &id).unwrap().is_none());
+    assert!(
+        a.ledger()
+            .recent_session_events(&id, 1000)
+            .unwrap()
+            .is_empty()
+    );
+    let (_, list) = tool(&a, &key, "list_sessions", json!({})).await;
+    let ids: Vec<&str> = list["sessions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| s["session_id"].as_str().unwrap())
+        .collect();
+    assert_eq!(ids, [other.id.as_str()]);
 }
 
 /// Regression: a batch could hold any number of calls (each one up to a 300 s wait).
