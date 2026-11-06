@@ -6,7 +6,7 @@ A 12-slide deck for the 3 to 4 minute Vultr hackathon pitch (Blast Radius Zero t
 
 | Path | What it is |
 | --- | --- |
-| `deck.py` | The deck: shared style and helpers at the top, then one method per slide (`s01_title` … `s11_close`, plus `s06b_demo_everyday` after the kanban demo) |
+| `deck.py` | The deck: shared style and helpers at the top, then one method per slide (`s01_title` … `s11_close`, plus `s06b_demo_everyday` after the kanban demo). `construct` sets the order: `s09_integrate`, the plug-in pitch, is shown fourth, right after the idea |
 | `render.sh` | Renders at 1920x1080, then exports the HTML deck, the PDF and the previews |
 | `previews.py` | Saves the last frame of each slide to `out/previews/slide-NN.png` and prints each slide's length |
 | `requirements.txt` | Pinned Python packages (Python 3.12) |

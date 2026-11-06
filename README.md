@@ -2,11 +2,39 @@
 
 _Previously called Agent Rush. Older evidence, links and internal names (the `agent-rush` binary and services, `AR_*` settings) still use that name._
 
-Vultr-Placeholder-Test123 is a backend for AI agents that do real work. Each session gets its own workspace box: a gVisor container on a private worker VM with a shell, a headless browser, language runtimes and file converters. Your app drives the agent through a REST API, a live event stream or an MCP server.
+**Give the app or agent you already have a contained, offsite subagent.** Plug Vultr-Placeholder-Test123 in over MCP or one REST call, hand it a task, and get back the result. The subagent writes and runs code, drives a real browser and converts files. It does all of that in its own sealed box on a Vultr worker, never on your servers.
 
-Everything the model runs stays inside the box. The box holds no credentials, and an egress filter keeps it away from cloud metadata, private networks and mail ports.
+Each session gets its own workspace box: a gVisor container on a private worker VM with a shell, a headless browser, language runtimes and file converters. Everything the model runs stays inside the box. The box holds no credentials, and an egress filter keeps it away from cloud metadata, private networks and mail ports.
 
 Status: the public instance is live on Vultr. See [Live demo](#live-demo).
+
+## Plug it into the app you already have
+
+```
+ your app, your agent             Vultr-Placeholder-Test123 (on Vultr)
+ (Claude Code, Cursor,   MCP /    +--------------------------------------+
+  a web app, a script)  -- REST ->| subagent session -> its own gVisor   |
+        ^                         | box: shell, browser, files, runtimes |
+        +--- reply, files, -------+--------------------------------------+
+             events, webhooks       blast radius: that one box
+```
+
+- **From an AI agent, over MCP.** Add one remote server to Claude Code, Claude Desktop, Cursor or any MCP client. Your agent gets 15 tools to start a subagent, hand it a task, wait for the reply, steer it mid-task, and run commands or move files in its box. See [Use it from an MCP client](#use-it-from-an-mcp-client).
+
+  ```sh
+  claude mcp add --transport http agent https://<host>/mcp --header "Authorization: Bearer ar_..."
+  ```
+
+- **From any app, over REST.** One `POST /v1/sessions` starts a subagent with its task. Watch it work over a live event stream, get a signed webhook when it finishes, and download its files or the whole workspace as a `.tar.gz`. See [Use it from your app](#use-it-from-your-app).
+
+  ```sh
+  curl -H "authorization: Bearer $AR_KEY" -H 'content-type: application/json' \
+    -d '{"message":"Clone the repo, run its tests and fix the failing one"}' $HOST/v1/sessions
+  ```
+
+- **What your app gains.** A worker that can run untrusted code, test a web app in a real browser, research the web with sources, or turn a CSV into a chart and a PDF report. Your app needs no sandbox, Docker host or GPU of its own.
+- **What it risks.** One box. A subagent that goes wrong, or is turned by a prompt injection, holds no keys and cannot reach your network, the cloud metadata service, the host or other boxes. Memory, disk, time and spend are capped. Its work and its mistakes stay offsite.
+- **What it does not do.** Each deployment has one trusted operator who issues the API keys; it is not a shared service for strangers. The subagent thinks with Vultr's GLM models (Flash by default), not with your app's model. Files move in and out up to 25 MiB over REST and 8 MiB over MCP.
 
 ## What it is
 
@@ -192,6 +220,7 @@ What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) 
 
 ## Hackathon fit (Blast Radius Zero)
 
+- **Business value: a contained subagent for apps that already exist.** Any MCP client or HTTP app can hand work to it, so teams get agents that run code and browse without giving them their own servers. See [Plug it into the app you already have](#plug-it-into-the-app-you-already-have) and the live MCP run in [docs/evidence/live/mcp/](docs/evidence/live/mcp/).
 - **Every agent LLM call goes to Vultr.** Job `7d466fa9` on the public instance made 5 model calls, all to `glm-5.3-flash`. It finished in 58 s for $0.0058, and its reviewer approved the result. Receipt: [docs/evidence/live/vultr-public/](docs/evidence/live/vultr-public/).
 - **Everything runs on Vultr.** The control and worker VMs are both Vultr instances in Chicago.
 - **Containment evidence:**
@@ -209,6 +238,7 @@ What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) 
 - [Design](docs/DESIGN.md) and [security](docs/SECURITY.md)
 - [Configuration](docs/CONFIGURATION.md) and [deployment](docs/DEPLOYMENT.md)
 - [Live deployment](docs/LIVE_DEPLOYMENT.md), [verification](docs/VERIFICATION.md) and [benchmarks](docs/BENCHMARKS.md)
+- [Hackathon entry draft](docs/SUBMISSION.md)
 
 ## License
 

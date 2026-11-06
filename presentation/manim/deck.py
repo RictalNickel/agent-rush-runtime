@@ -329,13 +329,13 @@ class PitchDeck(Slide):
             self.s01_title,
             self.s02_problem,
             self.s03_idea,
+            self.s09_integrate,
             self.s04_architecture,
             self.s05_tools,
             self.s06_demo_kanban,
             self.s06b_demo_everyday,
             self.s07_demo_research,
             self.s08_containment,
-            self.s09_integrate,
             self.s10_vultr,
             self.s11_close,
         ]
@@ -420,14 +420,16 @@ class PitchDeck(Slide):
     # ---- 1. Title ---------------------------------------------------------
 
     def s01_title(self) -> None:
-        self.next_slide(notes=f"{PRODUCT}: agents that do real work, with the damage contained.")
+        self.next_slide(notes=f"{PRODUCT}: plug a contained subagent into the app or agent you already have. "
+                             "It does real work offsite, and the damage stays in one box.")
         name = display(PRODUCT, 150, width=70)
         fit(name, 2.75 - 0.45 - X_LEFT)  # stop short of the mark on the right
         place(name, left=X_LEFT, top=1.85)
         bar = Rectangle(width=2.2, height=0.12, fill_color=AMBER, fill_opacity=1, stroke_width=0)
         place(bar, left=X_LEFT + 0.05, top=name.get_bottom()[1] - 0.35)
-        sub = stack(txt("A backend for AI agents that do real work:", 34),
+        sub = stack(txt("A contained subagent for the app you already have:", 34),
                     txt("a shell and a browser, sealed in one box.", 34), buff=0.14)
+        fit(sub, 2.75 - 0.45 - X_LEFT)
         place(sub, left=X_LEFT, top=bar.get_bottom()[1] - 0.45)
         meta = txt("Vultr hackathon, Blast Radius Zero track", 22, MUTED)
         place(meta, left=X_LEFT, top=sub.get_bottom()[1] - 0.5)
@@ -912,9 +914,11 @@ class PitchDeck(Slide):
     # ---- 10. Integrate -------------------------------------------------------
 
     def s09_integrate(self) -> None:
-        self.enter("Integrate it", "One HTTP call to start an agent",
-                   notes="Create a session with one POST and stream its events. Or add it to Claude Code, "
-                         "Cursor or any MCP client as a remote server. Turn ends are POSTed to your webhooks, signed.")
+        self.enter("Plug it in", "A sealed subagent for your app",
+                   notes="This is the point of it: plug it into the app or agent you already have. "
+                         "Add it to Claude Code, Cursor or any MCP client as one remote server, or start a session "
+                         "with one POST. Your app hands off the task; the subagent runs code and a browser offsite, "
+                         "in its own box on Vultr, and hands back the result. Turn ends are POSTed to your webhooks, signed.")
         C_CMD, C_FLAG, C_STR, C_VAR, C_DIM = TEXT, MUTED, OK, RUN, FAINT
         rest = code_block([
             [("curl ", C_CMD), ("$HOST", C_VAR), ("/v1/sessions \\", C_CMD)],
@@ -937,15 +941,15 @@ class PitchDeck(Slide):
             place(code, left=bg.get_left()[0] + 0.3, top=lab.get_bottom()[1] - 0.2)
             return VGroup(bg, lab, code)
 
-        p1 = panel("REST: create a session with its first message", rest)
-        p2 = panel("MCP: add it to Claude Code, Cursor or any HTTP MCP client", mcp)
+        p1 = panel("From any app: one POST hands a subagent its task", rest)
+        p2 = panel("From your agent: Claude Code, Cursor or any MCP client", mcp)
         panels = VGroup(p1, p2).arrange(DOWN, buff=0.35, aligned_edge=LEFT)
         place(panels, left=X_LEFT, top=1.95)
 
-        feats = [("REST API at /v1", "Sessions, messages, files"),
-                 ("Live event stream", "Server-sent events, resumable"),
-                 ("Signed webhooks", "HMAC-SHA256 on every turn end"),
-                 ("MCP server at /mcp", "12 tools, the same API keys")]
+        feats = [("Offsite, on Vultr", "Its own box, never your servers"),
+                 ("MCP server at /mcp", "15 tools, the same API keys"),
+                 ("REST and live events", "Sessions, files, server-sent events"),
+                 ("Signed webhooks", "HMAC-SHA256 on every turn end")]
         items = VGroup()
         for head, sub in feats:
             dot = Rectangle(width=0.07, height=0.62, fill_color=AMBER, fill_opacity=1, stroke_width=0)
@@ -966,12 +970,13 @@ class PitchDeck(Slide):
     def s10_vultr(self) -> None:
         self.enter("Built on Vultr", "Every agent call runs on Vultr",
                    notes="Every agent model call goes to Vultr Serverless Inference, GLM 5.3 Flash. "
-                         "Both VMs are Vultr instances in Chicago, about 8 cents an hour together. "
+                         "Both VMs are Vultr instances in Chicago. The 16 vCPU worker has run "
+                         "72 agent sessions at once through the public URL. "
                          "These are the real model costs of the demos.")
         rows = VGroup()
         for icon_text, head, sub in (
             ("AI", "Vultr Serverless Inference", "Every agent model call, GLM 5.3 Flash"),
-            ("VM", "Two Vultr VMs in Chicago", "Control 2 vCPU, 4 GB. Private worker 4 vCPU, 8 GB. About $0.082 per hour"),
+            ("VM", "Two Vultr VMs in Chicago", "Control 2 vCPU, 4 GB. Private worker 16 vCPU, 64 GB: 72 agent sessions at once"),
         ):
             badge = VGroup(card(0.9, 0.9, fill=RAISED), bold(icon_text, 24, TEXT))
             badge[1].move_to(badge[0])
@@ -1004,12 +1009,13 @@ class PitchDeck(Slide):
 
     def s11_close(self) -> None:
         self.enter(None, None, chrome=False,
-                   notes="It is live now. Open the URL and give it a task.")
+                   notes="It is live now. Plug it into your app, or open the URL and give it a task.")
         name = display(PRODUCT, 120, width=70)
         fit(name, 3.1 - 0.45 - X_LEFT)  # stop short of the mark on the right
-        line = txt("Agents with a shell and a browser.", 34)
+        line = txt("Plug a contained subagent into any app.", 34)
         line2 = txt("A blast radius of one box.", 34, MUTED)
         lines = stack(line, line2, buff=0.14)
+        fit(lines, 3.1 - 0.45 - X_LEFT)
         url_lab = txt("Try it live", 20, MUTED)
         url = mono(LIVE_URL, 30, AMBER)
         url_group = stack(url_lab, url, buff=0.14)
