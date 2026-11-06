@@ -17,6 +17,7 @@ A variable marked "none" has no default and is unset unless you set it.
 | `VULTR_INFERENCE_API_KEY` | none | Vultr inference key, used by the control plane's inference gateway. Keep it out of `worker.env` |
 | `AR_INFERENCE_MODEL` | none | Vultr catalog model ID. The public instance uses `glm-5.3-flash`. Vultr inference stays disabled until this, both tariffs and `AR_PRICING_VERIFIED=true` are set |
 | `AR_INPUT_USD_PER_MILLION`, `AR_OUTPUT_USD_PER_MILLION` | none | Model tariffs in USD per million tokens. Blank means unknown, never zero |
+| `AR_INFERENCE_MODELS` | none | Vultr only. Models a session may choose, as comma-separated `id:input:output` (USD per million tokens), for example `glm-5.3-flash:0.10:0.35,glm-5.3:0.75:3.00`. `AR_INFERENCE_MODEL` must be listed and stays the default; its listed prices become the default tariff, and an `AR_*_USD_PER_MILLION` value that differs stops startup. Up to 16 models, each with two prices. Unset: every session runs `AR_INFERENCE_MODEL`, as before. `AR_PRICING_VERIFIED=true` covers every listed price. A model removed from the list later fails the next call of a session that runs on it |
 | `AR_PRICING_VERIFIED` | `false` | Set to `true` only after the tariffs are checked against the provider |
 | `AR_INFERENCE_BUDGET_USD` | `5` | Total model spend the ledger allows. Must be between 0 and 25 |
 | `ANTHROPIC_API_KEY` | none | Key for `AR_INFERENCE_PROVIDER=anthropic`. Calls are priced from Anthropic's list prices |

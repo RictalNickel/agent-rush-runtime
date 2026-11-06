@@ -40,6 +40,10 @@ fn key_scoped_routes(id: &str) -> Vec<(&'static str, String)> {
         ("POST", format!("/v1/sessions/{id}/cancel")),
         ("GET", format!("/v1/sessions/{id}/events")),
         ("GET", format!("/v1/sessions/{id}/stream")),
+        ("GET", format!("/v1/sessions/{id}/archive")),
+        ("POST", format!("/v1/sessions/{id}/fork")),
+        ("GET", "/v1/models".into()),
+        ("GET", "/v1/usage".into()),
         ("GET", format!("/v1/sessions/{id}/files?path=a.txt")),
         ("PUT", format!("/v1/sessions/{id}/files?path=a.txt")),
         ("POST", format!("/v1/sessions/{id}/exec")),
@@ -412,6 +416,8 @@ async fn another_owner_gets_404_on_every_session_route() {
             ("POST", format!("/v1/sessions/{target}/cancel"), None),
             ("GET", format!("/v1/sessions/{target}/events"), None),
             ("GET", format!("/v1/sessions/{target}/stream"), None),
+            ("GET", format!("/v1/sessions/{target}/archive"), None),
+            ("POST", format!("/v1/sessions/{target}/fork"), None),
             (
                 "GET",
                 format!("/v1/sessions/{target}/files?path=a.txt"),
@@ -1123,4 +1129,494 @@ async fn turn_end_webhook_is_signed_with_the_webhook_secret() {
         rx.try_recv().is_err(),
         "only the operator's turn end is delivered"
     );
+}
+
+// Models, usage, workspace archives and forks.
+
+use agent_rush::config::{ModelCatalog, ModelPrice};
+use common::{app_with_models, glm_catalog};
+
+/// A call on full GLM 5.3 costs ten times one on Flash in these tests.
+const PRICES: &[(&str, f64)] = &[("glm-5.3-flash", 0.001), ("glm-5.3", 0.01)];
+
+fn glm_app(steps: Vec<Value>) -> App {
+    app_with_models(steps, SessionLimits::default(), glm_catalog(), PRICES)
+}
+
+/// Creates a session through the API and waits for its first turn to end.
+async fn run_session(a: &App, key: &str, owner: &str, body: Value) -> Value {
+    let (status, created) = call(&a.router, "POST", "/v1/sessions", Some(key), Some(body)).await;
+    assert_eq!(status, StatusCode::CREATED, "{created}");
+    let id = created["session"]["id"].as_str().unwrap();
+    a.sessions.wait_idle(owner, id, WAIT).await.unwrap();
+    created["session"].clone()
+}
+
+async fn events_of(a: &App, key: &str, id: &str) -> Vec<Value> {
+    let (status, body) = call(
+        &a.router,
+        "GET",
+        &format!("/v1/sessions/{id}/events?limit=1000"),
+        Some(key),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    body["events"].as_array().unwrap().clone()
+}
+
+#[tokio::test]
+async fn models_are_listed_and_every_call_of_a_session_runs_on_its_model() {
+    let a = glm_app(vec![bash("make"), reply("Built on full GLM")]);
+    let key = a.key("alice");
+    let (status, models) = call(&a.router, "GET", "/v1/models", Some(&key), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(models["provider"], "vultr");
+    assert_eq!(models["default"], "glm-5.3-flash");
+    assert_eq!(models["per_session"], true);
+    assert_eq!(
+        models["models"],
+        json!([
+            {"id":"glm-5.3-flash","input_usd_per_million":0.10,"output_usd_per_million":0.35,"default":true},
+            {"id":"glm-5.3","input_usd_per_million":0.75,"output_usd_per_million":3.00,"default":false},
+        ])
+    );
+    let (_, status_body) = call(&a.router, "GET", "/v1/status", Some(&key), None).await;
+    assert_eq!(status_body["models"], models);
+
+    let full = run_session(
+        &a,
+        &key,
+        "alice",
+        json!({"message":"Build it","model":"glm-5.3"}),
+    )
+    .await;
+    assert_eq!(full["model"], "glm-5.3");
+    let flash = run_session(&a, &key, "alice", json!({"message":"Hello"})).await;
+    assert_eq!(flash["model"], "glm-5.3-flash");
+    // The full model ran both calls of its turn, Flash the one of the other session.
+    let models_called: Vec<String> = a.model.calls().into_iter().map(|(m, _)| m).collect();
+    assert_eq!(models_called, ["glm-5.3", "glm-5.3", "glm-5.3-flash"]);
+
+    let full_id = full["id"].as_str().unwrap();
+    let (_, view) = call(
+        &a.router,
+        "GET",
+        &format!("/v1/sessions/{full_id}"),
+        Some(&key),
+        None,
+    )
+    .await;
+    assert_eq!(view["model"], "glm-5.3");
+    // Each model's price is what the session was charged.
+    assert!(
+        (view["spend_usd"].as_f64().unwrap() - 0.02).abs() < 1e-9,
+        "{view}"
+    );
+    assert_eq!(
+        (view["input_tokens"].as_i64(), view["model_calls"].as_i64()),
+        (Some(2000), Some(2))
+    );
+    let (_, list) = call(&a.router, "GET", "/v1/sessions", Some(&key), None).await;
+    let listed: Vec<&str> = list["sessions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| s["model"].as_str().unwrap())
+        .collect();
+    assert_eq!(listed, ["glm-5.3-flash", "glm-5.3"]);
+    // The reply records the model that produced it.
+    let events = events_of(&a, &key, full_id).await;
+    let answer = events.iter().find(|e| e["kind"] == "assistant").unwrap();
+    assert_eq!(answer["payload"]["model"], "glm-5.3");
+}
+
+#[tokio::test]
+async fn the_turn_spend_cap_counts_each_call_at_its_models_price() {
+    let limits = SessionLimits {
+        max_turn_usd: 0.015,
+        ..SessionLimits::default()
+    };
+    let steps = vec![bash("one"), bash("two"), bash("three"), reply("Done")];
+    let a = app_with_models(steps, limits, glm_catalog(), PRICES);
+    let key = a.key("alice");
+    // Two full GLM 5.3 calls ($0.02) pass the $0.015 turn cap: the third is refused.
+    let full = run_session(&a, &key, "alice", json!({"message":"go","model":"glm-5.3"})).await;
+    let view = a
+        .sessions
+        .get("alice", full["id"].as_str().unwrap())
+        .unwrap()
+        .unwrap();
+    assert_eq!(view.status, SessionStatus::Failed);
+    assert_eq!(view.model_calls, 2);
+    // Two Flash calls ($0.002) stay well inside it.
+    let flash = run_session(&a, &key, "alice", json!({"message":"go"})).await;
+    let view = a
+        .sessions
+        .get("alice", flash["id"].as_str().unwrap())
+        .unwrap()
+        .unwrap();
+    assert_eq!(view.status, SessionStatus::Idle);
+    assert!((view.spend_usd - 0.002).abs() < 1e-9);
+}
+
+#[tokio::test]
+async fn an_unknown_or_unsupported_model_is_400_and_creates_nothing() {
+    let a = glm_app(vec![]);
+    let key = a.key("alice");
+    let (status, body) = call(
+        &a.router,
+        "POST",
+        "/v1/sessions",
+        Some(&key),
+        Some(json!({"message":"hi","model":"gpt-9"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let error = body["error"].as_str().unwrap();
+    assert!(
+        error.contains("unknown model \"gpt-9\"") && error.contains("glm-5.3-flash, glm-5.3"),
+        "{error}"
+    );
+    assert!(a.sessions.list("alice").unwrap().is_empty());
+    assert!(a.model.calls().is_empty());
+
+    // Without a model list only the default exists; nothing else is accepted.
+    let plain = app(vec![]);
+    let key = plain.key("alice");
+    let (status, body) = call(
+        &plain.router,
+        "POST",
+        "/v1/sessions",
+        Some(&key),
+        Some(json!({"model":"glm-5.3"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+
+    // A provider that picks models per role cannot honour a chosen one.
+    let anthropic = ModelCatalog {
+        provider: "anthropic".into(),
+        default: "claude-opus-5-5".into(),
+        models: vec![ModelPrice {
+            id: "claude-opus-5-5".into(),
+            input_usd_per_million: 4.0,
+            output_usd_per_million: 20.0,
+        }],
+        per_session: false,
+    };
+    let claude = app_with_models(vec![], SessionLimits::default(), anthropic, &[]);
+    let key = claude.key("alice");
+    let (status, body) = call(
+        &claude.router,
+        "POST",
+        "/v1/sessions",
+        Some(&key),
+        Some(json!({"model":"claude-opus-5-5"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(
+        body["error"].as_str().unwrap().contains("anthropic"),
+        "{body}"
+    );
+    let (status, created) = call(&claude.router, "POST", "/v1/sessions", Some(&key), None).await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(created["session"]["model"], "claude-opus-5-5");
+}
+
+#[tokio::test]
+async fn usage_totals_add_up_per_model_and_per_session() {
+    let a = glm_app(vec![bash("make"), reply("Built")]);
+    let key = a.key("alice");
+    let full = run_session(
+        &a,
+        &key,
+        "alice",
+        json!({"message":"Build","model":"glm-5.3"}),
+    )
+    .await;
+    run_session(&a, &key, "alice", json!({"message":"Hello"})).await;
+    run_session(&a, &key, "alice", json!({"message":"Hello again"})).await;
+    let (status, usage) = call(&a.router, "GET", "/v1/usage", Some(&key), None).await;
+    assert_eq!(status, StatusCode::OK);
+    let total = &usage["total"];
+    assert_eq!(total["sessions"], 3);
+    assert_eq!(total["model_calls"], 4);
+    assert_eq!(total["input_tokens"], 4000);
+    assert_eq!(total["output_tokens"], 400);
+    assert!(
+        (total["spend_usd"].as_f64().unwrap() - 0.022).abs() < 1e-9,
+        "{usage}"
+    );
+    let by_model = usage["by_model"].as_array().unwrap();
+    assert_eq!(by_model.len(), 2);
+    assert_eq!(by_model[0]["model"], "glm-5.3");
+    assert_eq!(
+        (
+            by_model[0]["sessions"].as_i64(),
+            by_model[0]["model_calls"].as_i64()
+        ),
+        (Some(1), Some(2))
+    );
+    assert!((by_model[0]["spend_usd"].as_f64().unwrap() - 0.02).abs() < 1e-9);
+    assert_eq!(by_model[1]["model"], "glm-5.3-flash");
+    assert_eq!(
+        (
+            by_model[1]["sessions"].as_i64(),
+            by_model[1]["input_tokens"].as_i64()
+        ),
+        (Some(2), Some(2000))
+    );
+    let sessions = usage["sessions"].as_array().unwrap();
+    assert_eq!(sessions.len(), 3);
+    let row = sessions.iter().find(|s| s["id"] == full["id"]).unwrap();
+    assert_eq!(row["model"], "glm-5.3");
+    assert_eq!(row["output_tokens"], 200);
+    // Another owner sees only their own (here, nothing).
+    let bob = a.key("bob");
+    let (_, theirs) = call(&a.router, "GET", "/v1/usage", Some(&bob), None).await;
+    assert_eq!(theirs["total"]["sessions"], 0);
+    assert_eq!(theirs["by_model"], json!([]));
+}
+
+/// The paths in a tarball, as the fake worker writes them (uncompressed).
+fn tar_paths(bytes: &[u8]) -> Vec<String> {
+    let mut archive = tar::Archive::new(bytes);
+    archive
+        .entries()
+        .unwrap()
+        .map(|e| e.unwrap().path().unwrap().to_string_lossy().into_owned())
+        .collect()
+}
+
+#[tokio::test]
+async fn the_workspace_downloads_as_a_tarball_and_over_25_mib_is_413() {
+    let a = app(vec![]);
+    let key = a.key("alice");
+    let session = a.sessions.create("alice", None).unwrap();
+    let id = session.id.clone();
+    for (path, text) in [("app/main.py", "print('hi')"), ("notes.md", "# notes")] {
+        a.sessions
+            .write_file("alice", &id, path, Bytes::from(text))
+            .await
+            .unwrap();
+    }
+    let response = send(
+        &a.router,
+        Request::get(format!("/v1/sessions/{id}/archive"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()["content-type"], "application/gzip");
+    let disposition = response.headers()["content-disposition"].to_str().unwrap();
+    assert!(
+        disposition.starts_with("attachment; filename=\"workspace-")
+            && disposition.ends_with(".tar.gz\""),
+        "{disposition}"
+    );
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(tar_paths(&bytes), ["app/main.py", "notes.md"]);
+    let box_id = a
+        .sessions
+        .get("alice", &id)
+        .unwrap()
+        .unwrap()
+        .box_id
+        .unwrap();
+    // The archive was built in the box's /tmp and removed after it was read.
+    assert_eq!(a.boxes.files(&box_id), ["app/main.py", "notes.md"]);
+
+    a.boxes.put_file(
+        &box_id,
+        "big.bin",
+        vec![7; agent_rush::sandbox_api::MAX_FILE_BYTES + 1024],
+    );
+    let (status, body) = call(
+        &a.router,
+        "GET",
+        &format!("/v1/sessions/{id}/archive"),
+        Some(&key),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE, "{body}");
+    assert!(body["error"].as_str().unwrap().contains("25 MiB"), "{body}");
+    assert_eq!(
+        a.boxes.files(&box_id),
+        ["app/main.py", "big.bin", "notes.md"]
+    );
+
+    a.sessions.close("alice", &id).await.unwrap();
+    let (status, _) = call(
+        &a.router,
+        "GET",
+        &format!("/v1/sessions/{id}/archive"),
+        Some(&key),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+}
+
+#[tokio::test]
+async fn a_fork_copies_files_and_the_conversation_and_runs_on_its_own_model() {
+    let a = glm_app(vec![bash("make"), reply("Built it"), reply("Added tests")]);
+    let key = a.key("alice");
+    let source = run_session(
+        &a,
+        &key,
+        "alice",
+        json!({"title":"Benchmark","message":"Build the app"}),
+    )
+    .await;
+    let id = source["id"].as_str().unwrap().to_string();
+    a.sessions.send("alice", &id, "Add tests").unwrap();
+    a.sessions.wait_idle("alice", &id, WAIT).await.unwrap();
+    a.sessions
+        .write_file("alice", &id, "app/main.py", Bytes::from("print('hi')"))
+        .await
+        .unwrap();
+    let source_events = events_of(&a, &key, &id).await.len();
+
+    let (status, forked) = call(
+        &a.router,
+        "POST",
+        &format!("/v1/sessions/{id}/fork"),
+        Some(&key),
+        Some(json!({"model":"glm-5.3","message":"Run it once more"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{forked}");
+    let fork = &forked["session"];
+    let fork_id = fork["id"].as_str().unwrap().to_string();
+    assert_eq!(fork["model"], "glm-5.3");
+    assert_eq!(fork["forked_from"], id.as_str());
+    assert_eq!(fork["title"], "Benchmark (fork)");
+    assert_eq!(forked["sent"]["interjection"], false);
+    a.sessions.wait_idle("alice", &fork_id, WAIT).await.unwrap();
+
+    // The fork's workspace is a copy of the source's files.
+    let fork_box = a
+        .sessions
+        .get("alice", &fork_id)
+        .unwrap()
+        .unwrap()
+        .box_id
+        .unwrap();
+    assert_eq!(a.boxes.files(&fork_box), ["app/main.py"]);
+    // Its log starts with the source's requests and replies, without the tool steps.
+    let events = events_of(&a, &key, &fork_id).await;
+    let copied: Vec<(String, String)> = events
+        .iter()
+        .take_while(|e| e["payload"]["forked_from"] == id.as_str())
+        .map(|e| {
+            (
+                e["kind"].as_str().unwrap().to_string(),
+                e["payload"]["text"].as_str().unwrap().to_string(),
+            )
+        })
+        .collect();
+    let pair = |k: &str, t: &str| (k.to_string(), t.to_string());
+    assert_eq!(
+        copied,
+        [
+            pair("user", "Build the app"),
+            pair("assistant", "Built it"),
+            pair("user", "Add tests"),
+            pair("assistant", "Added tests"),
+        ]
+    );
+    // The fork's first call ran on its model and saw the earlier conversation, but not
+    // the source's tool output.
+    let (model, messages) = a.model.calls().pop().unwrap();
+    assert_eq!(model, "glm-5.3");
+    let text = messages
+        .iter()
+        .map(|m| m["content"].as_str().unwrap_or(""))
+        .collect::<Vec<_>>()
+        .join("\n");
+    for expected in [
+        "Build the app",
+        "Built it",
+        "Add tests",
+        "Added tests",
+        "Run it once more",
+    ] {
+        assert!(text.contains(expected), "{expected} missing from {text}");
+    }
+    assert!(!text.contains("ran: make"), "{text}");
+    // The source is unchanged.
+    assert_eq!(events_of(&a, &key, &id).await.len(), source_events);
+
+    // Without a model, a fork keeps the source's.
+    let (status, again) = call(
+        &a.router,
+        "POST",
+        &format!("/v1/sessions/{id}/fork"),
+        Some(&key),
+        Some(json!({"title":"Second"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{again}");
+    assert_eq!(again["session"]["model"], "glm-5.3-flash");
+    assert_eq!(again["session"]["title"], "Second");
+    assert!(again["sent"].is_null());
+}
+
+#[tokio::test]
+async fn a_fork_is_refused_cleanly_by_the_cap_an_unknown_model_or_a_large_workspace() {
+    let limits = SessionLimits {
+        max_open_sessions_per_owner: 2,
+        ..SessionLimits::default()
+    };
+    let a = app_with_models(vec![], limits, glm_catalog(), PRICES);
+    let key = a.key("alice");
+    let source = a.sessions.create("alice", Some("source")).unwrap();
+    let id = source.id.clone();
+    a.sessions
+        .write_file("alice", &id, "a.txt", Bytes::from("a"))
+        .await
+        .unwrap();
+    let other = a.sessions.create("alice", None).unwrap();
+    let fork_path = format!("/v1/sessions/{id}/fork");
+
+    let (status, body) = call(&a.router, "POST", &fork_path, Some(&key), None).await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS, "{body}");
+    assert_eq!(body["error"], "too many open sessions; close one");
+    a.sessions.close("alice", &other.id).await.unwrap();
+
+    let (status, body) = call(
+        &a.router,
+        "POST",
+        &fork_path,
+        Some(&key),
+        Some(json!({"model":"gpt-9"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+
+    let box_id = a
+        .sessions
+        .get("alice", &id)
+        .unwrap()
+        .unwrap()
+        .box_id
+        .unwrap();
+    a.boxes.put_file(
+        &box_id,
+        "big.bin",
+        vec![1; agent_rush::sandbox_api::MAX_FILE_BYTES + 1],
+    );
+    let (status, body) = call(&a.router, "POST", &fork_path, Some(&key), None).await;
+    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE, "{body}");
+    // Neither refusal left a session behind.
+    assert_eq!(a.sessions.list("alice").unwrap().len(), 2);
+
+    a.sessions.close("alice", &id).await.unwrap();
+    let (status, _) = call(&a.router, "POST", &fork_path, Some(&key), None).await;
+    assert_eq!(status, StatusCode::CONFLICT);
 }

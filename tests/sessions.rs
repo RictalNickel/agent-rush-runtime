@@ -113,6 +113,7 @@ impl SessionModel for FakeModel {
             Ok(ModelReply {
                 text,
                 cost_usd: 0.001,
+                ..Default::default()
             })
         })
     }

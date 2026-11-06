@@ -9,6 +9,8 @@ use common::{App, app, app_with_limits, bash, reply, send};
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
 
+const WAIT: std::time::Duration = std::time::Duration::from_secs(10);
+
 async fn rpc(a: &App, key: Option<&str>, message: Value) -> (StatusCode, Value) {
     let mut builder = Request::post("/mcp")
         .header("content-type", "application/json")
@@ -135,6 +137,9 @@ async fn initialize_list_start_send_and_wait_for_reply() {
             "cancel",
             "close_session",
             "list_sessions",
+            "list_models",
+            "fork_session",
+            "get_usage",
             "manage_skills"
         ]
     );
@@ -545,4 +550,96 @@ async fn long_tool_calls_beyond_the_per_owner_cap_are_tool_errors() {
     )
     .await;
     assert!(!is_error, "{reply}");
+}
+
+#[tokio::test]
+async fn models_forks_and_usage_through_mcp() {
+    let a = common::app_with_models(
+        vec![reply("Flash answer")],
+        SessionLimits::default(),
+        common::glm_catalog(),
+        &[("glm-5.3-flash", 0.001), ("glm-5.3", 0.01)],
+    );
+    let key = a.key("alice");
+    let (is_error, models) = tool(&a, &key, "list_models", json!({})).await;
+    assert!(!is_error);
+    assert_eq!(models["default"], "glm-5.3-flash");
+    assert_eq!(models["models"][1]["id"], "glm-5.3");
+
+    let (is_error, message) = tool(&a, &key, "start_session", json!({"model":"gpt-9"})).await;
+    assert!(is_error);
+    assert!(
+        message.as_str().unwrap().contains("unknown model"),
+        "{message}"
+    );
+    let (is_error, started) = tool(
+        &a,
+        &key,
+        "start_session",
+        json!({"message":"Write hello.txt"}),
+    )
+    .await;
+    assert!(!is_error, "{started}");
+    assert_eq!(started["model"], "glm-5.3-flash");
+    let id = started["session_id"].as_str().unwrap().to_string();
+    a.sessions.wait_idle("alice", &id, WAIT).await.unwrap();
+    a.sessions
+        .write_file("alice", &id, "hello.txt", "hi".into())
+        .await
+        .unwrap();
+
+    let (is_error, forked) = tool(
+        &a,
+        &key,
+        "fork_session",
+        json!({"session_id": id, "model": "glm-5.3", "message": "Do it again"}),
+    )
+    .await;
+    assert!(!is_error, "{forked}");
+    assert_eq!(forked["model"], "glm-5.3");
+    assert_eq!(forked["forked_from"], id.as_str());
+    let fork = forked["session_id"].as_str().unwrap().to_string();
+    let (_, waited) = tool(&a, &key, "wait_for_reply", json!({"session_id": fork})).await;
+    assert_eq!(waited["reply"], "fallback reply");
+    let (_, file) = tool(
+        &a,
+        &key,
+        "read_file",
+        json!({"session_id": fork, "path": "hello.txt"}),
+    )
+    .await;
+    assert_eq!(file, json!("hi"));
+    let (is_error, _) = tool(
+        &a,
+        &key,
+        "fork_session",
+        json!({"session_id": "00000000-0000-0000-0000-000000000000"}),
+    )
+    .await;
+    assert!(is_error);
+
+    let (is_error, usage) = tool(&a, &key, "get_usage", json!({})).await;
+    assert!(!is_error);
+    assert_eq!(usage["total"]["sessions"], 2);
+    assert_eq!(usage["total"]["model_calls"], 2);
+    let spend: Vec<(String, f64)> = usage["by_model"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| {
+            (
+                m["model"].as_str().unwrap().to_string(),
+                m["spend_usd"].as_f64().unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        spend,
+        [
+            ("glm-5.3".to_string(), 0.01),
+            ("glm-5.3-flash".to_string(), 0.001)
+        ]
+    );
+    let (_, listed) = tool(&a, &key, "list_sessions", json!({})).await;
+    assert_eq!(listed["sessions"][0]["model"], "glm-5.3");
 }

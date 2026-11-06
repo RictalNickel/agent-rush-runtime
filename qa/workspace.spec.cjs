@@ -29,13 +29,14 @@ async function signIn(page){
 
 // A fake /v1 backend with a session event log. `sse:false` makes the stream fail so the
 // page has to fall back to polling /events. `throttleImages` refuses the first request for
-// each screenshot with 429, the way the server does past its per-session limit.
-async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false}={}){
-  const st={sessions:[],events:new Map(),csrf:[],deletes:[],purges:[],streams:0,polls:0,speak:0,transcribe:0,cancelled:0,images:{inFlight:0,maxInFlight:0,requests:{}}};
+// each screenshot with 429, the way the server does past its per-session limit. `models` is
+// the model list /v1/status reports (none by default, as before models could be chosen).
+async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false,models}={}){
+  const st={sessions:[],events:new Map(),csrf:[],deletes:[],purges:[],created:[],archives:0,models,streams:0,polls:0,speak:0,transcribe:0,cancelled:0,images:{inFlight:0,maxInFlight:0,requests:{}}};
   const emit=(id,kind,payload)=>{const log=st.events.get(id);const event={session_id:id,seq:log.length+1,kind,payload,at:Date.now()};log.push(event);st.sessions.find(s=>s.id===id).last_seq=event.seq;return event;};
   const status=(id,value,reason)=>{st.sessions.find(s=>s.id===id).status=value;emit(id,'status',reason?{status:value,reason}:{status:value});};
   st.emit=emit;st.status=status;
-  const create=(id,title)=>{const s={id,title,status:'idle',box_id:null,created_at:Date.now(),updated_at:Date.now(),spend_usd:0,last_seq:0};st.sessions.unshift(s);st.events.set(id,[]);return s;};
+  const create=(id,title,model)=>{const s={id,title,status:'idle',box_id:null,created_at:Date.now(),updated_at:Date.now(),spend_usd:0,last_seq:0,...(model?{model}:{})};st.sessions.unshift(s);st.events.set(id,[]);return s;};
   for(const s of seed){create(s.id,s.title);for(const [kind,payload] of s.events)emit(s.id,kind,payload);st.sessions[0].status=s.status||'idle';}
   // The first turn: a shell step, a browser visit and a screenshot, still running.
   const firstTurn=id=>{
@@ -63,10 +64,11 @@ async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false}=
     if(method!=='GET')st.csrf.push(req.headers()['x-csrf-token']||'');
     const match=/^\/v1\/sessions\/([^/]+)(\/.*)?$/.exec(path);
     const id=match&&decodeURIComponent(match[1]),sub=match?.[2]||'';
-    if(path==='/v1/status')return route.fulfill({json:{provider:'vultr',worker_connected:true,sessions_available:true,voice_available:voice,mcp_servers:[]}});
+    if(path==='/v1/status')return route.fulfill({json:{provider:'vultr',worker_connected:true,sessions_available:true,voice_available:voice,mcp_servers:[],...(st.models?{models:st.models}:{})}});
     if(path==='/v1/sessions'&&method==='GET')return route.fulfill({json:{sessions:st.sessions}});
     if(path==='/v1/sessions'&&method==='POST'){
-      const {message}=req.postDataJSON();const s=create(`s${st.sessions.length+1}`,message.slice(0,80));
+      const body=req.postDataJSON();st.created.push(body);const {message}=body;
+      const s=create(`s${st.sessions.length+1}`,message.slice(0,80),body.model||st.models?.default);
       emit(s.id,'user',{text:message});firstTurn(s.id);
       return route.fulfill({status:201,json:{session:{...s},sent:{interjection:false,seq:1}}});
     }
@@ -115,6 +117,11 @@ async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false}=
       st.polls+=1;
       const after=Number(url.searchParams.get('after')||0);const events=st.events.get(id).filter(e=>e.seq>after);
       return route.fulfill({json:{events,next_after:events.length?events[events.length-1].seq:after,more:false}});
+    }
+    if(sub==='/archive'){
+      st.archives+=1;
+      // An empty gzip stream: enough for the browser to save a file.
+      return route.fulfill({status:200,headers:{'content-type':'application/gzip','content-disposition':`attachment; filename="workspace-${id}.tar.gz"`},body:Buffer.from([31,139,8,0,0,0,0,0,0,3,3,0,0,0,0,0,0,0,0,0])});
     }
     if(sub==='/files'){
       const p=url.searchParams.get('path');
@@ -479,5 +486,75 @@ test('mobile at 390 px: the delete button always shows and the dialog fits',asyn
   expect(api.deletes).toEqual(['keep']);
   // The drawer stays open after the delete.
   await expect(page.locator('#drawer')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+const MODELS={provider:'vultr',default:'glm-5.3-flash',per_session:true,models:[
+  {id:'glm-5.3-flash',input_usd_per_million:0.1,output_usd_per_million:0.35,default:true},
+  {id:'glm-5.3',input_usd_per_million:0.75,output_usd_per_million:3,default:false}]};
+
+test('models and downloads: pick a model for a new session, see it on the session, download its files',async({page})=>{
+  const errors=watchErrors(page);
+  const api=await fakeApi(page,{models:MODELS});
+  await page.goto('/');
+  await signIn(page);
+  // The picker is offered for a new session and starts on the default model.
+  const picker=page.getByLabel('Model',{exact:true});
+  await expect(picker).toBeVisible();
+  await expect(picker).toHaveValue('glm-5.3-flash');
+  await expect(picker.locator('option')).toHaveText(['glm-5.3-flash ($0.10 in, $0.35 out per M tokens)','glm-5.3 ($0.75 in, $3.00 out per M tokens)']);
+  await page.screenshot({path:'/tmp/agent-rush-qa/desktop-model-picker.png'});
+  await picker.selectOption('glm-5.3');
+  const prompt=page.getByLabel('Message the agent');
+  await prompt.fill('Benchmark this task.');
+  await prompt.press('Enter');
+  await expect(prompt).toHaveValue('');
+  expect(api.created.at(-1)).toEqual({message:'Benchmark this task.',model:'glm-5.3'});
+  // The session shows its model, and the picker steps aside while it is open.
+  await expect(page.locator('#session-model')).toHaveText('glm-5.3');
+  await expect(picker).toBeHidden();
+  await page.screenshot({path:'/tmp/agent-rush-qa/desktop-session-model.png'});
+
+  // Download files saves the whole workspace as one tarball.
+  const saved=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Download files'}).click();
+  const download=await saved;
+  expect(download.suggestedFilename()).toBe('workspace-s1.tar.gz');
+  expect(api.archives).toBe(1);
+
+  // A new session offers the picker again; with one model there is nothing to pick.
+  await page.getByRole('button',{name:'New session'}).click();
+  await expect(picker).toBeVisible();
+  api.models={...MODELS,models:MODELS.models.slice(0,1)};
+  await page.reload();
+  await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
+  await expect(page.locator('#session-list .session')).toHaveCount(1);
+  await expect(page.locator('#model-pick')).toBeHidden();
+  await prompt.fill('Use the default.');
+  await prompt.press('Enter');
+  await expect(prompt).toHaveValue('');
+  expect(api.created.at(-1)).toEqual({message:'Use the default.'});
+  expect(errors).toEqual([]);
+});
+
+test('mobile at 390 px: the session header with its model and download button fits',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  const errors=watchErrors(page);
+  const api=await fakeApi(page,{models:MODELS});
+  await page.goto('/');
+  await signIn(page);
+  await expect(page.locator('#model-pick')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.getByLabel('Model',{exact:true}).selectOption('glm-5.3');
+  await page.getByLabel('Message the agent').fill('A task with a long enough title to need the ellipsis in the header.');
+  await page.getByLabel('Message the agent').press('Enter');
+  await expect(page.locator('#session-model')).toHaveText('glm-5.3');
+  const button=page.getByRole('button',{name:'Download files'});
+  await expect(button).toBeVisible();
+  const box=await button.boundingBox();
+  expect(box.x+box.width).toBeLessThanOrEqual(390);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:'/tmp/agent-rush-qa/mobile-session-model.png'});
+  expect(api.created.at(-1).model).toBe('glm-5.3');
   expect(errors).toEqual([]);
 });

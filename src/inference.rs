@@ -1,6 +1,6 @@
 use crate::{
     agent::{AgentContext, ContextBudget, Role},
-    config::{Provider, Settings},
+    config::{ModelCatalog, Provider, Settings},
     ledger::Ledger,
 };
 use anyhow::{Context, Result, ensure};
@@ -304,6 +304,9 @@ pub struct InferenceGateway {
     client: reqwest::Client,
     settings: Arc<Settings>,
     ledger: Arc<Ledger>,
+    /// The models a session may name, with the tariffs its calls are priced at.
+    catalog: Arc<ModelCatalog>,
+    vultr_endpoint: String,
 }
 impl InferenceGateway {
     pub fn new(settings: Arc<Settings>, ledger: Arc<Ledger>) -> Result<Self> {
@@ -312,9 +315,17 @@ impl InferenceGateway {
                 .timeout(Duration::from_secs(600))
                 .redirect(reqwest::redirect::Policy::none())
                 .build()?,
+            catalog: Arc::new(settings.model_catalog()),
             settings,
             ledger,
+            vultr_endpoint: ENDPOINT.into(),
         })
+    }
+    /// Sends Vultr calls to a local stand-in instead of Vultr. Tests only.
+    #[doc(hidden)]
+    pub fn with_vultr_endpoint(mut self, url: &str) -> Self {
+        self.vultr_endpoint = url.into();
+        self
     }
     pub fn context_budget(&self) -> ContextBudget {
         match self.settings.inference_provider {
@@ -333,6 +344,17 @@ impl InferenceGateway {
         context: &AgentContext,
         effort: Option<&str>,
     ) -> Result<(String, Option<Value>, Value)> {
+        self.complete_with_model(context, effort, None).await
+    }
+    /// `complete_with_effort` on a session's model: an ID from the operator's model list,
+    /// priced at its listed tariff. `None` is the default model. Anthropic chooses its
+    /// model per role and ignores it.
+    pub async fn complete_with_model(
+        &self,
+        context: &AgentContext,
+        effort: Option<&str>,
+        model: Option<&str>,
+    ) -> Result<(String, Option<Value>, Value)> {
         if let Some(effort) = effort {
             ensure!(
                 crate::agent_config::REASONING_EFFORTS.contains(&effort),
@@ -341,7 +363,7 @@ impl InferenceGateway {
         }
         match self.settings.inference_provider {
             Provider::Vultr => {
-                let (completion, receipt) = self.complete_vultr(context, effort).await?;
+                let (completion, receipt) = self.complete_vultr(context, effort, model).await?;
                 Ok((completion.content, None, receipt))
             }
             Provider::Anthropic => self.complete_anthropic(context, effort).await,
@@ -460,24 +482,42 @@ impl InferenceGateway {
         &self,
         context: &AgentContext,
         effort: Option<&str>,
+        model: Option<&str>,
     ) -> Result<(Completion, Value)> {
         ensure!(
             self.settings.inference_configured(),
             "Vultr inference key, model and verified pricing must be configured"
         );
-        let input = self
-            .settings
-            .inference_input_per_million
-            .context("input price required")?;
-        let output = self
-            .settings
-            .inference_output_per_million
-            .context("output price required")?;
+        // The model and its tariff come from the operator's configuration, never from
+        // model output: an ID outside the list is refused before anything is reserved.
+        // Without a list every call runs the default model, as before models were chosen,
+        // even for a session recorded under an earlier default.
+        let chosen = model.filter(|m| !m.is_empty() && !self.settings.inference_models.is_empty());
+        let (model, input, output) = match chosen {
+            None => (
+                self.settings.inference_model.as_str(),
+                self.settings
+                    .inference_input_per_million
+                    .context("input price required")?,
+                self.settings
+                    .inference_output_per_million
+                    .context("output price required")?,
+            ),
+            Some(id) => {
+                let price = self
+                    .catalog
+                    .price(id)
+                    .with_context(|| format!("model {id:?} is not allowed on this deployment"))?;
+                (
+                    price.id.as_str(),
+                    price.input_usd_per_million,
+                    price.output_usd_per_million,
+                )
+            }
+        };
         validate_pricing(input, output)?;
-        let mut request = with_reasoning_effort(
-            build_request(&self.settings.inference_model, &context.messages)?,
-            context.role,
-        );
+        let mut request =
+            with_reasoning_effort(build_request(model, &context.messages)?, context.role);
         if let Some(effort) = effort {
             request["reasoning"]["effort"] = json!(effort);
         }
@@ -494,7 +534,7 @@ impl InferenceGateway {
         let outcome = async {
             let response = self
                 .client
-                .post(ENDPOINT)
+                .post(&self.vultr_endpoint)
                 .bearer_auth(&self.settings.inference_key)
                 .json(&request)
                 .send()
@@ -517,7 +557,9 @@ impl InferenceGateway {
                 "provider usage exceeds cost reservation; stop and reconcile billing"
             );
             let completion = decode_response(body)?;
-            let receipt = json!({"call_id":call_id,"provider":"Vultr Serverless Inference","origin":"https://api.vultrinference.com/v1","role":context.role,"effort":effort.unwrap_or(anthropic_role(context.role).effort),"model":completion.model,"provider_request_id":completion.provider_id,"input_tokens":completion.input_tokens,"output_tokens":completion.output_tokens,"accounted_usd":cost,"at":crate::domain::now()});
+            // `model` is what the provider reported; `requested_model` is the configured
+            // ID the call was sent as and priced at.
+            let receipt = json!({"call_id":call_id,"provider":"Vultr Serverless Inference","origin":"https://api.vultrinference.com/v1","role":context.role,"effort":effort.unwrap_or(anthropic_role(context.role).effort),"model":completion.model,"requested_model":model,"input_usd_per_million":input,"output_usd_per_million":output,"provider_request_id":completion.provider_id,"input_tokens":completion.input_tokens,"output_tokens":completion.output_tokens,"accounted_usd":cost,"at":crate::domain::now()});
             Ok((completion, receipt))
         }
         .await;
@@ -536,17 +578,28 @@ impl GatewayModel {
         system: &str,
         messages: &[Value],
         effort: Option<&str>,
+        model: Option<&str>,
     ) -> Result<crate::session::ModelReply> {
         let mut context =
             AgentContext::with_role("session", "", Role::Solo, self.gateway.context_budget());
         context.messages = std::iter::once(json!({"role":"system","content":system}))
             .chain(messages.iter().cloned())
             .collect();
-        let (text, _compaction, receipt) =
-            self.gateway.complete_with_effort(&context, effort).await?;
+        let (text, _compaction, receipt) = self
+            .gateway
+            .complete_with_model(&context, effort, model)
+            .await?;
+        let tokens = |keys: &[&str]| keys.iter().filter_map(|k| receipt[*k].as_u64()).sum();
         Ok(crate::session::ModelReply {
             text,
             cost_usd: receipt["accounted_usd"].as_f64().unwrap_or(0.0),
+            // Anthropic reports cached prompt tokens apart; they are prompt tokens too.
+            input_tokens: tokens(&[
+                "input_tokens",
+                "cache_read_input_tokens",
+                "cache_creation_input_tokens",
+            ]),
+            output_tokens: tokens(&["output_tokens"]),
         })
     }
 }
@@ -556,7 +609,7 @@ impl crate::session::SessionModel for GatewayModel {
         system: &'a str,
         messages: &'a [Value],
     ) -> futures_util::future::BoxFuture<'a, Result<crate::session::ModelReply>> {
-        Box::pin(self.call(system, messages, None))
+        Box::pin(self.call(system, messages, None, None))
     }
     fn complete_with_effort<'a>(
         &'a self,
@@ -564,7 +617,16 @@ impl crate::session::SessionModel for GatewayModel {
         messages: &'a [Value],
         effort: Option<&'a str>,
     ) -> futures_util::future::BoxFuture<'a, Result<crate::session::ModelReply>> {
-        Box::pin(self.call(system, messages, effort))
+        Box::pin(self.call(system, messages, effort, None))
+    }
+    fn complete_with_model<'a>(
+        &'a self,
+        model: &'a str,
+        system: &'a str,
+        messages: &'a [Value],
+        effort: Option<&'a str>,
+    ) -> futures_util::future::BoxFuture<'a, Result<crate::session::ModelReply>> {
+        Box::pin(self.call(system, messages, effort, Some(model)))
     }
     fn budget(&self) -> ContextBudget {
         self.gateway.context_budget()

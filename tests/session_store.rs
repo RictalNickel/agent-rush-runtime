@@ -268,3 +268,85 @@ fn validate_rejects_builtin_clash_unknown_mcp_and_oversized_addendum() {
         "placeholders are parsed in order"
     );
 }
+
+#[test]
+fn sessions_stored_before_models_get_the_default_model_and_keep_their_spend() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("control.db");
+    {
+        // The agent_sessions table as the first release created it.
+        let old = rusqlite::Connection::open(&path).unwrap();
+        old.execute_batch(
+            "CREATE TABLE agent_sessions(id TEXT PRIMARY KEY, owner TEXT NOT NULL, title TEXT NOT NULL, status TEXT NOT NULL, box_id TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, spend_usd REAL NOT NULL DEFAULT 0, last_seq INTEGER NOT NULL DEFAULT 0);
+            INSERT INTO agent_sessions VALUES('old','alice','Before models','idle',NULL,1,1,0.25,0);",
+        )
+        .unwrap();
+    }
+    let db = Ledger::open(&path, 1024).unwrap();
+    let view = db.agent_session("alice", "old").unwrap().unwrap();
+    assert_eq!((view.model.as_str(), view.spend_usd), ("", 0.25));
+    assert_eq!((view.input_tokens, view.model_calls), (0, 0));
+    assert_eq!(db.fill_session_models("glm-5.3-flash").unwrap(), 1);
+    let new = db
+        .create_agent_session_within("alice", "New", "glm-5.3", None, 20)
+        .unwrap()
+        .unwrap();
+    assert_eq!(db.fill_session_models("other").unwrap(), 0);
+    drop(db);
+    // Opening it again migrates nothing twice.
+    let db = Ledger::open(&path, 1024).unwrap();
+    let view = db.agent_session("alice", "old").unwrap().unwrap();
+    assert_eq!(view.model, "glm-5.3-flash");
+    assert_eq!(
+        db.agent_session("alice", &new.id).unwrap().unwrap().model,
+        "glm-5.3"
+    );
+}
+
+#[test]
+fn usage_adds_up_per_model_and_stays_with_its_owner() {
+    let db = Ledger::memory(1024).unwrap();
+    let flash = |title: &str| {
+        db.create_agent_session_within("alice", title, "glm-5.3-flash", None, 20)
+            .unwrap()
+            .unwrap()
+    };
+    let (a, b) = (flash("a"), flash("b"));
+    let full = db
+        .create_agent_session_within("alice", "c", "glm-5.3", Some(&a.id), 20)
+        .unwrap()
+        .unwrap();
+    assert_eq!(full.forked_from.as_deref(), Some(a.id.as_str()));
+    let bob = db
+        .create_agent_session_within("bob", "d", "glm-5.3", None, 20)
+        .unwrap()
+        .unwrap();
+    db.add_session_usage(&a.id, 0.001, 1000, 100).unwrap();
+    db.add_session_usage(&a.id, 0.002, 2000, 200).unwrap();
+    db.add_session_usage(&b.id, 0.004, 500, 50).unwrap();
+    db.add_session_usage(&full.id, 0.01, 3000, 300).unwrap();
+    db.add_session_usage(&bob.id, 0.5, 9, 9).unwrap();
+    assert!(db.add_session_usage(&a.id, f64::INFINITY, 1, 1).is_err());
+    let view = db.agent_session("alice", &a.id).unwrap().unwrap();
+    assert_eq!(
+        (view.input_tokens, view.output_tokens, view.model_calls),
+        (3000, 300, 2)
+    );
+    assert!((view.spend_usd - 0.003).abs() < 1e-12);
+    let usage = db.usage_by_model("alice").unwrap();
+    assert_eq!(usage.len(), 2);
+    assert_eq!(usage[0].model, "glm-5.3");
+    assert_eq!((usage[0].sessions, usage[0].input_tokens), (1, 3000));
+    assert_eq!(usage[1].model, "glm-5.3-flash");
+    assert_eq!(
+        (
+            usage[1].sessions,
+            usage[1].input_tokens,
+            usage[1].output_tokens,
+            usage[1].model_calls
+        ),
+        (2, 3500, 350, 3)
+    );
+    assert!((usage[1].spend_usd - 0.007).abs() < 1e-12);
+    assert!(db.usage_by_model("carol").unwrap().is_empty());
+}

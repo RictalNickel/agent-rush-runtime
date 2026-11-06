@@ -134,6 +134,12 @@ a { color: inherit; }
 }
 .chat-head h2 { min-width: 0; font-size: 1rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .head-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.model-tag {
+  flex: none; max-width: 18ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 0.75rem/1.5 var(--mono); color: var(--muted); border: 1px solid var(--rule); border-radius: 6px; padding: 0 6px;
+}
+.button.download { gap: 6px; }
+.button.download .ico { width: 16px; height: 16px; }
 .state { display: inline-flex; align-items: center; gap: 7px; font-size: 0.8125rem; font-weight: 650; color: var(--muted); white-space: nowrap; }
 .state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
 .state.idle::before { background: var(--ok); }
@@ -252,6 +258,15 @@ pre {
 .send svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .send:disabled { background: var(--raised); color: var(--faint); cursor: not-allowed; }
 .composer-note { max-width: var(--column); margin: 8px auto 0; font-size: 0.8125rem; color: var(--faint); text-align: center; }
+.model-pick {
+  max-width: var(--column); margin: 8px auto 0; display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 0.8125rem; color: var(--muted);
+}
+.model-pick select {
+  min-width: 0; max-width: 100%; font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 8px; padding: 4px 8px;
+}
+.model-pick select:focus-visible { border-color: var(--amber-dim); }
 
 /* Toast: a manual popover, so it shows above open dialogs. */
 #toast {
@@ -315,6 +330,10 @@ a.entry { text-decoration: underline; text-underline-offset: 3px; text-decoratio
   .system { order: 3; width: 100%; }
   .bar-actions { margin-left: auto; }
   .msg.you { max-width: 92%; }
+  .chat-head { gap: 8px; }
+  .button.download { padding: 0 9px; }
+  .button.download .label { display: none; }
+  .model-tag { max-width: 11ch; }
   .rules div { grid-template-columns: 1fr; gap: 2px; }
   .step-body { padding-left: 0; }
   .shot { margin-left: 0; }

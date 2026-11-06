@@ -1,4 +1,5 @@
-use anyhow::{Result, ensure};
+use anyhow::{Context, Result, ensure};
+use serde::Serialize;
 use std::{env, path::PathBuf};
 
 /// Internal provider tariff input: blank means not discovered, never an assumed zero price.
@@ -9,6 +10,108 @@ pub fn provider_rate(raw: Option<&str>) -> Result<Option<f64>> {
     let rate: f64 = raw.parse()?;
     ensure!(rate.is_finite() && rate >= 0.0, "invalid provider tariff");
     Ok(Some(rate))
+}
+
+/// Most models `AR_INFERENCE_MODELS` may list.
+pub const MAX_MODELS: usize = 16;
+
+/// One model the operator allows sessions to use, with its verified tariff.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ModelPrice {
+    pub id: String,
+    pub input_usd_per_million: f64,
+    pub output_usd_per_million: f64,
+}
+
+/// A provider model ID: 1-200 ASCII letters, digits and `._-/:`.
+pub fn valid_model_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 200
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || "._-/:".contains(c))
+}
+
+/// Parses `AR_INFERENCE_MODELS`: comma-separated `id:input:output` entries, prices in USD
+/// per million tokens. A price is never blank or assumed; the ID may itself hold colons.
+pub fn parse_models(raw: &str) -> Result<Vec<ModelPrice>> {
+    let mut models: Vec<ModelPrice> = Vec::new();
+    for entry in raw.split(',').map(str::trim).filter(|e| !e.is_empty()) {
+        let mut parts = entry.rsplitn(3, ':');
+        let (Some(output), Some(input), Some(id)) = (parts.next(), parts.next(), parts.next())
+        else {
+            anyhow::bail!(
+                "model entry {entry:?} must be id:input_usd_per_million:output_usd_per_million"
+            );
+        };
+        let id = id.trim();
+        ensure!(valid_model_id(id), "invalid model ID {id:?}");
+        ensure!(
+            !models.iter().any(|m| m.id == id),
+            "model {id:?} is listed twice"
+        );
+        let price = |raw: &str| {
+            provider_rate(Some(raw))
+                .ok()
+                .flatten()
+                .with_context(|| format!("model {id:?} needs two finite, nonnegative prices"))
+        };
+        models.push(ModelPrice {
+            id: id.into(),
+            input_usd_per_million: price(input)?,
+            output_usd_per_million: price(output)?,
+        });
+    }
+    ensure!(!models.is_empty(), "AR_INFERENCE_MODELS lists no models");
+    ensure!(
+        models.len() <= MAX_MODELS,
+        "AR_INFERENCE_MODELS lists more than {MAX_MODELS} models"
+    );
+    Ok(models)
+}
+
+/// The models sessions may run on, as trusted configuration sets them. A model never
+/// comes from model output.
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+pub struct ModelCatalog {
+    pub provider: String,
+    /// The model of a session that does not choose one; empty when none is configured.
+    pub default: String,
+    /// Models with their tariffs. With Anthropic this is informational: roles pick models.
+    pub models: Vec<ModelPrice>,
+    /// Whether a session may choose its model (Vultr only).
+    pub per_session: bool,
+}
+impl ModelCatalog {
+    pub fn price(&self, id: &str) -> Option<&ModelPrice> {
+        self.models.iter().find(|m| m.id == id)
+    }
+    /// The model a new session runs on: the requested one, which must be listed, or the
+    /// default.
+    pub fn choose(&self, requested: Option<&str>) -> Result<String> {
+        let Some(id) = requested else {
+            return Ok(self.default.clone());
+        };
+        ensure!(
+            self.per_session,
+            "this deployment's inference provider ({}) cannot run a chosen model per session; leave out model",
+            self.provider
+        );
+        ensure!(
+            self.price(id).is_some(),
+            "unknown model {id:?}; allowed models: {}",
+            if self.models.is_empty() {
+                "none configured".to_string()
+            } else {
+                self.models
+                    .iter()
+                    .map(|m| m.id.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            }
+        );
+        Ok(id.to_string())
+    }
 }
 
 /// Which inference service every agent role uses. Selected by the operator, never by a model.
@@ -51,6 +154,9 @@ pub struct Settings {
     pub inference_model: String,
     pub inference_input_per_million: Option<f64>,
     pub inference_output_per_million: Option<f64>,
+    /// Models a Vultr session may choose (`AR_INFERENCE_MODELS`); empty means only
+    /// `inference_model` at the `AR_*_USD_PER_MILLION` tariffs.
+    pub inference_models: Vec<ModelPrice>,
     pub pricing_verified: bool,
     pub inference_budget_usd: f64,
     pub capacity_mb: u32,
@@ -78,6 +184,7 @@ impl Settings {
             inference_model: String::new(),
             inference_input_per_million: None,
             inference_output_per_million: None,
+            inference_models: Vec::new(),
             pricing_verified: false,
             inference_budget_usd: 5.0,
             capacity_mb: 2048,
@@ -124,6 +231,13 @@ impl Settings {
             provider_rate(env::var("AR_INPUT_USD_PER_MILLION").ok().as_deref())?;
         s.inference_output_per_million =
             provider_rate(env::var("AR_OUTPUT_USD_PER_MILLION").ok().as_deref())?;
+        if s.inference_provider == Provider::Vultr
+            && let Some(raw) = env::var("AR_INFERENCE_MODELS")
+                .ok()
+                .filter(|v| !v.trim().is_empty())
+        {
+            s.set_models(parse_models(&raw)?)?;
+        }
         s.pricing_verified = env::var("AR_PRICING_VERIFIED").is_ok_and(|v| v == "true");
         if let Ok(v) = env::var("AR_INFERENCE_BUDGET_USD") {
             s.inference_budget_usd = v.parse()?;
@@ -169,6 +283,89 @@ impl Settings {
             );
         }
         Ok(s)
+    }
+    /// Sets the models sessions may choose. The default model must be one of them, and
+    /// its listed tariff becomes the default tariff; an `AR_*_USD_PER_MILLION` value that
+    /// disagrees with the list stops startup rather than picking one.
+    pub fn set_models(&mut self, models: Vec<ModelPrice>) -> Result<()> {
+        let default = models
+            .iter()
+            .find(|m| m.id == self.inference_model)
+            .with_context(|| {
+                format!(
+                    "AR_INFERENCE_MODEL {:?} must be one of the AR_INFERENCE_MODELS",
+                    self.inference_model
+                )
+            })?;
+        for (set, listed, name) in [
+            (
+                self.inference_input_per_million,
+                default.input_usd_per_million,
+                "AR_INPUT_USD_PER_MILLION",
+            ),
+            (
+                self.inference_output_per_million,
+                default.output_usd_per_million,
+                "AR_OUTPUT_USD_PER_MILLION",
+            ),
+        ] {
+            ensure!(
+                set.is_none_or(|v| v == listed),
+                "{name} differs from the AR_INFERENCE_MODELS price of {}",
+                default.id
+            );
+        }
+        self.inference_input_per_million = Some(default.input_usd_per_million);
+        self.inference_output_per_million = Some(default.output_usd_per_million);
+        self.inference_models = models;
+        Ok(())
+    }
+    /// The models sessions may run on. Vultr: the `AR_INFERENCE_MODELS` list, or the one
+    /// default model when its tariffs are set. Anthropic: the role model, not choosable.
+    pub fn model_catalog(&self) -> ModelCatalog {
+        match self.inference_provider {
+            Provider::Anthropic => {
+                let model = crate::inference::anthropic_role(crate::agent::Role::Solo).model;
+                ModelCatalog {
+                    provider: Provider::Anthropic.name().into(),
+                    default: model.into(),
+                    models: crate::inference::anthropic_tariff(model, false)
+                        .map(|t| ModelPrice {
+                            id: model.into(),
+                            input_usd_per_million: t.input,
+                            output_usd_per_million: t.output,
+                        })
+                        .into_iter()
+                        .collect(),
+                    per_session: false,
+                }
+            }
+            Provider::Vultr => {
+                let models = if !self.inference_models.is_empty() {
+                    self.inference_models.clone()
+                } else {
+                    match (
+                        self.inference_input_per_million,
+                        self.inference_output_per_million,
+                    ) {
+                        (Some(input), Some(output)) if !self.inference_model.is_empty() => {
+                            vec![ModelPrice {
+                                id: self.inference_model.clone(),
+                                input_usd_per_million: input,
+                                output_usd_per_million: output,
+                            }]
+                        }
+                        _ => Vec::new(),
+                    }
+                };
+                ModelCatalog {
+                    provider: Provider::Vultr.name().into(),
+                    default: self.inference_model.clone(),
+                    models,
+                    per_session: true,
+                }
+            }
+        }
     }
     pub fn inference_configured(&self) -> bool {
         if self.inference_provider == Provider::Anthropic {
