@@ -56,6 +56,7 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/v1/sessions/{id}/cancel", post(cancel_session))
         .route("/v1/sessions/{id}/events", get(list_events))
         .route("/v1/sessions/{id}/stream", get(stream_events))
+        .route("/v1/sessions/{id}/archive", get(archive))
         .route(
             "/v1/sessions/{id}/files",
             get(read_file)
@@ -795,6 +796,32 @@ async fn read_file(
                 .into_response())
         }
     }
+}
+/// The whole workspace as a gzip tarball (up to 25 MiB; 413 beyond).
+async fn archive(
+    State(s): State<AppState>,
+    BusyOwner { owner, _slot }: BusyOwner,
+    Path(id): Path<String>,
+) -> Result<Response, ApiError> {
+    let bytes = engine(&s)?
+        .archive(&owner, &id)
+        .await
+        .map_err(workspace_error)?;
+    let short: String = id.chars().take(8).collect();
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/gzip".to_string()),
+            (
+                header::CONTENT_DISPOSITION,
+                format!(
+                    "attachment; filename=\"{}\"",
+                    download_name(&format!("workspace-{short}.tar.gz"))
+                ),
+            ),
+        ],
+        Body::from(bytes),
+    )
+        .into_response())
 }
 async fn write_file(
     State(s): State<AppState>,

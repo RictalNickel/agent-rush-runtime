@@ -40,6 +40,7 @@ fn key_scoped_routes(id: &str) -> Vec<(&'static str, String)> {
         ("POST", format!("/v1/sessions/{id}/cancel")),
         ("GET", format!("/v1/sessions/{id}/events")),
         ("GET", format!("/v1/sessions/{id}/stream")),
+        ("GET", format!("/v1/sessions/{id}/archive")),
         ("GET", "/v1/models".into()),
         ("GET", "/v1/usage".into()),
         ("GET", format!("/v1/sessions/{id}/files?path=a.txt")),
@@ -414,6 +415,7 @@ async fn another_owner_gets_404_on_every_session_route() {
             ("POST", format!("/v1/sessions/{target}/cancel"), None),
             ("GET", format!("/v1/sessions/{target}/events"), None),
             ("GET", format!("/v1/sessions/{target}/stream"), None),
+            ("GET", format!("/v1/sessions/{target}/archive"), None),
             (
                 "GET",
                 format!("/v1/sessions/{target}/files?path=a.txt"),
@@ -1127,7 +1129,7 @@ async fn turn_end_webhook_is_signed_with_the_webhook_secret() {
     );
 }
 
-// Models and usage.
+// Models, usage and workspace archives.
 
 use agent_rush::config::{ModelCatalog, ModelPrice};
 use common::{app_with_models, glm_catalog};
@@ -1374,4 +1376,86 @@ async fn usage_totals_add_up_per_model_and_per_session() {
     let (_, theirs) = call(&a.router, "GET", "/v1/usage", Some(&bob), None).await;
     assert_eq!(theirs["total"]["sessions"], 0);
     assert_eq!(theirs["by_model"], json!([]));
+}
+
+/// The paths in a tarball, as the fake worker writes them (uncompressed).
+fn tar_paths(bytes: &[u8]) -> Vec<String> {
+    let mut archive = tar::Archive::new(bytes);
+    archive
+        .entries()
+        .unwrap()
+        .map(|e| e.unwrap().path().unwrap().to_string_lossy().into_owned())
+        .collect()
+}
+
+#[tokio::test]
+async fn the_workspace_downloads_as_a_tarball_and_over_25_mib_is_413() {
+    let a = app(vec![]);
+    let key = a.key("alice");
+    let session = a.sessions.create("alice", None).unwrap();
+    let id = session.id.clone();
+    for (path, text) in [("app/main.py", "print('hi')"), ("notes.md", "# notes")] {
+        a.sessions
+            .write_file("alice", &id, path, Bytes::from(text))
+            .await
+            .unwrap();
+    }
+    let response = send(
+        &a.router,
+        Request::get(format!("/v1/sessions/{id}/archive"))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()["content-type"], "application/gzip");
+    let disposition = response.headers()["content-disposition"].to_str().unwrap();
+    assert!(
+        disposition.starts_with("attachment; filename=\"workspace-")
+            && disposition.ends_with(".tar.gz\""),
+        "{disposition}"
+    );
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(tar_paths(&bytes), ["app/main.py", "notes.md"]);
+    let box_id = a
+        .sessions
+        .get("alice", &id)
+        .unwrap()
+        .unwrap()
+        .box_id
+        .unwrap();
+    // The archive was built in the box's /tmp and removed after it was read.
+    assert_eq!(a.boxes.files(&box_id), ["app/main.py", "notes.md"]);
+
+    a.boxes.put_file(
+        &box_id,
+        "big.bin",
+        vec![7; agent_rush::sandbox_api::MAX_FILE_BYTES + 1024],
+    );
+    let (status, body) = call(
+        &a.router,
+        "GET",
+        &format!("/v1/sessions/{id}/archive"),
+        Some(&key),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE, "{body}");
+    assert!(body["error"].as_str().unwrap().contains("25 MiB"), "{body}");
+    assert_eq!(
+        a.boxes.files(&box_id),
+        ["app/main.py", "big.bin", "notes.md"]
+    );
+
+    a.sessions.close("alice", &id).await.unwrap();
+    let (status, _) = call(
+        &a.router,
+        "GET",
+        &format!("/v1/sessions/{id}/archive"),
+        Some(&key),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
 }

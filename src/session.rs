@@ -4,6 +4,7 @@
 use crate::{
     agent::{COMPACT_BUDGET, ContextBudget, clip},
     agent_config::{AgentConfig, BUILTIN_TOOLS},
+    boxes::BoxError,
     config::{ModelCatalog, Settings},
     ledger::Ledger,
     mcp_client::McpRegistry,
@@ -250,6 +251,8 @@ const INTERJECTION_PREFIX: &str = "[Message from the user, sent while you were w
 const HISTORY_EVENTS: usize = 400;
 const BOX_CREATE_SECONDS: u64 = 180;
 const BOX_FILE_SECONDS: u64 = 120;
+/// Time allowed to pack or unpack a workspace archive in the box.
+const ARCHIVE_SECONDS: u32 = 300;
 /// Largest recorded `tool_call` event payload. A call that cannot be clipped below it is
 /// recorded as a stub and refused.
 const MAX_RECORDED_CALL_BYTES: usize = 64 * 1024;
@@ -410,6 +413,15 @@ impl Sessions {
         let model = self.inner.choose_model(model)?;
         self.inner
             .create_session(owner, title.unwrap_or(""), &model, None)
+    }
+    /// A gzip tarball of the session's `/workspace`, at most `MAX_FILE_BYTES`; a larger
+    /// workspace is `BoxError::TooLarge`. It is packed in the box and read back through
+    /// the box client, so no worker call beyond exec and file reads is needed.
+    pub async fn archive(&self, owner: &str, id: &str) -> Result<Vec<u8>> {
+        if self.inner.owned(owner, id)?.status == SessionStatus::Closed {
+            return Err(SessionError::Closed.into());
+        }
+        self.inner.archive_box(owner, id).await
     }
     /// A slot for one live event stream, held until the stream ends.
     pub fn stream_slot(&self, owner: &str) -> Result<OwnerSlot> {
@@ -791,6 +803,53 @@ impl Inner {
                 self.limits.max_open_sessions_per_owner,
             )?
             .ok_or_else(|| SessionError::TooManySessions.into())
+    }
+    /// Packs `/workspace` in the box (see `archive_command`) and reads the archive back.
+    async fn archive_box(&self, owner: &str, id: &str) -> Result<Vec<u8>> {
+        let path = format!("/tmp/.ar-archive-{}.tar.gz", uuid::Uuid::new_v4());
+        let pack = ExecRequest {
+            command: archive_command(&path),
+            cwd: None,
+            timeout_seconds: Some(ARCHIVE_SECONDS),
+            stdin: None,
+        };
+        let result = async {
+            let packed = self.exec_in_box(owner, id, &pack).await?;
+            let (tar_exit, size) = archive_status(&packed.stdout).with_context(|| {
+                format!(
+                    "packing the workspace failed: {}",
+                    clip(&format!("{}{}", packed.stdout, packed.stderr), 500)
+                )
+            })?;
+            if size > MAX_FILE_BYTES as u64 {
+                return Err(BoxError::TooLarge(format!(
+                    "the workspace packs to more than {} MiB; download single files instead",
+                    MAX_FILE_BYTES / (1024 * 1024)
+                ))
+                .into());
+            }
+            // GNU tar exits 1 when a file changed while it was read; the archive is usable.
+            ensure!(
+                tar_exit <= 1 && !packed.timed_out,
+                "packing the workspace failed (tar exit {tar_exit}): {}",
+                clip(&packed.stderr, 500)
+            );
+            match self.read_in_box(owner, id, &path).await? {
+                FileRead::File(bytes) => Ok(bytes),
+                FileRead::Dir(_) => bail!("the workspace archive is a directory"),
+            }
+        }
+        .await;
+        let cleanup = ExecRequest {
+            command: format!("rm -f {}", shell_quote(&path)),
+            cwd: None,
+            timeout_seconds: Some(30),
+            stdin: None,
+        };
+        if let Err(e) = self.exec_in_box(owner, id, &cleanup).await {
+            tracing::warn!(session = id, "removing a workspace archive failed: {e:#}");
+        }
+        result
     }
     fn emit(&self, id: &str, kind: &str, payload: Value) -> Result<SessionEvent> {
         let event = self.ledger.append_event(id, kind, payload)?;
@@ -1799,6 +1858,25 @@ fn enabled_mcp(config: &AgentConfig, available: &[String]) -> Vec<String> {
         .filter(|s| available.contains(s))
         .cloned()
         .collect()
+}
+
+/// The command that packs `/workspace` into a gzip tarball at `path` (under /tmp). The
+/// stream is cut one byte past `MAX_FILE_BYTES`, so an oversized workspace never fills
+/// /tmp; the last line is tar's exit code and the archive's size. The first line names
+/// the operation, for logs and test fakes.
+pub fn archive_command(path: &str) -> String {
+    let file = shell_quote(path);
+    format!(
+        "# agent-rush: archive {path}\ntar -czf - -C /workspace . | head -c {} > {file}\necho \"${{PIPESTATUS[0]}} $(stat -c %s {file})\"",
+        MAX_FILE_BYTES + 1
+    )
+}
+/// tar's exit code and the archive size from the last line `archive_command` prints.
+fn archive_status(stdout: &str) -> Option<(i64, u64)> {
+    let mut fields = stdout.lines().last()?.split_whitespace();
+    let tar_exit = fields.next()?.parse().ok()?;
+    let size = fields.next()?.parse().ok()?;
+    Some((tar_exit, size))
 }
 
 fn format_exec(result: &ExecResult) -> String {

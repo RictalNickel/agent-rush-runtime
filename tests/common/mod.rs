@@ -98,7 +98,8 @@ pub fn bash(command: &str) -> Value {
     json!({"tool":"bash","command":command})
 }
 
-/// A fake worker: an in-memory filesystem per box; exec echoes the command.
+/// A fake worker: an in-memory filesystem per box; exec echoes the command, except the
+/// workspace archive commands, which it runs on its files (as a plain tar), and `rm -f`.
 #[derive(Default)]
 pub struct FakeBoxes {
     next: AtomicUsize,
@@ -109,6 +110,78 @@ impl FakeBoxes {
     #[allow(dead_code)]
     pub fn live(&self) -> usize {
         self.boxes.lock().unwrap().len()
+    }
+    /// Puts a file straight into a box, past the API's size limit.
+    pub fn put_file(&self, box_id: &str, path: &str, data: Vec<u8>) {
+        self.boxes
+            .lock()
+            .unwrap()
+            .get_mut(box_id)
+            .unwrap()
+            .insert(normalize(path), data);
+    }
+    /// The paths in a box, sorted.
+    pub fn files(&self, box_id: &str) -> Vec<String> {
+        let mut paths: Vec<String> = self.boxes.lock().unwrap()[box_id].keys().cloned().collect();
+        paths.sort();
+        paths
+    }
+    /// Runs the archive, extract and `rm -f` commands on a box's files.
+    fn run_file_command(
+        files: &mut HashMap<String, Vec<u8>>,
+        command: &str,
+    ) -> Option<Result<ExecResult>> {
+        let first = command.lines().next().unwrap_or("");
+        let done = |stdout: String| {
+            Some(Ok(ExecResult {
+                stdout,
+                ..Default::default()
+            }))
+        };
+        if let Some(path) = first.strip_prefix("# agent-rush: archive ") {
+            let mut builder = tar::Builder::new(Vec::new());
+            let mut names: Vec<&String> =
+                files.keys().filter(|n| !n.starts_with("/tmp/")).collect();
+            names.sort();
+            for name in names {
+                let data = &files[name];
+                let mut header = tar::Header::new_gnu();
+                header.set_size(data.len() as u64);
+                header.set_mode(0o644);
+                header.set_cksum();
+                builder
+                    .append_data(&mut header, format!("./{name}"), data.as_slice())
+                    .unwrap();
+            }
+            let mut archive = builder.into_inner().unwrap();
+            archive.truncate(agent_rush::sandbox_api::MAX_FILE_BYTES + 1);
+            let size = archive.len();
+            files.insert(path.to_string(), archive);
+            return done(format!("0 {size}\n"));
+        }
+        if let Some(path) = first.strip_prefix("# agent-rush: extract ") {
+            let Some(data) = files.remove(path) else {
+                return Some(Ok(ExecResult {
+                    exit_code: 2,
+                    stderr: "no archive".into(),
+                    ..Default::default()
+                }));
+            };
+            let mut archive = tar::Archive::new(data.as_slice());
+            for entry in archive.entries().unwrap() {
+                let mut entry = entry.unwrap();
+                let name = entry.path().unwrap().to_string_lossy().into_owned();
+                let mut bytes = Vec::new();
+                std::io::Read::read_to_end(&mut entry, &mut bytes).unwrap();
+                files.insert(normalize(&name), bytes);
+            }
+            return done(String::new());
+        }
+        if let Some(path) = command.strip_prefix("rm -f ") {
+            files.remove(path.trim_matches('\''));
+            return done(String::new());
+        }
+        None
     }
 }
 fn normalize(path: &str) -> String {
@@ -133,8 +206,12 @@ impl BoxClient for FakeBoxes {
         request: &'a ExecRequest,
     ) -> BoxFuture<'a, Result<ExecResult>> {
         Box::pin(async move {
-            if !self.boxes.lock().unwrap().contains_key(box_id) {
+            let mut boxes = self.boxes.lock().unwrap();
+            let Some(files) = boxes.get_mut(box_id) else {
                 bail!("box {box_id} not found");
+            };
+            if let Some(result) = Self::run_file_command(files, &request.command) {
+                return result;
             }
             Ok(ExecResult {
                 exit_code: 0,
