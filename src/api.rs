@@ -5,8 +5,8 @@ use crate::{
 use axum::{
     Json, Router,
     body::Body,
-    extract::{DefaultBodyLimit, Path, Query, State},
-    http::{HeaderMap, HeaderValue, StatusCode, header},
+    extract::{ConnectInfo, DefaultBodyLimit, FromRequestParts, Path, Query, State},
+    http::{HeaderMap, HeaderValue, StatusCode, header, request::Parts},
     middleware::{self, Next},
     response::{Html, IntoResponse, Response},
     routing::{delete, get, post},
@@ -14,6 +14,9 @@ use axum::{
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
+    collections::HashMap,
+    convert::Infallible,
+    net::{IpAddr, Ipv6Addr, SocketAddr},
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -22,7 +25,7 @@ use std::{
 pub struct AppState {
     pub settings: Arc<Settings>,
     pub ledger: Arc<Ledger>,
-    login_attempts: Arc<Mutex<Vec<Instant>>>,
+    login_attempts: Arc<Mutex<LoginLimiter>>,
     pub http: reqwest::Client,
     worker_seen: Arc<tokio::sync::Mutex<Option<(Instant, bool)>>>,
     /// The agent session engine; None when no worker is configured (`/v1/sessions` → 503).
@@ -52,7 +55,7 @@ impl AppState {
         Ok(Self {
             settings: Arc::new(settings),
             ledger: Arc::new(ledger),
-            login_attempts: Arc::new(Mutex::new(Vec::new())),
+            login_attempts: Arc::default(),
             http,
             worker_seen: Arc::new(tokio::sync::Mutex::new(None)),
             sessions: None,
@@ -113,6 +116,106 @@ impl AppState {
         Ok(session.0)
     }
 }
+/// Failed logins one client address may make in a minute.
+pub const LOGIN_FAILURES_PER_ADDRESS: usize = 10;
+/// Failed logins from all addresses together in a minute, so that many addresses still
+/// cannot brute force the password. Well above the per-address limit, so one client
+/// cannot lock the operator out.
+pub const LOGIN_FAILURES_GLOBAL: usize = 100;
+const LOGIN_WINDOW: Duration = Duration::from_secs(60);
+
+/// Counts failed logins per client address and in total over the last minute.
+#[derive(Default)]
+struct LoginLimiter {
+    by_address: HashMap<IpAddr, Vec<Instant>>,
+    all: Vec<Instant>,
+}
+impl LoginLimiter {
+    /// Reserves an attempt for `address`, or refuses when that address or all addresses
+    /// together are at their limit. Reserving before the password check means parallel
+    /// requests cannot overshoot; `release` gives a successful login's slot back, so
+    /// only failures count.
+    fn reserve(&mut self, address: IpAddr) -> Option<Instant> {
+        self.all.retain(|at| at.elapsed() < LOGIN_WINDOW);
+        self.by_address.retain(|_, attempts| {
+            attempts.retain(|at| at.elapsed() < LOGIN_WINDOW);
+            !attempts.is_empty()
+        });
+        let mine = self.by_address.get(&address).map_or(0, Vec::len);
+        if mine >= LOGIN_FAILURES_PER_ADDRESS || self.all.len() >= LOGIN_FAILURES_GLOBAL {
+            return None;
+        }
+        let now = Instant::now();
+        self.by_address.entry(address).or_default().push(now);
+        self.all.push(now);
+        Some(now)
+    }
+    fn release(&mut self, address: IpAddr, at: Instant) {
+        if let Some(attempts) = self.by_address.get_mut(&address) {
+            if let Some(i) = attempts.iter().rposition(|a| *a == at) {
+                attempts.remove(i);
+            }
+            if attempts.is_empty() {
+                self.by_address.remove(&address);
+            }
+        }
+        if let Some(i) = self.all.iter().rposition(|a| *a == at) {
+            self.all.remove(i);
+        }
+    }
+}
+
+/// The socket peer of a request, when the server records it (`main` serves with
+/// `into_make_service_with_connect_info`). In-process tests may have none.
+pub struct Peer(pub Option<SocketAddr>);
+impl<S: Send + Sync> FromRequestParts<S> for Peer {
+    type Rejection = Infallible;
+    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Infallible> {
+        Ok(Self(
+            parts
+                .extensions
+                .get::<ConnectInfo<SocketAddr>>()
+                .map(|info| info.0),
+        ))
+    }
+}
+
+/// The client address a login is counted against. Caddy on the same host proxies every
+/// public request, so a loopback peer means "behind Caddy": then the address is the last
+/// `X-Forwarded-For` entry, the one Caddy wrote from the connection it accepted itself
+/// (earlier entries come from the client and are ignored). Any other peer is the client,
+/// and its `X-Forwarded-For` is ignored, since it could send anything there. Without a
+/// peer every request counts as one unspecified address.
+pub fn client_address(peer: Option<SocketAddr>, headers: &HeaderMap) -> IpAddr {
+    let Some(peer) = peer else {
+        return IpAddr::from([0u8; 4]);
+    };
+    let peer_ip = peer.ip().to_canonical();
+    if !peer_ip.is_loopback() {
+        return peer_ip;
+    }
+    headers
+        .get_all("x-forwarded-for")
+        .iter()
+        .next_back()
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.rsplit(',').next())
+        .and_then(|last| last.trim().parse::<IpAddr>().ok())
+        .map_or(peer_ip, |ip| ip.to_canonical())
+}
+
+/// The limiter's key: the IPv4 address, or the /64 of an IPv6 one, since a single IPv6
+/// host usually holds a whole /64 and could otherwise rotate addresses.
+fn login_bucket(address: IpAddr) -> IpAddr {
+    match address.to_canonical() {
+        IpAddr::V6(v6) => {
+            let s = v6.segments();
+            IpAddr::V6(Ipv6Addr::new(s[0], s[1], s[2], s[3], 0, 0, 0, 0))
+        }
+        v4 => v4,
+    }
+}
+
 pub struct ApiError(pub StatusCode, pub String);
 impl ApiError {
     pub(crate) fn unauthorized() -> Self {
@@ -251,23 +354,26 @@ async fn status(State(s): State<AppState>) -> Json<Value> {
 struct Login {
     password: String,
 }
-async fn login(State(s): State<AppState>, Json(input): Json<Login>) -> Result<Response, ApiError> {
-    {
-        let mut attempts = s.login_attempts.lock().unwrap();
-        attempts.retain(|i| i.elapsed() < Duration::from_secs(60));
-        if attempts.len() >= 10 {
-            return Err(ApiError(
-                StatusCode::TOO_MANY_REQUESTS,
-                "Too many attempts; try again in one minute".into(),
-            ));
-        }
-        attempts.push(Instant::now());
-    }
+async fn login(
+    State(s): State<AppState>,
+    Peer(peer): Peer,
+    headers: HeaderMap,
+    Json(input): Json<Login>,
+) -> Result<Response, ApiError> {
+    let bucket = login_bucket(client_address(peer, &headers));
+    let Some(reserved) = s.login_attempts.lock().unwrap().reserve(bucket) else {
+        return Err(ApiError(
+            StatusCode::TOO_MANY_REQUESTS,
+            "Too many attempts; try again in one minute".into(),
+        ));
+    };
     if s.settings.operator_password.len() < 16
         || !auth::same(&input.password, &s.settings.operator_password)
     {
         return Err(ApiError::unauthorized());
     }
+    // Only failures count.
+    s.login_attempts.lock().unwrap().release(bucket, reserved);
     let token = auth::token();
     let csrf = auth::token();
     s.ledger

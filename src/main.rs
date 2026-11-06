@@ -298,12 +298,16 @@ async fn main() -> Result<()> {
             let stop = Arc::new(AtomicBool::new(false));
             let scheduler = tokio::spawn(service::scheduler(state.clone(), stop.clone()));
             tracing::info!(address=%bind,"control server listening");
-            axum::serve(listener, router(state))
-                .with_graceful_shutdown(async move {
-                    shutdown_signal().await;
-                    stop.store(true, Ordering::SeqCst);
-                })
-                .await?;
+            // The peer address keys the login limiter (`api::client_address`).
+            axum::serve(
+                listener,
+                router(state).into_make_service_with_connect_info::<std::net::SocketAddr>(),
+            )
+            .with_graceful_shutdown(async move {
+                shutdown_signal().await;
+                stop.store(true, Ordering::SeqCst);
+            })
+            .await?;
             scheduler.await??;
         }
         Commands::Worker { bind, boxes } => {

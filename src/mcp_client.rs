@@ -1,6 +1,12 @@
 //! Client for operator-configured remote MCP servers (streamable HTTP, JSON-RPC 2.0).
 //! Credentials stay on the control plane: header values never reach a prompt, a box,
 //! a log line or an error message.
+//!
+//! An https server gets the webhooks' SSRF guard on every request: its host must resolve
+//! only to public addresses, the request connects to the address that was checked (no
+//! second lookup), ignores proxy settings and never follows redirects. Plain http is
+//! allowed only to a loopback host, for a local server the operator runs on this machine.
+use crate::webhooks::{UrlGuard, is_forbidden_ip, pinned_client};
 use anyhow::{Context, Result, anyhow, bail, ensure};
 use futures_util::StreamExt;
 use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
@@ -24,6 +30,7 @@ const MAX_OWNER_SESSIONS: usize = 4096;
 /// The owner used by the owner-less `list_tools` and `call`.
 const SHARED_OWNER: &str = "";
 const SESSION_HEADER: &str = "mcp-session-id";
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -72,6 +79,8 @@ type SessionSlot = Arc<tokio::sync::Mutex<Option<Session>>>;
 
 struct Server {
     config: McpServerConfig,
+    /// Plain http to a loopback host: an operator's local server, reached without the guard.
+    local: bool,
     headers: HeaderMap,
     /// Sessions by owner, so one owner's server-side state never serves another's.
     sessions: Mutex<HashMap<String, SessionSlot>>,
@@ -88,7 +97,9 @@ impl Server {
 }
 
 pub struct McpRegistry {
+    /// For local (loopback http) servers only; https servers get a pinned client per request.
     client: reqwest::Client,
+    guard: UrlGuard,
     servers: Vec<Server>,
     next_id: AtomicU64,
 }
@@ -141,11 +152,21 @@ impl McpRegistry {
             );
             let url = reqwest::Url::parse(&config.url)
                 .map_err(|_| anyhow!("MCP server {:?}: invalid url", config.name))?;
+            let local = url.scheme() == "http"
+                && matches!(url.host_str(), Some("127.0.0.1" | "localhost" | "[::1]"));
             ensure!(
-                url.scheme() == "https"
-                    || (url.scheme() == "http"
-                        && matches!(url.host_str(), Some("127.0.0.1" | "localhost" | "[::1]"))),
+                url.scheme() == "https" || local,
                 "MCP server {:?}: url must be https (http only on loopback)",
+                config.name
+            );
+            // A literal address can be refused now; names are checked at every request.
+            let literal = url
+                .host_str()
+                .map(|h| h.trim_start_matches('[').trim_end_matches(']'))
+                .and_then(|h| h.parse::<std::net::IpAddr>().ok());
+            ensure!(
+                local || !literal.is_some_and(is_forbidden_ip),
+                "MCP server {:?}: an https url must not point at a private or reserved address",
                 config.name
             );
             let mut headers = HeaderMap::new();
@@ -163,16 +184,18 @@ impl McpRegistry {
             }
             servers.push(Server {
                 config,
+                local,
                 headers,
                 sessions: Mutex::new(HashMap::new()),
             });
         }
         Ok(Self {
             client: reqwest::Client::builder()
-                .timeout(Duration::from_secs(120))
+                .timeout(REQUEST_TIMEOUT)
                 .connect_timeout(Duration::from_secs(10))
                 .redirect(reqwest::redirect::Policy::none())
                 .build()?,
+            guard: UrlGuard::public(),
             servers,
             next_id: AtomicU64::new(1),
         })
@@ -330,13 +353,17 @@ impl McpRegistry {
         body: &Value,
         id: Option<u64>,
     ) -> Result<(Option<Value>, Option<String>)> {
-        let mut request = self
-            .client
-            .post(&server.config.url)
-            .headers(server.headers.clone())
-            .header(CONTENT_TYPE, "application/json")
-            .header(ACCEPT, "application/json, text/event-stream")
-            .json(body);
+        let mut request = if server.local {
+            self.client.post(&server.config.url)
+        } else {
+            let (url, addr) = self.guard.check(&server.config.url).await?;
+            let host = url.host_str().unwrap_or_default().to_string();
+            pinned_client(&host, addr, REQUEST_TIMEOUT)?.post(url)
+        }
+        .headers(server.headers.clone())
+        .header(CONTENT_TYPE, "application/json")
+        .header(ACCEPT, "application/json, text/event-stream")
+        .json(body);
         if let Some(session) = session {
             request = request.header("mcp-protocol-version", &session.protocol);
             if let Some(sid) = &session.id {

@@ -6,7 +6,8 @@
 //! host resolves to a private, loopback, link-local or otherwise non-public address, both
 //! when the webhook is created and again at every delivery. Each delivery connects to the
 //! address it checked (no second DNS lookup), ignores proxy settings from the environment
-//! and never follows redirects.
+//! and never follows redirects. Requests to remote MCP servers over https use the same
+//! guard and pinned client (`mcp_client`).
 use crate::{ledger::Ledger, session::Sessions, session_store::SessionEvent};
 use anyhow::{Context, Result, anyhow, bail, ensure};
 use serde_json::{Value, json};
@@ -118,28 +119,28 @@ impl UrlGuard {
     fn allowed(&self, ip: IpAddr) -> bool {
         !is_forbidden_ip(ip) || (self.allow_loopback && ip.is_loopback())
     }
-    /// Parses and checks a webhook URL, resolving its host. Returns the URL and the
-    /// address to connect to.
+    /// Parses and checks a webhook or MCP server URL, resolving its host. Returns the URL
+    /// and the address to connect to.
     pub async fn check(&self, raw: &str) -> Result<(reqwest::Url, SocketAddr)> {
-        ensure!(raw.len() <= 2048, "webhook URL must be at most 2048 bytes");
-        let url = reqwest::Url::parse(raw.trim()).context("invalid webhook URL")?;
+        ensure!(raw.len() <= 2048, "URL must be at most 2048 bytes");
+        let url = reqwest::Url::parse(raw.trim()).context("invalid URL")?;
         ensure!(
             url.scheme() == "https" || (self.allow_loopback && url.scheme() == "http"),
-            "webhook URL must use https"
+            "URL must use https"
         );
         ensure!(
             url.username().is_empty() && url.password().is_none(),
-            "webhook URL must not embed credentials"
+            "URL must not embed credentials"
         );
         let host = url
             .host_str()
-            .ok_or_else(|| anyhow!("webhook URL needs a host"))?
+            .ok_or_else(|| anyhow!("URL needs a host"))?
             .trim_start_matches('[')
             .trim_end_matches(']')
             .to_string();
         let port = url
             .port_or_known_default()
-            .ok_or_else(|| anyhow!("webhook URL needs a port"))?;
+            .ok_or_else(|| anyhow!("URL needs a port"))?;
         let addrs: Vec<SocketAddr> = match host.parse::<IpAddr>() {
             Ok(ip) => vec![SocketAddr::new(ip, port)],
             Err(_) => tokio::time::timeout(
@@ -147,27 +148,32 @@ impl UrlGuard {
                 tokio::net::lookup_host((host.as_str(), port)),
             )
             .await
-            .map_err(|_| anyhow!("resolving the webhook host timed out"))?
-            .map_err(|_| anyhow!("could not resolve the webhook host"))?
+            .map_err(|_| anyhow!("resolving the host timed out"))?
+            .map_err(|_| anyhow!("could not resolve the host"))?
             .collect(),
         };
         ensure!(!addrs.is_empty(), "could not resolve the webhook host");
         // Every address must be public, so DNS answers cannot mix in a private target.
         if addrs.iter().any(|a| !self.allowed(a.ip())) {
-            bail!("webhook URL resolves to a private or reserved address");
+            bail!("URL resolves to a private or reserved address");
         }
         Ok((url, addrs[0]))
     }
 }
 
-/// The client for one delivery: it connects only to `addr`, the address `UrlGuard::check`
-/// approved. `no_proxy` matters: a proxy from the environment (`HTTPS_PROXY`,
-/// `ALL_PROXY`, ...) would make the proxy resolve and connect to the host itself, which
-/// skips the pinned address and so the private-address check.
-fn delivery_client(host: &str, addr: SocketAddr) -> Result<reqwest::Client> {
+/// A client for one request: it connects only to `addr`, the address `UrlGuard::check`
+/// approved, and never follows redirects. `no_proxy` matters: a proxy from the
+/// environment (`HTTPS_PROXY`, `ALL_PROXY`, ...) would make the proxy resolve and connect
+/// to the host itself, which skips the pinned address and so the private-address check.
+pub(crate) fn pinned_client(
+    host: &str,
+    addr: SocketAddr,
+    timeout: Duration,
+) -> Result<reqwest::Client> {
     Ok(reqwest::Client::builder()
         .no_proxy()
-        .timeout(DELIVERY_TIMEOUT)
+        .timeout(timeout)
+        .connect_timeout(timeout.min(Duration::from_secs(10)))
         .redirect(reqwest::redirect::Policy::none())
         .resolve(host, addr)
         .build()?)
@@ -186,7 +192,7 @@ pub async fn deliver(guard: UrlGuard, url: &str, secret: &str, body: &[u8]) -> R
             Err(e) => return Err(e),
         };
         let host = parsed.host_str().unwrap_or_default().to_string();
-        let client = delivery_client(&host, addr)?;
+        let client = pinned_client(&host, addr, DELIVERY_TIMEOUT)?;
         match client
             .post(parsed)
             .header(reqwest::header::CONTENT_TYPE, "application/json")

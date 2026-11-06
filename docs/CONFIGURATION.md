@@ -100,7 +100,7 @@ Read by `voice/server.py`. The service listens on `127.0.0.1:8790` and has no au
 `AR_MCP_SERVERS_FILE` points to a JSON file. It is either an array of servers or an object with a `servers` array. Each server has:
 
 - `name`: `^[a-z0-9][a-z0-9_-]{0,39}$`, unique in the file.
-- `url`: a streamable HTTP MCP endpoint.
+- `url`: a streamable HTTP MCP endpoint over `https`, or plain `http` to a loopback host (`127.0.0.1`, `localhost`, `[::1]`) for a server on the control VM itself. An `https` host must resolve only to public addresses: a private, loopback, link-local or reserved address is refused when the file loads (for a literal address) or at every request (for a name). Each request connects to the address it checked, ignores proxy settings and does not follow redirects, as webhooks do.
 - `headers` (optional): a map of header names to values. Values are credentials. They stay on the control plane and never appear in prompts, the box or error messages.
 - `allowed_tools` (optional): when set, only these tool names are listed and callable.
 
