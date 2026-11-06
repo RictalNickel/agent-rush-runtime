@@ -53,10 +53,10 @@ The service binds `127.0.0.1:8790`. It has no authentication, so do not expose t
 | Route | Request | Response |
 | --- | --- | --- |
 | `GET /health` | none | `{"stt": true, "tts": false}` |
-| `POST /transcribe` | multipart field `audio` (WAV, MP3, OGG, WebM, M4A or any format ffmpeg reads) | `{"text": "..."}` |
+| `POST /transcribe` | multipart field `audio`: WAV, MP3, OGG, WebM or MP4/M4A audio | `{"text": "..."}` |
 | `POST /speak` | JSON `{"text": "..."}`, up to 1000 characters | `audio/wav`, 48 kHz mono 16-bit |
 
-Limits: uploads up to 25 MB, clips up to 60 seconds. Errors: `413` for too large, `422` for unreadable audio or empty text, `501` when an engine is not ready (the message says why), `504` when conversion takes too long.
+Limits: uploads up to 25 MB, clips up to 60 seconds. The container is recognised from the upload's first bytes, and ffmpeg runs with `-protocol_whitelist pipe` and a demuxer allowlist (`matroska`, `ogg`, `wav`, `mp3`, `mov`), so an upload cannot make it open playlists, other files or URLs. Any other container gets `422`. Errors: `413` for too large, `422` for unreadable audio or empty text, `501` when an engine is not ready (the message says why), `504` when conversion takes too long.
 
 ```sh
 curl -s http://127.0.0.1:8790/health
