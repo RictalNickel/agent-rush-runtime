@@ -152,7 +152,24 @@ a { color: inherit; }
 .msg.interjection p { border: 1px dashed var(--amber-dim); }
 .tag { font-size: 0.75rem; font-weight: 650; color: var(--amber); }
 .msg.agent { margin: 10px 0 14px; gap: 10px; }
-.answer { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 68ch; }
+.answer { overflow-wrap: anywhere; max-width: 68ch; }
+.answer > * + * { margin-top: 0.75em; }
+.answer h3, .answer h4, .answer h5 { line-height: 1.3; }
+.answer h3 { font-size: 1.125rem; font-weight: 700; }
+.answer h4 { font-size: 1.0625rem; font-weight: 650; }
+.answer h5 { font-size: 0.9375rem; font-weight: 650; color: var(--muted); }
+.answer ul, .answer ol { padding-left: 1.4em; }
+.answer ul { list-style: disc; }
+.answer ol { list-style: decimal; }
+.answer li + li { margin-top: 0.25em; }
+.answer li::marker { color: var(--faint); }
+.answer a { color: var(--amber); text-decoration: underline; text-decoration-color: var(--amber-dim); text-underline-offset: 3px; }
+.answer a:hover { text-decoration-color: var(--amber); }
+.answer code {
+  font: 0.875em/1.4 var(--mono); padding: 0.1em 0.35em; border-radius: 5px;
+  border: 1px solid var(--rule); background: var(--surface);
+}
+.answer pre code { padding: 0; border: 0; background: none; font: inherit; }
 .attachments { display: flex; flex-wrap: wrap; gap: 8px; }
 .file-link {
   display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 8px;

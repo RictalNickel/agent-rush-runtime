@@ -490,8 +490,116 @@ function fileLink(path, label = baseName(path)) {
   return el('a', { className: 'file-link', href: filesUrl(ui.current.id, path), download: baseName(path), textContent: label });
 }
 
+// Assistant replies use a small markdown subset. Every node is built with createElement and
+// textContent, never innerHTML, so a reply cannot inject markup or script.
+const INLINE = /`([^`\n]+)`|\[([^\]\n]+)\]\(((?:[^()\s]|\([^()\s]*\))+)\)|\*\*([^*\n]+)\*\*|\*(?![\s*])([^*\n]+?)\*|https?:\/\/[^\s<>"'`]+/g;
+const LIST_ITEM = /^\s*([-*]|\d+\.)\s+(.*)$/;
+const HEADING = /^(#{1,3})\s+(\S.*)$/;
+const FENCE = /^\s{0,3}```/;
+const FENCE_END = /^\s{0,3}```\s*$/;
+const HEADING_TAGS = ['h3', 'h4', 'h5'];
+
+// Only http and https become links. Anything else (javascript:, data:, relative paths) stays text.
+function httpUrl(raw) {
+  try {
+    const url = new URL(raw);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+// A bare URL keeps balanced parentheses and leaves sentence punctuation outside the link.
+function trimUrl(url) {
+  let end = url.length;
+  while (end > 0) {
+    const head = url.slice(0, end);
+    const last = head.at(-1);
+    const unmatchedClose = last === ')' && head.split(')').length > head.split('(').length;
+    if (!'.,;:!?'.includes(last) && !unmatchedClose) break;
+    end -= 1;
+  }
+  return url.slice(0, end);
+}
+
+function anchor(href, label) {
+  return el('a', { href, target: '_blank', rel: 'noopener noreferrer', textContent: label });
+}
+
+// Inline markdown: code, links, bold, italic and bare URLs. The text between matches stays text.
+function inline(text) {
+  const nodes = [];
+  const pattern = new RegExp(INLINE);
+  let cursor = 0;
+  for (let match = pattern.exec(text); match; match = pattern.exec(text)) {
+    const [whole, code, label, target, bold, italic] = match;
+    if (match.index > cursor) nodes.push(document.createTextNode(text.slice(cursor, match.index)));
+    let end = match.index + whole.length;
+    if (code !== undefined) {
+      nodes.push(el('code', { textContent: code }));
+    } else if (bold !== undefined) {
+      nodes.push(el('strong', {}, ...inline(bold)));
+    } else if (italic !== undefined) {
+      nodes.push(el('em', {}, ...inline(italic)));
+    } else if (label !== undefined) {
+      const url = httpUrl(target);
+      nodes.push(url ? anchor(url, label) : document.createTextNode(`${label} (${target})`));
+    } else {
+      const raw = trimUrl(whole);
+      end = match.index + raw.length;
+      const url = httpUrl(raw);
+      nodes.push(url ? anchor(url, raw) : document.createTextNode(raw));
+    }
+    cursor = end;
+    pattern.lastIndex = end;
+  }
+  if (cursor < text.length) nodes.push(document.createTextNode(text.slice(cursor)));
+  return nodes;
+}
+
+// Block markdown: fenced code, headings (as h3 to h5), lists, and paragraphs whose lines break.
+function markdown(source) {
+  const lines = source.replace(/\r\n?/g, '\n').split('\n');
+  const isBlock = line => FENCE.test(line) || HEADING.test(line.trim()) || LIST_ITEM.test(line);
+  const kindOf = line => (/\d/.test(LIST_ITEM.exec(line)[1]) ? 'ol' : 'ul');
+  const blocks = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (FENCE.test(line)) {
+      const code = [];
+      for (i += 1; i < lines.length && !FENCE_END.test(lines[i]); i += 1) code.push(lines[i]);
+      i += 1; // The closing fence, or the end of the reply.
+      blocks.push(el('pre', {}, el('code', { textContent: code.join('\n') })));
+    } else if (HEADING.test(line.trim())) {
+      const [, hashes, text] = HEADING.exec(line.trim());
+      blocks.push(el(HEADING_TAGS[hashes.length - 1], {}, ...inline(text)));
+      i += 1;
+    } else if (LIST_ITEM.test(line)) {
+      const kind = kindOf(line);
+      const list = el(kind, kind === 'ol' ? { start: parseInt(LIST_ITEM.exec(line)[1], 10) } : {});
+      while (i < lines.length && LIST_ITEM.test(lines[i]) && kindOf(lines[i]) === kind) {
+        list.append(el('li', {}, ...inline(LIST_ITEM.exec(lines[i])[2])));
+        i += 1;
+      }
+      blocks.push(list);
+    } else if (!line.trim()) {
+      i += 1;
+    } else {
+      const children = [];
+      for (; i < lines.length && lines[i].trim() && !isBlock(lines[i]); i += 1) {
+        if (children.length) children.push(el('br'));
+        children.push(...inline(lines[i].trim()));
+      }
+      blocks.push(el('p', {}, ...children));
+    }
+  }
+  return blocks;
+}
+
 function renderAnswer(p) {
-  const item = el('li', { className: 'msg agent' }, el('p', { className: 'answer', textContent: p.text || 'The agent replied without text.' }));
+  const text = typeof p.text === 'string' && p.text.trim() ? p.text : 'The agent replied without text.';
+  const item = el('li', { className: 'msg agent' }, el('div', { className: 'answer' }, ...markdown(text)));
   const attachments = Array.isArray(p.attachments) ? p.attachments.filter(a => typeof a === 'string' && a) : [];
   if (attachments.length) {
     item.append(el('ul', { className: 'attachments', ariaLabel: 'Attached files' },

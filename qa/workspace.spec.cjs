@@ -68,7 +68,7 @@ async function fakeApi(page,{voice=false,sse=true,seed=[]}={}){
       const e=emit(id,'user',{text});status(id,'running');
       emit(id,'tool_call',{tool:'convert_file',call:{tool:'convert_file',input:'report.md',output:'report.pdf'}});
       emit(id,'tool_result',{tool:'convert_file',ok:true,output:'exit code 0\nstdout:\nreport.pdf',truncated:false});
-      emit(id,'assistant',{text:'Done. The report is attached.',attachments:['report.pdf','/workspace/.screenshots/shot-1.png']});
+      emit(id,'assistant',{text:'Done. The **report** is attached.\n\n- Converted `report.md` to `report.pdf`\n- Source: [example.com](https://example.com/)\n- Preview: [Open the preview](javascript:alert(1))',attachments:['report.pdf','/workspace/.screenshots/shot-1.png']});
       status(id,'idle','replied');
       return route.fulfill({status:202,json:{interjection:false,seq:e.seq}});
     }
@@ -178,7 +178,19 @@ test('session chat: send, tool rows, screenshot, interjection, stop, reply, file
   await prompt.fill('Write it up as a PDF report.');
   await prompt.press('Enter');
   const answer=log.locator('.msg.agent').last();
-  await expect(answer.locator('.answer')).toHaveText('Done. The report is attached.');
+  await expect(answer.locator('.answer > p')).toHaveText('Done. The report is attached.');
+  // Markdown: bold, a list, code spans and links. A javascript: link stays plain text.
+  const body=answer.locator('.answer');
+  await expect(body.locator('strong')).toHaveText('report');
+  await expect(body.locator('ul > li')).toHaveCount(3);
+  await expect(body.locator('code')).toHaveText(['report.md','report.pdf']);
+  const source=body.getByRole('link',{name:'example.com'});
+  await expect(source).toHaveAttribute('href','https://example.com/');
+  await expect(source).toHaveAttribute('target','_blank');
+  await expect(source).toHaveAttribute('rel','noopener noreferrer');
+  await expect(body.locator('a')).toHaveCount(1);
+  await expect(body.locator('a[href^="javascript:"]')).toHaveCount(0);
+  await expect(body).toContainText('Preview: Open the preview (javascript:alert(1))');
   const attached=answer.getByRole('link',{name:'report.pdf'});
   await expect(attached).toHaveAttribute('href',/\/v1\/sessions\/s1\/files\?path=report\.pdf$/);
   await expect(answer.locator('.shot img')).toHaveAttribute('src',/^blob:/);
@@ -237,7 +249,7 @@ test('voice: mic transcribes and sends, speaker reads new replies aloud',async({
   await page.getByRole('button',{name:'Stop recording and send'}).click();
   await expect(page.locator('#log .msg.you').last()).toHaveText('Read me the result');
   expect(api.transcribe).toBe(1);
-  await expect(page.locator('#log .answer').last()).toHaveText('Done. The report is attached.');
+  await expect(page.locator('#log .answer > p').last()).toHaveText('Done. The report is attached.');
   await expect.poll(()=>api.speak).toBe(1);
   expect(errors).toEqual([]);
 });
