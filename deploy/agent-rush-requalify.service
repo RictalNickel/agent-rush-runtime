@@ -1,0 +1,7 @@
+[Unit]
+Description=Agent Rush worker containment requalification
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/agent-rush/requalify.sh

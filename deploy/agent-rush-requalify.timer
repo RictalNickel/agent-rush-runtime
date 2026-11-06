@@ -1,0 +1,9 @@
+[Unit]
+Description=Requalify the Agent Rush worker every 45 minutes (reports last two hours)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=45min
+
+[Install]
+WantedBy=timers.target
