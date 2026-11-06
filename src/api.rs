@@ -1,4 +1,7 @@
-use crate::{auth, config::Settings, domain::JobRequest, ledger::Ledger};
+use crate::{
+    auth, config::Settings, domain::JobRequest, ledger::Ledger, mcp_client::McpRegistry,
+    session::Sessions, webhooks::UrlGuard,
+};
 use axum::{
     Json, Router,
     body::Body,
@@ -22,6 +25,14 @@ pub struct AppState {
     login_attempts: Arc<Mutex<Vec<Instant>>>,
     pub http: reqwest::Client,
     worker_seen: Arc<tokio::sync::Mutex<Option<(Instant, bool)>>>,
+    /// The agent session engine; None when no worker is configured (`/v1/sessions` → 503).
+    pub sessions: Option<Sessions>,
+    /// Operator-configured remote MCP servers (the agent config's MCP allowlist).
+    pub mcp: Arc<McpRegistry>,
+    /// Which webhook destinations are allowed (public addresses only in production).
+    pub webhook_guard: UrlGuard,
+    /// Client for the optional local voice service: no worker identity, no redirects.
+    pub(crate) voice_http: reqwest::Client,
 }
 /// How long the public status endpoint reuses one worker health check.
 const WORKER_STATUS_TTL: Duration = Duration::from_secs(5);
@@ -44,9 +55,47 @@ impl AppState {
             login_attempts: Arc::new(Mutex::new(Vec::new())),
             http,
             worker_seen: Arc::new(tokio::sync::Mutex::new(None)),
+            sessions: None,
+            mcp: Arc::new(McpRegistry::empty()),
+            webhook_guard: UrlGuard::public(),
+            voice_http: reqwest::Client::builder()
+                .timeout(Duration::from_secs(300))
+                .redirect(reqwest::redirect::Policy::none())
+                .build()?,
         })
     }
+    /// The owner of a bearer API key (`Authorization: Bearer ar_...`). `Ok(None)` when no
+    /// bearer credential was sent; an unknown or revoked key is 401.
+    pub fn bearer_owner(&self, headers: &HeaderMap) -> Result<Option<String>, ApiError> {
+        let Some(value) = headers
+            .get(header::AUTHORIZATION)
+            .and_then(|v| v.to_str().ok())
+        else {
+            return Ok(None);
+        };
+        let Some(key) = value
+            .strip_prefix("Bearer ")
+            .or_else(|| value.strip_prefix("bearer "))
+        else {
+            return Ok(None);
+        };
+        match self
+            .ledger
+            .api_key_owner(key.trim())
+            .map_err(ApiError::internal)?
+        {
+            Some(owner) => Ok(Some(owner)),
+            None => Err(ApiError(
+                StatusCode::UNAUTHORIZED,
+                "Invalid or revoked API key".into(),
+            )),
+        }
+    }
+    /// A bearer API key, or the operator cookie (with the CSRF header for mutations).
     pub fn owner(&self, headers: &HeaderMap, mutation: bool) -> Result<String, ApiError> {
+        if let Some(owner) = self.bearer_owner(headers)? {
+            return Ok(owner);
+        }
         let token = auth::session_token(headers).ok_or_else(ApiError::unauthorized)?;
         let session = self
             .ledger
@@ -66,10 +115,10 @@ impl AppState {
 }
 pub struct ApiError(pub StatusCode, pub String);
 impl ApiError {
-    fn unauthorized() -> Self {
+    pub(crate) fn unauthorized() -> Self {
         Self(StatusCode::UNAUTHORIZED, "Operator login required".into())
     }
-    fn internal(e: impl std::fmt::Display) -> Self {
+    pub(crate) fn internal(e: impl std::fmt::Display) -> Self {
         tracing::warn!(error=%e,"request failed");
         Self(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -108,6 +157,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/memories/{id}", delete(delete_memory))
         .route("/api/jobs/{id}/artifacts/{name}", get(artifact))
         .layer(DefaultBodyLimit::max(32768))
+        // Added after the 32 KiB default so their own per-route body limits apply.
+        .merge(crate::api_v1::routes())
+        .merge(crate::mcp_server::routes())
         .layer(middleware::from_fn(security_headers))
         .with_state(state)
 }
@@ -166,7 +218,7 @@ async fn font() -> impl IntoResponse {
 impl AppState {
     /// Worker reachability for the public status page. Cached so anonymous polling cannot
     /// drive private-worker traffic; concurrent requests share one in-flight check.
-    async fn worker_connected(&self) -> bool {
+    pub(crate) async fn worker_connected(&self) -> bool {
         let Some(url) = &self.settings.worker_url else {
             return false;
         };

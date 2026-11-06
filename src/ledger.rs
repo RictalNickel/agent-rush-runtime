@@ -31,6 +31,7 @@ impl Ledger {
         crate::session_store::migrate(&db)?;
         crate::skills::migrate(&db)?;
         crate::agent_config::migrate(&db)?;
+        crate::api_keys::migrate(&db)?;
         Ok(Self {
             db: Mutex::new(db),
             capacity_mb,

@@ -1,14 +1,19 @@
 use agent_rush::{
     api::{AppState, router},
+    box_client::HttpBoxClient,
     config::Settings,
     deploy::VultrClient,
     deploy::lifecycle::{
         DeploymentManifest, ManifestFile, ResourceApi, ResourceKind, ResourceRole, teardown,
     },
     domain::Limits,
+    inference::{GatewayModel, InferenceGateway},
     ledger::Ledger,
+    mcp_client::McpRegistry,
     node::{NodeState, node_router},
     service,
+    session::{SessionLimits, Sessions},
+    webhooks,
     worker::{DockerRunner, IMAGE},
 };
 use anyhow::{Context, Result, ensure};
@@ -154,7 +159,31 @@ async fn main() -> Result<()> {
             std::fs::create_dir_all(&settings.data_dir)?;
             let ledger = Ledger::open(&settings.data_dir.join("control.db"), settings.capacity_mb)?;
             let bind = settings.bind.clone();
-            let state = AppState::new(settings, ledger)?;
+            let mut state = AppState::new(settings, ledger)?;
+            if let Some(path) = &state.settings.mcp_servers_file {
+                state.mcp = Arc::new(McpRegistry::from_file(path)?);
+            }
+            if let Some(worker_url) = state.settings.worker_url.clone() {
+                let boxes = HttpBoxClient::new(
+                    state.http.clone(),
+                    worker_url,
+                    state.settings.worker_token.clone(),
+                );
+                let model = GatewayModel {
+                    gateway: InferenceGateway::new(state.settings.clone(), state.ledger.clone())?,
+                };
+                let sessions = Sessions::new(
+                    state.ledger.clone(),
+                    Arc::new(model),
+                    Arc::new(boxes),
+                    state.mcp.clone(),
+                    SessionLimits::default(),
+                );
+                webhooks::spawn(sessions.clone(), state.ledger.clone(), state.webhook_guard);
+                state.sessions = Some(sessions);
+            } else {
+                tracing::warn!("no worker configured; /v1/sessions answers 503");
+            }
             let listener = tokio::net::TcpListener::bind(&bind).await?;
             let stop = Arc::new(AtomicBool::new(false));
             let scheduler = tokio::spawn(service::scheduler(state.clone(), stop.clone()));

@@ -178,6 +178,9 @@ impl Sessions {
         }
         Self { inner }
     }
+    pub fn limits(&self) -> SessionLimits {
+        self.inner.limits
+    }
     pub fn create(&self, owner: &str, title: Option<&str>) -> Result<SessionView> {
         self.inner
             .ledger
