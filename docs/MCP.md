@@ -4,7 +4,7 @@ Agent Rush is also an MCP server. Any MCP client (Claude Code, Claude Desktop, C
 
 - **Transport:** streamable HTTP. JSON-RPC 2.0 over `POST /mcp`, answered with `application/json`. It is stateless and has no server-sent stream, so `GET /mcp` returns 405.
 - **Protocol version:** `2025-06-18`.
-- **Auth:** the same API keys as the REST API (see [API.md](API.md)): `Authorization: Bearer ar_...`. A request without a valid key gets 401 with `WWW-Authenticate: Bearer`.
+- **Auth:** the same API keys as the REST API (see [API.md](API.md)): `Authorization: Bearer ar_...`. A request without a valid key gets 401 with `WWW-Authenticate: Bearer`. Keys are created by the operator through the browser login (`POST /v1/keys` with the cookie and `X-CSRF-Token`); a key cannot create or revoke keys, and no MCP tool manages keys or webhooks.
 
 ## Connect
 
@@ -58,16 +58,19 @@ A typical exchange:
 ## Errors
 
 - **Tool failures** come back as a normal result with `isError: true` and a text message. Examples are a session that is not found, a closed session, or a workspace error. A session that belongs to another key's owner is reported as "Session not found", exactly like one that does not exist.
+- **Per-owner caps** are tool failures too:
+  - `start_session` with 20 sessions open (not closed): `too many open sessions; close one`.
+  - `wait_for_reply`, `run_command`, `read_file`, `write_file` and `list_files` with 8 such calls already running (the REST exec and file calls count too): `too many requests in flight; wait for one to finish`.
 - **Protocol errors** use JSON-RPC codes:
 
 | Code | Meaning |
 | --- | --- |
 | -32700 | The body is not JSON |
-| -32600 | Not a valid JSON-RPC request |
+| -32600 | Not a valid JSON-RPC request, or a batch of more than 16 messages |
 | -32601 | Unknown method |
 | -32602 | Unknown tool, or missing or invalid arguments |
 
-Batches (a JSON array of requests) are supported. Notifications get no answer, and a body made only of notifications returns 202.
+Batches (a JSON array of requests) are supported, up to 16 messages. A longer batch gets HTTP 400 with a single `-32600` error. Notifications get no answer, and a body made only of notifications returns 202.
 
 ## Try it with curl
 

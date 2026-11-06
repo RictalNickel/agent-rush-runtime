@@ -84,6 +84,16 @@ pub trait BoxClient: Send + Sync {
         path: &'a str,
         bytes: &'a [u8],
     ) -> BoxFuture<'a, Result<WriteResult>>;
+    /// `write_file` with owned, reference-counted bytes, so a client that sends them on
+    /// (the HTTP client) needs no copy. Defaults to `write_file`.
+    fn write_file_bytes<'a>(
+        &'a self,
+        box_id: &'a str,
+        path: &'a str,
+        bytes: axum::body::Bytes,
+    ) -> BoxFuture<'a, Result<WriteResult>> {
+        Box::pin(async move { self.write_file(box_id, path, &bytes).await })
+    }
     fn destroy<'a>(&'a self, box_id: &'a str) -> BoxFuture<'a, Result<()>>;
     fn list<'a>(&'a self) -> BoxFuture<'a, Result<Vec<BoxInfo>>>;
 }

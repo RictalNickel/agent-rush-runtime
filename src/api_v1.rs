@@ -1,12 +1,14 @@
 //! The public `/v1` API: a thin layer over `Sessions`, the skill and agent-config stores,
 //! API keys, webhooks and the optional voice service. Every route needs a bearer API key
 //! (`Authorization: Bearer ar_...`) or the operator cookie (plus `X-CSRF-Token` for
-//! changes). A session that is missing or belongs to another owner is always 404.
+//! changes). Creating or revoking keys and registering or deleting webhooks needs the
+//! operator cookie: a bearer key gets 403 there. A session that is missing or belongs to
+//! another owner is always 404.
 use crate::{
     agent_config::{AgentConfig, BUILTIN_TOOLS},
     api::{ApiError, AppState},
     sandbox_api::{ExecRequest, FileRead, MAX_EXEC_TIMEOUT_SECONDS, MAX_FILE_BYTES},
-    session::{SessionError, Sessions},
+    session::{OwnerSlot, SessionError, Sessions},
     session_store::{MAX_EVENT_PAGE, MAX_MESSAGE_BYTES, SessionEvent, SessionStatus},
     skills::{builtin_skills, parse_skill_md},
 };
@@ -99,6 +101,56 @@ impl FromRequestParts<AppState> for Owner {
     }
 }
 
+/// The operator's browser login: the `ar_session` cookie, plus `X-CSRF-Token` for changes.
+/// Minting and revoking keys and managing webhooks need it, so a leaked API key cannot
+/// mint more keys, revoke the operator's other keys or point webhooks somewhere new.
+pub(crate) struct Operator(pub String);
+impl FromRequestParts<AppState> for Operator {
+    type Rejection = ApiError;
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, ApiError> {
+        if state.bearer_owner(&parts.headers)?.is_some() {
+            return Err(ApiError(
+                StatusCode::FORBIDDEN,
+                "API keys cannot create or revoke keys or manage webhooks: sign in as the operator and use the cookie with X-CSRF-Token".into(),
+            ));
+        }
+        let mutation = !matches!(parts.method, Method::GET | Method::HEAD);
+        state
+            .owner(&parts.headers, mutation)
+            .map(Operator)
+            .map_err(|e| {
+                if e.0 == StatusCode::UNAUTHORIZED {
+                    ApiError(
+                        StatusCode::UNAUTHORIZED,
+                        "Operator login required (API keys cannot manage keys or webhooks)".into(),
+                    )
+                } else {
+                    e
+                }
+            })
+    }
+}
+
+/// The owner, holding one of their long-request slots (`max_long_requests_per_owner`)
+/// for as long as the request runs. It is taken before the body is read, so an owner
+/// at the cap is refused (429) before an upload is buffered. Without sessions there is
+/// no slot; the handler then answers 503 as before.
+pub(crate) struct BusyOwner {
+    pub owner: String,
+    _slot: Option<OwnerSlot>,
+}
+impl FromRequestParts<AppState> for BusyOwner {
+    type Rejection = ApiError;
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, ApiError> {
+        let Owner(owner) = Owner::from_request_parts(parts, state).await?;
+        let slot = match &state.sessions {
+            Some(sessions) => Some(sessions.long_request_slot(&owner).map_err(lookup_error)?),
+            None => None,
+        };
+        Ok(Self { owner, _slot: slot })
+    }
+}
+
 /// `Json` whose rejections are `{"error": ...}` like every other API error.
 pub(crate) struct JsonBody<T>(pub T);
 impl<S: Send + Sync, T: DeserializeOwned> FromRequest<S> for JsonBody<T> {
@@ -141,6 +193,9 @@ fn session_status(e: &SessionError) -> ApiError {
     match e {
         SessionError::NotFound => ApiError(StatusCode::NOT_FOUND, "Session not found".into()),
         SessionError::Closed => ApiError(StatusCode::CONFLICT, "Session is closed".into()),
+        SessionError::TooManySessions
+        | SessionError::TooManyStreams
+        | SessionError::TooManyRequests => ApiError(StatusCode::TOO_MANY_REQUESTS, e.to_string()),
     }
 }
 /// For calls whose other failures are caused by the request (validation): 400.
@@ -242,6 +297,11 @@ async fn status(State(s): State<AppState>, Owner(_): Owner) -> Json<Value> {
             "max_exec_timeout_seconds": MAX_EXEC_TIMEOUT_SECONDS,
             "max_event_page": MAX_EVENT_PAGE,
             "max_audio_bytes": MAX_AUDIO_BYTES,
+            "max_open_sessions_per_owner": limits.max_open_sessions_per_owner,
+            "max_streams_per_owner": limits.max_streams_per_owner,
+            "max_long_requests_per_owner": limits.max_long_requests_per_owner,
+            "max_box_calls_per_session": limits.max_box_calls_per_session,
+            "max_mcp_batch": limits.max_mcp_batch,
         },
     }))
 }
@@ -256,7 +316,7 @@ struct KeyInput {
 }
 async fn create_key(
     State(s): State<AppState>,
-    Owner(owner): Owner,
+    Operator(owner): Operator,
     body: Bytes,
 ) -> Result<impl IntoResponse, ApiError> {
     let input: KeyInput = optional_json(&body)?;
@@ -275,7 +335,7 @@ async fn list_keys(
 }
 async fn revoke_key(
     State(s): State<AppState>,
-    Owner(owner): Owner,
+    Operator(owner): Operator,
     Path(id): Path<String>,
 ) -> Result<Json<Value>, ApiError> {
     if !s
@@ -520,8 +580,13 @@ async fn stream_events(
         .and_then(|v| v.trim().parse::<i64>().ok());
     let after = last_event_id.or(q.after).unwrap_or(0).max(0);
     let closed = session.status == SessionStatus::Closed;
-    Ok(Sse::new(event_stream(sessions, owner, id, after, closed))
-        .keep_alive(KeepAlive::new().interval(SSE_KEEPALIVE)))
+    // Held by the stream: given back when it ends or the client disconnects.
+    let slot = sessions.stream_slot(&owner).map_err(lookup_error)?;
+    let stream = event_stream(sessions, owner, id, after, closed).map(move |event| {
+        let _held = &slot;
+        event
+    });
+    Ok(Sse::new(stream).keep_alive(KeepAlive::new().interval(SSE_KEEPALIVE)))
 }
 
 // Files and the direct shell.
@@ -582,7 +647,7 @@ fn download_name(path: &str) -> String {
 }
 async fn read_file(
     State(s): State<AppState>,
-    Owner(owner): Owner,
+    BusyOwner { owner, _slot }: BusyOwner,
     Path(id): Path<String>,
     Query(q): Query<PathQuery>,
 ) -> Result<Response, ApiError> {
@@ -619,7 +684,7 @@ async fn read_file(
 }
 async fn write_file(
     State(s): State<AppState>,
-    Owner(owner): Owner,
+    BusyOwner { owner, _slot }: BusyOwner,
     Path(id): Path<String>,
     Query(q): Query<PathQuery>,
     body: Bytes,
@@ -629,14 +694,14 @@ async fn write_file(
         .ok_or_else(|| ApiError(StatusCode::BAD_REQUEST, "path is required".into()))?;
     check_path(&path)?;
     let written = engine(&s)?
-        .write_file(&owner, &id, &path, &body)
+        .write_file(&owner, &id, &path, body)
         .await
         .map_err(workspace_error)?;
     Ok(Json(json!(written)))
 }
 async fn exec(
     State(s): State<AppState>,
-    Owner(owner): Owner,
+    BusyOwner { owner, _slot }: BusyOwner,
     Path(id): Path<String>,
     JsonBody(req): JsonBody<ExecRequest>,
 ) -> Result<Json<Value>, ApiError> {
@@ -850,7 +915,7 @@ struct WebhookInput {
 }
 async fn create_webhook(
     State(s): State<AppState>,
-    Owner(owner): Owner,
+    Operator(owner): Operator,
     JsonBody(input): JsonBody<WebhookInput>,
 ) -> Result<impl IntoResponse, ApiError> {
     let (url, _) = s
@@ -873,7 +938,7 @@ async fn list_webhooks(
 }
 async fn delete_webhook(
     State(s): State<AppState>,
-    Owner(owner): Owner,
+    Operator(owner): Operator,
     Path(id): Path<String>,
 ) -> Result<Json<Value>, ApiError> {
     if !s

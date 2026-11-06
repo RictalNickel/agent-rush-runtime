@@ -121,6 +121,18 @@ fn clean_title(title: &str) -> String {
 
 impl Ledger {
     pub fn create_agent_session(&self, owner: &str, title: &str) -> Result<SessionView> {
+        Ok(self
+            .create_agent_session_within(owner, title, usize::MAX)?
+            .expect("no cap"))
+    }
+    /// Creates a session unless the owner already has `max_open` sessions that are not
+    /// closed (then `None`). The count and the insert happen under one database lock.
+    pub fn create_agent_session_within(
+        &self,
+        owner: &str,
+        title: &str,
+        max_open: usize,
+    ) -> Result<Option<SessionView>> {
         ensure!(
             !owner.is_empty() && owner.len() <= 128,
             "invalid session owner"
@@ -137,11 +149,22 @@ impl Ledger {
             spend_usd: 0.0,
             last_seq: 0,
         };
-        self.db.lock().unwrap().execute(
+        let db = self.db.lock().unwrap();
+        if max_open < usize::MAX {
+            let open: i64 = db.query_row(
+                "SELECT COUNT(*) FROM agent_sessions WHERE owner=?1 AND status!='closed'",
+                [owner],
+                |r| r.get(0),
+            )?;
+            if usize::try_from(open).unwrap_or(usize::MAX) >= max_open {
+                return Ok(None);
+            }
+        }
+        db.execute(
             "INSERT INTO agent_sessions(id,owner,title,status,created_at,updated_at) VALUES(?1,?2,?3,'idle',?4,?4)",
             params![session.id, owner, session.title, at],
         )?;
-        Ok(session)
+        Ok(Some(session))
     }
     pub fn agent_session(&self, owner: &str, id: &str) -> Result<Option<SessionView>> {
         let db = self.db.lock().unwrap();

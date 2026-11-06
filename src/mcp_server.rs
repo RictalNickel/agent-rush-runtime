@@ -2,12 +2,13 @@
 //! JSON-RPC 2.0, single or batch: `initialize`, `ping`, `tools/list`, `tools/call`, and
 //! notifications (answered with 202). Auth is the same bearer API keys as `/v1`; a
 //! session that is missing or belongs to another owner is reported as not found.
+//! A batch holds at most `SessionLimits::max_mcp_batch` messages.
 use crate::{
     api::{ApiError, AppState},
     api_v1::{check_exec, check_path, engine, input_error, lookup_error, workspace_error},
     mcp_client::PROTOCOL_VERSION,
     sandbox_api::{ExecRequest, FileRead},
-    session::Sessions,
+    session::{SessionLimits, Sessions},
     session_store::{MAX_EVENT_PAGE, SessionEvent, SessionStatus},
     skills::{builtin_skills, parse_skill_md},
 };
@@ -87,6 +88,22 @@ async fn handle(State(s): State<AppState>, headers: HeaderMap, body: Bytes) -> R
                 return (
                     StatusCode::BAD_REQUEST,
                     Json(rpc_error(Value::Null, -32600, "Empty batch")),
+                )
+                    .into_response();
+            }
+            let max = s
+                .sessions
+                .as_ref()
+                .map_or_else(SessionLimits::default, Sessions::limits)
+                .max_mcp_batch;
+            if batch.len() > max {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(rpc_error(
+                        Value::Null,
+                        -32600,
+                        &format!("Batch too large: at most {max} messages per request"),
+                    )),
                 )
                     .into_response();
             }
@@ -331,6 +348,14 @@ async fn call_tool(s: &AppState, owner: &str, name: &str, args: Args<'_>) -> Too
     };
     let sessions = engine(s)?;
     let id = session_id.as_deref().unwrap_or("");
+    // Waiting for a reply and direct workspace calls hold one of the owner's long-request
+    // slots while they run.
+    let _slot = match name {
+        "wait_for_reply" | "run_command" | "read_file" | "write_file" | "list_files" => {
+            Some(sessions.long_request_slot(owner).map_err(lookup_error)?)
+        }
+        _ => None,
+    };
     match name {
         "start_session" => start_session(sessions, owner, &args),
         "send_message" => {
@@ -388,10 +413,12 @@ async fn call_tool(s: &AppState, owner: &str, name: &str, args: Args<'_>) -> Too
             check_path(path).map_err(|e| ToolError::Params(e.1))?;
             let content = args.str("content")?;
             let bytes = match args.opt_str("encoding")?.unwrap_or("utf8") {
-                "utf8" => content.as_bytes().to_vec(),
-                "base64" => base64::engine::general_purpose::STANDARD
-                    .decode(content.trim())
-                    .map_err(|_| ToolError::Params("content is not valid base64".into()))?,
+                "utf8" => Bytes::copy_from_slice(content.as_bytes()),
+                "base64" => Bytes::from(
+                    base64::engine::general_purpose::STANDARD
+                        .decode(content.trim())
+                        .map_err(|_| ToolError::Params("content is not valid base64".into()))?,
+                ),
                 _ => return Err(ToolError::Params("encoding must be utf8 or base64".into())),
             };
             if bytes.len() > MCP_MAX_FILE_BYTES {
@@ -401,7 +428,7 @@ async fn call_tool(s: &AppState, owner: &str, name: &str, args: Args<'_>) -> Too
                 ));
             }
             let written = sessions
-                .write_file(owner, id, path, &bytes)
+                .write_file(owner, id, path, bytes)
                 .await
                 .map_err(workspace_error)?;
             Ok(json_text(

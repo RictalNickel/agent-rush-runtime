@@ -168,7 +168,7 @@ The agent's config edits are versioned and revertible, and each one is shown as 
 
 ## Control: API (`src/api_v1.rs`) and MCP server (`src/mcp_server.rs`)
 
-**Auth:** `Authorization: Bearer ar_<key>`, or the existing cookie together with CSRF. Keys are created through `POST /v1/keys`, which returns the key once (only its hash is stored), and revoked through `DELETE /v1/keys/{id}`.
+**Auth:** `Authorization: Bearer ar_<key>`, or the existing cookie together with CSRF. Keys are created through `POST /v1/keys`, which returns the key once (only its hash is stored), and revoked through `DELETE /v1/keys/{id}`. Creating and revoking keys and registering or deleting webhooks need the operator cookie with CSRF; a bearer key gets 403 there (listing stays open to keys and never shows key material).
 
 **REST:**
 

@@ -2,6 +2,7 @@ mod common;
 
 use agent_rush::{
     api_keys::looks_like_key,
+    session::SessionLimits,
     session_store::SessionStatus,
     webhooks::{self, UrlGuard, hmac_sha256, is_forbidden_ip, signature},
 };
@@ -11,7 +12,10 @@ use axum::{
     http::{HeaderMap, Request, StatusCode},
     routing::post,
 };
-use common::{App, app, app_without_sessions, bash, call, reply, send};
+use common::{
+    App, app, app_with_limits, app_without_sessions, bash, call, call_operator, operator_login,
+    reply, send,
+};
 use futures_util::StreamExt;
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
@@ -74,53 +78,54 @@ async fn every_key_scoped_route_rejects_a_missing_key() {
 #[tokio::test]
 async fn keys_are_shown_once_listed_without_secret_and_revocable() {
     let a = app(vec![]);
-    let bootstrap = a.key("alice");
-    let (status, created) = call(
-        &a.router,
-        "POST",
-        "/v1/keys",
-        Some(&bootstrap),
-        Some(json!({"name":"ci"})),
-    )
-    .await;
-    assert_eq!(status, StatusCode::CREATED);
-    let key = created["key"].as_str().unwrap().to_string();
+    let (cookie, csrf) = operator_login(&a.router).await;
+    let mut created = Vec::new();
+    for name in ["ci", "laptop"] {
+        let (status, body) = call_operator(
+            &a.router,
+            "POST",
+            "/v1/keys",
+            &cookie,
+            Some(&csrf),
+            Some(json!({"name": name})),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{body}");
+        created.push(body);
+    }
+    let key = created[0]["key"].as_str().unwrap().to_string();
+    let other = created[1]["key"].as_str().unwrap().to_string();
     assert!(looks_like_key(&key) && key.len() == 51, "{key}");
-    assert_eq!(created["prefix"], key[..11]);
+    assert_eq!(created[0]["prefix"], key[..11]);
+    // A key can list the owner's keys, but never sees key material.
     let (status, list) = call(&a.router, "GET", "/v1/keys", Some(&key), None).await;
     assert_eq!(status, StatusCode::OK);
     let text = list.to_string();
-    assert!(!text.contains(&key), "the key must never be listed");
-    assert!(!text.contains(&agent_rush::api_keys::key_hash(&key)));
+    for k in [&key, &other] {
+        assert!(!text.contains(k.as_str()), "a key must never be listed");
+        assert!(!text.contains(&agent_rush::api_keys::key_hash(k)));
+    }
     assert_eq!(list["keys"].as_array().unwrap().len(), 2);
 
-    // Another owner cannot revoke it.
-    let bob = a.key("bob");
-    let id = created["id"].as_str().unwrap();
-    let (status, _) = call(
-        &a.router,
-        "DELETE",
-        &format!("/v1/keys/{id}"),
-        Some(&bob),
-        None,
-    )
-    .await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
+    // Another owner cannot revoke it, even through the operator path.
+    let id = created[1]["id"].as_str().unwrap();
+    assert!(!a.ledger().revoke_api_key("bob", id).unwrap());
 
-    let (status, _) = call(
+    let (status, _) = call_operator(
         &a.router,
         "DELETE",
         &format!("/v1/keys/{id}"),
-        Some(&bootstrap),
+        &cookie,
+        Some(&csrf),
         None,
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    let (status, body) = call(&a.router, "GET", "/v1/sessions", Some(&key), None).await;
+    let (status, body) = call(&a.router, "GET", "/v1/sessions", Some(&other), None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert_eq!(body["error"], "Invalid or revoked API key");
-    // The bootstrap key still works, and the revoked key shows as revoked.
-    let (status, list) = call(&a.router, "GET", "/v1/keys", Some(&bootstrap), None).await;
+    // The first key still works, and the revoked key shows as revoked.
+    let (status, list) = call(&a.router, "GET", "/v1/keys", Some(&key), None).await;
     assert_eq!(status, StatusCode::OK);
     assert!(
         list["keys"]
@@ -129,54 +134,260 @@ async fn keys_are_shown_once_listed_without_secret_and_revocable() {
             .iter()
             .any(|k| k["id"] == id && k["revoked"] == true)
     );
+    let (status, _) = call_operator(
+        &a.router,
+        "DELETE",
+        "/v1/keys/no-such-key",
+        &cookie,
+        Some(&csrf),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]
 async fn the_operator_cookie_with_csrf_can_create_keys() {
     let a = app(vec![]);
-    let response = send(
+    let (cookie, csrf) = operator_login(&a.router).await;
+    let (status, _) = call_operator(
         &a.router,
-        Request::post("/api/login")
-            .header("content-type", "application/json")
-            .body(Body::from(
-                json!({"password": common::PASSWORD}).to_string(),
-            ))
-            .unwrap(),
+        "POST",
+        "/v1/keys",
+        &cookie,
+        None,
+        Some(json!({})),
     )
     .await;
-    assert_eq!(response.status(), StatusCode::OK);
-    let cookie = response.headers()["set-cookie"]
-        .to_str()
-        .unwrap()
-        .split(';')
-        .next()
-        .unwrap()
-        .to_string();
-    let body: Value =
-        serde_json::from_slice(&response.into_body().collect().await.unwrap().to_bytes()).unwrap();
-    let csrf = body["csrf"].as_str().unwrap().to_string();
-    let create = |csrf: Option<&str>| {
-        let mut builder = Request::post("/v1/keys")
-            .header("cookie", &cookie)
-            .header("content-type", "application/json");
-        if let Some(csrf) = csrf {
-            builder = builder.header("x-csrf-token", csrf);
-        }
-        builder.body(Body::from("{}")).unwrap()
-    };
-    assert_eq!(
-        send(&a.router, create(None)).await.status(),
-        StatusCode::FORBIDDEN
-    );
-    let response = send(&a.router, create(Some(&csrf))).await;
-    assert_eq!(response.status(), StatusCode::CREATED);
-    let body: Value =
-        serde_json::from_slice(&response.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(status, StatusCode::FORBIDDEN, "CSRF header required");
+    let (status, body) = call_operator(
+        &a.router,
+        "POST",
+        "/v1/keys",
+        &cookie,
+        Some(&csrf),
+        Some(json!({})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
     let key = body["key"].as_str().unwrap();
     assert_eq!(
         a.ledger().api_key_owner(key).unwrap().as_deref(),
         Some("operator")
     );
+}
+
+/// Regression: a bearer key could mint more keys, revoke the operator's other keys and
+/// register webhooks. Those routes now need the operator cookie with CSRF.
+#[tokio::test]
+async fn a_bearer_key_cannot_mint_or_revoke_keys_or_manage_webhooks() {
+    let a = app(vec![]);
+    let key = a.key("operator");
+    let victim = a.ledger().create_api_key("operator", "victim").unwrap();
+    let hook = a
+        .ledger()
+        .create_webhook("operator", "https://93.184.215.14/hook")
+        .unwrap();
+    let routes = [
+        (
+            "POST",
+            "/v1/keys".to_string(),
+            Some(json!({"name": "minted"})),
+        ),
+        ("DELETE", format!("/v1/keys/{}", victim.view.id), None),
+        (
+            "POST",
+            "/v1/webhooks".to_string(),
+            Some(json!({"url": "https://93.184.215.14/other"})),
+        ),
+        ("DELETE", format!("/v1/webhooks/{}", hook.webhook.id), None),
+    ];
+    let (cookie, csrf) = operator_login(&a.router).await;
+    for (method, path, body) in routes {
+        let (status, reply) = call(&a.router, method, &path, Some(&key), body.clone()).await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{method} {path}: {reply}");
+        assert!(
+            reply["error"].as_str().unwrap().contains("operator"),
+            "{reply}"
+        );
+        // A bearer key next to the operator cookie does not get through either.
+        let mut builder = Request::builder()
+            .method(method)
+            .uri(&path)
+            .header("authorization", format!("Bearer {key}"))
+            .header("cookie", &cookie)
+            .header("x-csrf-token", &csrf);
+        let request_body = match body {
+            Some(v) => {
+                builder = builder.header("content-type", "application/json");
+                Body::from(v.to_string())
+            }
+            None => Body::empty(),
+        };
+        let response = send(&a.router, builder.body(request_body).unwrap()).await;
+        assert_eq!(response.status(), StatusCode::FORBIDDEN, "{method} {path}");
+        // Without any credentials it is 401.
+        let (status, _) = call(&a.router, method, &path, None, None).await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "{method} {path}");
+    }
+    // Nothing changed: two keys (neither revoked) and the one webhook.
+    let keys = a.ledger().api_keys("operator").unwrap();
+    assert_eq!(keys.len(), 2);
+    assert!(keys.iter().all(|k| !k.revoked));
+    assert_eq!(a.ledger().webhooks("operator").unwrap().len(), 1);
+    // Listing stays open to keys and shows no key material or webhook secret.
+    let (status, list) = call(&a.router, "GET", "/v1/keys", Some(&key), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(!list.to_string().contains(&victim.key));
+    let (status, list) = call(&a.router, "GET", "/v1/webhooks", Some(&key), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(list["webhooks"].as_array().unwrap().len(), 1);
+    assert!(!list.to_string().contains(&hook.secret));
+    // The operator cookie with CSRF can do all four.
+    let (status, _) = call_operator(
+        &a.router,
+        "DELETE",
+        &format!("/v1/webhooks/{}", hook.webhook.id),
+        &cookie,
+        Some(&csrf),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = call_operator(
+        &a.router,
+        "DELETE",
+        &format!("/v1/keys/{}", victim.view.id),
+        &cookie,
+        Some(&csrf),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+/// Regression: an owner could open sessions without bound.
+#[tokio::test]
+async fn open_sessions_per_owner_are_capped_and_closing_one_frees_a_place() {
+    let a = app_with_limits(
+        vec![],
+        SessionLimits {
+            max_open_sessions_per_owner: 2,
+            ..SessionLimits::default()
+        },
+    );
+    let alice = a.key("alice");
+    let mut ids = Vec::new();
+    for _ in 0..2 {
+        let (status, body) = call(&a.router, "POST", "/v1/sessions", Some(&alice), None).await;
+        assert_eq!(status, StatusCode::CREATED);
+        ids.push(body["session"]["id"].as_str().unwrap().to_string());
+    }
+    let (status, body) = call(&a.router, "POST", "/v1/sessions", Some(&alice), None).await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS, "{body}");
+    assert_eq!(body["error"], "too many open sessions; close one");
+    // Another owner has its own allowance.
+    let bob = a.key("bob");
+    let (status, _) = call(&a.router, "POST", "/v1/sessions", Some(&bob), None).await;
+    assert_eq!(status, StatusCode::CREATED);
+    let (status, _) = call(
+        &a.router,
+        "DELETE",
+        &format!("/v1/sessions/{}", ids[0]),
+        Some(&alice),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = call(&a.router, "POST", "/v1/sessions", Some(&alice), None).await;
+    assert_eq!(status, StatusCode::CREATED);
+}
+
+/// Regression: an owner could hold any number of SSE streams open.
+#[tokio::test]
+async fn concurrent_event_streams_per_owner_are_capped() {
+    let a = app_with_limits(
+        vec![],
+        SessionLimits {
+            max_streams_per_owner: 2,
+            ..SessionLimits::default()
+        },
+    );
+    let alice = a.key("alice");
+    let session = a.sessions.create("alice", None).unwrap();
+    let stream = |key: &str| {
+        Request::get(format!("/v1/sessions/{}/stream", session.id))
+            .header("authorization", format!("Bearer {key}"))
+            .body(Body::empty())
+            .unwrap()
+    };
+    let first = send(&a.router, stream(&alice)).await;
+    assert_eq!(first.status(), StatusCode::OK);
+    let second = send(&a.router, stream(&alice)).await;
+    assert_eq!(second.status(), StatusCode::OK);
+    let third = send(&a.router, stream(&alice)).await;
+    assert_eq!(third.status(), StatusCode::TOO_MANY_REQUESTS);
+    // A disconnect (the stream is dropped) gives its place back.
+    drop(first);
+    let again = send(&a.router, stream(&alice)).await;
+    assert_eq!(again.status(), StatusCode::OK);
+    drop((second, again));
+}
+
+/// Regression: an owner could keep any number of workspace calls in flight. The slot is
+/// taken before an upload body is read.
+#[tokio::test]
+async fn long_requests_per_owner_are_capped() {
+    let a = app_with_limits(
+        vec![],
+        SessionLimits {
+            max_long_requests_per_owner: 2,
+            ..SessionLimits::default()
+        },
+    );
+    let alice = a.key("alice");
+    let session = a.sessions.create("alice", None).unwrap();
+    let held: Vec<_> = (0..2)
+        .map(|_| a.sessions.long_request_slot("alice").unwrap())
+        .collect();
+    let id = &session.id;
+    for (method, path, body) in [
+        (
+            "POST",
+            format!("/v1/sessions/{id}/exec"),
+            Some(json!({"command":"id"})),
+        ),
+        ("GET", format!("/v1/sessions/{id}/files?path=."), None),
+        (
+            "PUT",
+            format!("/v1/sessions/{id}/files?path=a.txt"),
+            Some(json!("x")),
+        ),
+    ] {
+        let (status, reply) = call(&a.router, method, &path, Some(&alice), body).await;
+        assert_eq!(
+            status,
+            StatusCode::TOO_MANY_REQUESTS,
+            "{method} {path}: {reply}"
+        );
+    }
+    // Other owners are not affected, and the slots come back when released.
+    let bob = a.key("bob");
+    let (status, _) = call(&a.router, "GET", "/v1/sessions", Some(&bob), None).await;
+    assert_eq!(status, StatusCode::OK);
+    drop(held);
+    let (status, reply) = call(
+        &a.router,
+        "POST",
+        &format!("/v1/sessions/{id}/exec"),
+        Some(&alice),
+        Some(json!({"command":"id"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{reply}");
+    // The finished request gave its slot back too.
+    let _a = a.sessions.long_request_slot("alice").unwrap();
+    let _b = a.sessions.long_request_slot("alice").unwrap();
 }
 
 #[tokio::test]
@@ -630,12 +841,13 @@ async fn the_production_guard_refuses_private_and_reserved_webhook_targets() {
     }
     // The API applies the guard at create time.
     let a = app(vec![]);
-    let key = a.key("alice");
-    let (status, body) = call(
+    let (cookie, csrf) = operator_login(&a.router).await;
+    let (status, body) = call_operator(
         &a.router,
         "POST",
         "/v1/webhooks",
-        Some(&key),
+        &cookie,
+        Some(&csrf),
         Some(json!({"url":"http://169.254.169.254/latest"})),
     )
     .await;
@@ -661,12 +873,15 @@ async fn turn_end_webhook_is_signed_with_the_webhook_secret() {
     tokio::spawn(async move { axum::serve(listener, receiver).await.unwrap() });
 
     let a: App = app(vec![reply("Bob done"), reply("All done")]);
-    let key = a.key("alice");
-    let (status, hook) = call(
+    // Webhooks are registered through the operator login; they belong to "operator".
+    let (cookie, csrf) = operator_login(&a.router).await;
+    let key = a.key("operator");
+    let (status, hook) = call_operator(
         &a.router,
         "POST",
         "/v1/webhooks",
-        Some(&key),
+        &cookie,
+        Some(&csrf),
         Some(json!({"url": format!("http://127.0.0.1:{port}/hook")})),
     )
     .await;
@@ -677,7 +892,7 @@ async fn turn_end_webhook_is_signed_with_the_webhook_secret() {
         !list.to_string().contains(&secret),
         "secrets are shown once"
     );
-    // Another owner's turns never reach alice's webhook.
+    // Another owner's turns never reach the operator's webhook.
     let bob_session = a.sessions.create("bob", None).unwrap();
 
     webhooks::spawn(
@@ -690,8 +905,10 @@ async fn turn_end_webhook_is_signed_with_the_webhook_secret() {
         .wait_idle("bob", &bob_session.id, WAIT)
         .await
         .unwrap();
-    let session = a.sessions.create("alice", None).unwrap();
-    a.sessions.send("alice", &session.id, "finish up").unwrap();
+    let session = a.sessions.create("operator", None).unwrap();
+    a.sessions
+        .send("operator", &session.id, "finish up")
+        .unwrap();
 
     let (headers, body) = tokio::time::timeout(WAIT, rx.recv())
         .await
@@ -711,5 +928,8 @@ async fn turn_end_webhook_is_signed_with_the_webhook_secret() {
     assert_eq!(payload["session_id"], session.id);
     assert_eq!(payload["status"], "idle");
     assert_eq!(payload["last_reply"], "All done");
-    assert!(rx.try_recv().is_err(), "only alice's turn end is delivered");
+    assert!(
+        rx.try_recv().is_err(),
+        "only the operator's turn end is delivered"
+    );
 }
