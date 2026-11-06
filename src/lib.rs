@@ -12,5 +12,6 @@ pub mod memory;
 pub mod node;
 pub mod qualification;
 pub mod resources;
+pub mod sandbox_api;
 pub mod service;
 pub mod worker;
