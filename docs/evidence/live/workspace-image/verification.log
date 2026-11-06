@@ -1,0 +1,150 @@
+# image agent-rush-workspace@sha256:ebc275674643ed89334e12402cba4522621c56898ef30953e896e262d4cc303c
+# runtime: runsc network=ar-box readonly=true user=1000:1000
+
+$ id; uname -a; echo $PATH
+uid=1000(agent) gid=1000(agent) groups=1000(agent)
+Linux 07d736610f27 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 x86_64 x86_64 GNU/Linux
+/opt/box/bin:/home/agent/.local/bin:/home/agent/.npm-global/bin:/home/agent/.cargo/bin:/opt/rust/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+[exit 0, 128 ms]
+
+$ for t in python3 node npm git rg cargo rustc fd jq pandoc soffice ffmpeg convert pdftotext qpdf browse websearch fetch; do printf "%-10s %s\n" "$t" "$(command -v $t)"; done
+python3    /usr/bin/python3
+node       /usr/bin/node
+npm        /usr/bin/npm
+git        /usr/bin/git
+rg         /usr/bin/rg
+cargo      /opt/rust/cargo/bin/cargo
+rustc      /opt/rust/cargo/bin/rustc
+fd         /usr/local/bin/fd
+jq         /usr/bin/jq
+pandoc     /usr/bin/pandoc
+soffice    /usr/bin/soffice
+ffmpeg     /usr/bin/ffmpeg
+convert    /opt/box/bin/convert
+pdftotext  /usr/bin/pdftotext
+qpdf       /usr/bin/qpdf
+browse     /opt/box/bin/browse
+websearch  /opt/box/bin/websearch
+fetch      /opt/box/bin/fetch
+[exit 0, 240 ms]
+
+$ python3 --version; node --version; npm --version; git --version; rg --version | head -1; cargo --version; rustc --version
+Python 3.12.3
+v26.13.0
+11.20.0
+git version 2.43.0
+ripgrep 14.1.0
+cargo 1.90.0 (840b83a10 2025-07-30)
+rustc 1.90.0 (1159e78c4 2025-09-14)
+[exit 0, 823 ms]
+
+$ browse goto https://example.com
+{"ok": true, "url": "https://example.com/", "title": "Example Domain", "status": 200}
+[exit 0, 4848 ms]
+
+$ browse snapshot
+{"ok": true, "url": "https://example.com/", "title": "Example Domain", "text": "This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.\nهذا النطاق مُخصص للاستخدام في أمثلة التوثيق دون الحاجة إلى إذن. هذه ليست خدمة، يُرجى تجنب الاعتماد عليها لأغراض الاختبار والمراقبة.\n该域名仅用于文档示例，无需获得许可。这并非一项服务，请勿将其用于测试和监控目的。\nL’usage de ce domaine est réservé à des exemples de documentation, sans autorisation préalable. Il ne s’agit pas d’un service ; son utilisation à des fins de test ou de surveillance est à éviter.\nДанный домен предназначен для использования в примерах документации без необходимости получения предварительного разрешения. Это не сервис; не рекомендуется его использование для тестирования и мониторинга.\nEste dominio está destinado al uso en ejemplos de documentación sin necesidad de permiso. Esto no es un servicio; evitar utilizarlo para realizar pruebas o monitoreos.\nlink \"Learn more\" -> https://iana.org/help/example-domains [ref=1]", "refs": 1}
+[exit 0, 1454 ms]
+
+$ browse '{"action":"screenshot","path":"/workspace/shot.png"}' && file /workspace/shot.png
+{"ok": true, "url": "https://example.com/", "title": "Example Domain", "path": "/workspace/shot.png"}
+/workspace/shot.png: PNG image data, 1280 x 700, 8-bit/color RGB, non-interlaced
+[exit 0, 1764 ms]
+
+$ browse tabs
+{"ok": true, "tabs": [{"index": 0, "url": "https://example.com/", "title": "Example Domain", "current": true}]}
+[exit 0, 1584 ms]
+
+$ websearch rust 5
+[
+ {
+  "title": "Rust Programming Language",
+  "url": "https://rust-lang.org/",
+  "snippet": "Rust is a fast, memory-safe, and productive programming language that can run on embedded devices, web services, and more. Learn how to get started, why Rust is different, and how to join the community."
+ },
+ {
+  "title": "Rust - Explore, Build and Survive",
+  "url": "https://rust.facepunch.com/",
+  "snippet": "The only aim in Rust is to survive. Everything wants you to die - the island's wildlife and other inhabitants, the environment, other survivors. Do whatever it takes to last another night."
+ },
+ {
+  "title": "Save 50% on Rust on Steam",
+  "url": "https://store.steampowered.com/app/252490/Rust/",
+  "snippet": "The only aim in Rust is to survive. Everything wants you to die - the island's wildlife, other inhabitants, the environment, and other survivors. Do whatever it takes to last another night."
+ },
+ {
+  "title": "Rust (programming language) - Wikipedia",
+  "url": "https://en.wikipedia.org/wiki/Rust_(programming_language)",
+  "snippet": "Rust (programming language) ... Rust is a general-purpose programming language that emphasizes performance, type safety, concurrency, and memory safety. Rust supports multiple programming paradigms. It was influenced by ideas from functional programming, including immutability, higher-order functions, algebraic data types, and pattern matching."
+ },
+ {
+  "title": "Rust - Play - Rust",
+  "url": "https://rust.facepunch.com/play",
+  "snippet": "Rust now enters its 12th year of continued expansion and has had over 380 content updates, with a guaranteed content patch every month. These include regular balance fixes and improvements to AI, and graphics, as well as updates to environments and the frequent addition of content such as new maps, more weapons, extra vehicles, and a plethora of utility items."
+ }
+]
+[exit 0, 1020 ms]
+
+$ websearch rust | jq length
+8
+[exit 0, 983 ms]
+
+$ fetch https://example.com
+# Example Domain
+https://example.com
+
+This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.
+[exit 0, 396 ms]
+
+$ printf "# Report\n\nHello **box**.\n\n- one\n- two\n" > a.md && convert a.md a.docx && file a.docx
+a.docx (9954 bytes)
+a.docx: Microsoft Word 2007+
+[exit 0, 449 ms]
+
+$ convert a.docx a.pdf && file a.pdf && pdftotext a.pdf - | head -5
+a.pdf (25235 bytes)
+a.pdf: PDF document, version 1.7, 1 page(s) (zip deflate encoded)
+Report
+Hello box.
+•
+•
+
+[exit 0, 4240 ms]
+
+$ convert -size 64x64 xc:steelblue a.png 2>/dev/null || /usr/bin/convert -size 64x64 xc:steelblue a.png; convert a.png a.jpg && file a.jpg
+a.jpg (334 bytes)
+a.jpg: JPEG image data, JFIF standard 1.01, aspect ratio, density 0x0, segment length 16, baseline, precision 8, 64x64, components 3
+[exit 0, 427 ms]
+
+$ ffmpeg -nostdin -hide_banner -loglevel error -f lavfi -i sine=frequency=440:duration=1 a.wav && convert a.wav a.mp3 && file a.mp3
+a.mp3 (8586 bytes)
+a.mp3: Audio file with ID3 version 2.4.0, contains: MPEG ADTS, layer III, v1, 56 kbps, 44.1 kHz, Monaural
+[exit 0, 797 ms]
+
+$ convert a.png a.xyz; echo "exit=$?"
+convert: no converter for .png to .xyz (documents: pandoc/LibreOffice, images: ImageMagick, audio and video: ffmpeg)
+exit=2
+[exit 0, 183 ms]
+
+$ cargo new --quiet hello && cd hello && cargo run --quiet 2>&1 | tail -2
+Hello, world!
+[exit 0, 3827 ms]
+
+$ npm init -y >/dev/null && node -e "console.log(require(\"os\").platform())"
+linux
+[exit 0, 1599 ms]
+
+$ python3 -m venv .venv && .venv/bin/pip --version
+pip 24.0 from /workspace/.venv/lib/python3.12/site-packages/pip (python 3.12)
+[exit 0, 8393 ms]
+
+$ curl -sS -m 5 http://169.254.169.254/ ; echo "metadata exit=$?"
+curl: (7) Failed to connect to 169.254.169.254 port 80 after 0 ms: Couldn't connect to server
+metadata exit=7
+[exit 0, 119 ms]
+
+$ browse close
+{"ok": true, "closed": true}
+[exit 0, 328 ms]
+
+# cleaned up: 0 containers, 0 volumes

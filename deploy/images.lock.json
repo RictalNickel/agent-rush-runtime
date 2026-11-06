@@ -3,6 +3,9 @@
   "platform": "linux/amd64",
   "control_base": "ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852",
   "cli_sandbox": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+  "workspace_base": "mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f",
+  "workspace": "agent-rush-workspace@sha256:ebc275674643ed89334e12402cba4522621c56898ef30953e896e262d4cc303c",
+  "workspace_note": "Built on the worker from deploy/workspace.Dockerfile and box-qualified there (docs/evidence/live/box-qualification). Rebuilds pick up newer apt packages, so install-worker.sh pins each host to the digest it builds and qualifies.",
   "public_ca_bundle_sha256": "714d457d580922dbf1d0be8bd35ba236a842b50b0072ae791582a19adef772a5",
   "public_ca_source": "Debian ca-certificates 20250419, /usr/share/ca-certificates/mozilla/*.crt (sorted); session proxy roots excluded",
   "optional_profiles": {

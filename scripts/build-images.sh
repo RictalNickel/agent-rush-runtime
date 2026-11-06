@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# `build-images.sh --workspace` builds only the session workspace image (on the worker)
+# and prints the digest reference to record in deploy/images.lock.json as "workspace".
+if [ "${1:-}" = "--workspace" ]; then
+  docker build -f deploy/workspace.Dockerfile -t agent-rush-workspace:local deploy
+  echo "agent-rush-workspace@$(docker image inspect agent-rush-workspace:local --format '{{.Id}}')"
+  exit 0
+fi
 : "${CARGO_HOME:=/workspace/.toolchains/cargo}"
 : "${RUSTUP_HOME:=/workspace/.toolchains/rustup}"
 export CARGO_HOME RUSTUP_HOME
