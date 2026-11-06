@@ -592,8 +592,9 @@ impl InferenceGateway {
     }
 }
 
-/// Attempts a call makes while Vultr answers HTTP 429.
-const RATE_LIMIT_ATTEMPTS: u32 = 6;
+/// Attempts a call makes while Vultr answers HTTP 429: about two and a half minutes of
+/// backoff. Six attempts (about 45 s) were not enough for Flash with 72 sessions at once.
+const RATE_LIMIT_ATTEMPTS: u32 = 12;
 
 /// How long to wait after the `attempt`th 429: the provider's `Retry-After` seconds when
 /// given (at most 30), otherwise 2, 4, 8, 16 s, plus up to a second of jitter so parallel

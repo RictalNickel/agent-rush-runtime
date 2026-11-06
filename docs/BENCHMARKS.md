@@ -129,6 +129,22 @@ Flash on the 16 vCPU host, the everyday and the hard suite 8 times each, 48 sess
 
 No session was refused, rate-limited or failed by the system.
 
+## Live large demo
+
+On 2026-11-06 the public instance moved to a 16 vCPU / 64 GB worker ([LIVE_DEPLOYMENT.md](LIVE_DEPLOYMENT.md#large-worker-2026-11-06)). These runs went through the public URL, so through Caddy and the 2 vCPU control plane. The three demo sessions stayed open throughout. Evidence: [`live-large-demo-2026-11-06/`](evidence/live/live-large-demo-2026-11-06/).
+
+| Run | Sessions at once | Passed / refused | Notes |
+| --- | --- | --- | --- |
+| Box workloads | 32 | 0 refused | CPU 1.5 s, numpy 17.7 s, npm 7.5 s (medians) |
+| Box workloads | 64 | 0 refused | CPU 3.1 s, numpy 37.3 s, npm 16.1 s |
+| Box workloads | 80 | 3 refused | The 3 demo boxes counted toward the 80-box limit, since raised to 88 |
+| Agent, Flash: 48 everyday + 24 hard | 72 | 69/71 | One SQLite answer wrong. One session stopped by a Vultr 429 after 45 s of retries, which led to the longer retry. One run lost to a TLS timeout on the tester's connection |
+| Same, after the retry change | 72 | 69/71 | 24/24 hard. Both misses were the model's SQLite mistake; no session failed. One run lost to the tester's connection again |
+
+- The control plane was never the bottleneck: load at most 0.21 and memory at most 27 MB, with 80 boxes running on the worker.
+- The TLS timeouts were on the tester's side. Caddy logged no error, and 200 parallel TLS connections from another network all succeeded (worst 0.6 s).
+- Vultr rate-limits Flash, not only the full model, once about 70 sessions call it at once. The gateway now keeps retrying a 429 for about 2.5 minutes (12 attempts) before it gives up. Nothing is charged for those attempts.
+
 ## Soak: 12 minutes of session churn
 
 48 workers each loop as fast as they can: create a session, upload a 1 MiB file, hash it and run a short CPU job in the box, download it and compare, then delete the session for good.

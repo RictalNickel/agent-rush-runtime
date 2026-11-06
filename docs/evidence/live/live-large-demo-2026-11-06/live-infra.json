@@ -1,0 +1,201 @@
+{
+ "mode": "infra",
+ "label": "live public URL, worker voc-g-16c-64gb",
+ "host": "https://144-202-59-108.sslip.io",
+ "model": null,
+ "suite": "basic",
+ "started_at": 1793996396,
+ "seconds": 182.8,
+ "status": {
+  "inference_configured": true,
+  "limits": {
+   "box_cpu_millis": 1000,
+   "box_memory_mb": 512,
+   "max_audio_bytes": 26214400,
+   "max_box_calls_per_session": 4,
+   "max_event_page": 1000,
+   "max_exec_timeout_seconds": 600,
+   "max_file_bytes": 26214400,
+   "max_long_requests_per_owner": 150,
+   "max_mcp_batch": 16,
+   "max_message_bytes": 65536,
+   "max_open_sessions_per_owner": 150,
+   "max_streams_per_owner": 64,
+   "max_turn_seconds": 1800
+  },
+  "models": {
+   "default": "glm-5.3-flash",
+   "models": [
+    {
+     "default": true,
+     "id": "glm-5.3-flash",
+     "input_usd_per_million": 0.1,
+     "output_usd_per_million": 0.35
+    },
+    {
+     "default": false,
+     "id": "glm-5.3",
+     "input_usd_per_million": 0.75,
+     "output_usd_per_million": 3.0
+    }
+   ],
+   "per_session": true,
+   "provider": "vultr"
+  },
+  "provider": "vultr",
+  "sessions_available": true,
+  "version": "0.1.0",
+  "voice_available": false,
+  "worker_connected": true
+ },
+ "results": [
+  {
+   "concurrency": 32,
+   "wall_seconds": 33.6,
+   "workloads": {
+    "cold_start": {
+     "ok": 32,
+     "failed": 0,
+     "median_s": 1.35,
+     "max_s": 2.92,
+     "first_failure": null
+    },
+    "cpu_python": {
+     "ok": 32,
+     "failed": 0,
+     "median_s": 1.52,
+     "max_s": 2.35,
+     "first_failure": null
+    },
+    "numpy_matmul": {
+     "ok": 32,
+     "failed": 0,
+     "median_s": 17.66,
+     "max_s": 19.09,
+     "first_failure": null
+    },
+    "disk_write_256mb": {
+     "ok": 32,
+     "failed": 0,
+     "median_s": 1.98,
+     "max_s": 5.91,
+     "first_failure": null
+    },
+    "npm_install": {
+     "ok": 32,
+     "failed": 0,
+     "median_s": 7.49,
+     "max_s": 8.7,
+     "first_failure": null
+    }
+   }
+  },
+  {
+   "concurrency": 64,
+   "wall_seconds": 67.3,
+   "workloads": {
+    "cold_start": {
+     "ok": 64,
+     "failed": 0,
+     "median_s": 3.31,
+     "max_s": 5.48,
+     "first_failure": null
+    },
+    "cpu_python": {
+     "ok": 64,
+     "failed": 0,
+     "median_s": 3.09,
+     "max_s": 4.37,
+     "first_failure": null
+    },
+    "numpy_matmul": {
+     "ok": 64,
+     "failed": 0,
+     "median_s": 37.33,
+     "max_s": 41.67,
+     "first_failure": null
+    },
+    "disk_write_256mb": {
+     "ok": 64,
+     "failed": 0,
+     "median_s": 2.61,
+     "max_s": 10.88,
+     "first_failure": null
+    },
+    "npm_install": {
+     "ok": 64,
+     "failed": 0,
+     "median_s": 16.11,
+     "max_s": 22.13,
+     "first_failure": null
+    }
+   }
+  },
+  {
+   "concurrency": 80,
+   "wall_seconds": 81.9,
+   "workloads": {
+    "cold_start": {
+     "ok": 77,
+     "failed": 3,
+     "median_s": 3.46,
+     "max_s": 6.5,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.45,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "cpu_python": {
+     "ok": 77,
+     "failed": 3,
+     "median_s": 3.86,
+     "max_s": 5.33,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.22,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "numpy_matmul": {
+     "ok": 77,
+     "failed": 3,
+     "median_s": 46.99,
+     "max_s": 51.96,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.1,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "disk_write_256mb": {
+     "ok": 77,
+     "failed": 3,
+     "median_s": 5.73,
+     "max_s": 6.65,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.45,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "npm_install": {
+     "ok": 77,
+     "failed": 3,
+     "median_s": 18.09,
+     "max_s": 24.39,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.12,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    }
+   }
+  }
+ ]
+}

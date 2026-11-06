@@ -184,7 +184,7 @@ Settings are environment variables. The most important are below. The full list,
 ## Live demo
 
 - **Public instance:** https://144-202-59-108.sslip.io (Let's Encrypt certificate through Caddy).
-- **Where it runs:** two Vultr VMs in Chicago (`ord`): a control VM (2 vCPU, 4 GB) and a private worker VM (4 vCPU, 8 GB), about $0.082 per hour in total. See [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md).
+- **Where it runs:** two Vultr VMs in Chicago (`ord`): a control VM (2 vCPU, 4 GB) and a private worker VM (16 vCPU, 64 GB since 2026-11-06, for large demos), about $0.74 per hour in total. The worker has run 64 sandboxes and 72 agent sessions at once through the public URL. See [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md).
 - **Inference:** the public instance sends every agent call to Vultr Serverless Inference, using GLM 5.3 Flash.
 - **Evidence:** [VERIFICATION.md](docs/VERIFICATION.md) lists what was observed and when. Raw receipts are in [docs/evidence/live/](docs/evidence/live/), including the box qualification ([box-qualification-v2/](docs/evidence/live/box-qualification-v2/) and the earlier [box-qualification/](docs/evidence/live/box-qualification/)), the workspace image build ([workspace-image/](docs/evidence/live/workspace-image/)), a box round trip ([boxes/](docs/evidence/live/boxes/)), the session demo ([session-demo/](docs/evidence/live/session-demo/)), the MCP run ([mcp/](docs/evidence/live/mcp/)) and the voice service run ([voice/](docs/evidence/live/voice/)).
 

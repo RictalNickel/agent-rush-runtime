@@ -9,11 +9,27 @@ Deployed 2026-11-05 (UTC) on Vultr, Chicago (`ord`). It was approved to stay up 
 | Resource | Plan | Price | Role |
 | --- | --- | --- | --- |
 | `agent-rush-control` | vc2-2c-4gb (2 vCPU, 4 GB) | $0.027/h | Caddy HTTPS gateway, Rust control plane on loopback :8080, SQLite ledger |
-| `agent-rush-worker` | vc2-4c-8gb (4 vCPU, 8 GB) | $0.055/h | Private execution node: Docker + gVisor `runsc`, nginx mTLS ingress on the VPC address |
-| VPC `agent-rush-private` | 10.42.0.0/24 | free | control 10.42.0.3, worker 10.42.0.4 |
+| `agent-rush-worker16` | voc-g-16c-64gb-320s-amd (16 dedicated vCPU, 64 GB, 320 GB) | $0.658/h | **Live worker since 2026-11-06 20:19 UTC.** Private execution node: Docker + gVisor `runsc`, nginx mTLS ingress on the VPC address. `AR_BOX_MAX=88`, `AR_BOX_DISK_MB=3072` |
+| `agent-rush-worker` | vc2-4c-8gb (4 vCPU, 8 GB) | $0.055/h | The original worker, kept idle as a fallback |
+| VPC `agent-rush-private` | 10.42.0.0/24 | free | control 10.42.0.3, worker16 10.42.0.5, original worker 10.42.0.4 |
 | Two firewall groups, one SSH key | | free | SSH from the operator's IP only; 80/443 public on control |
 
-Total: **$0.082/hour**, about $2 per day. Resource IDs and the exact delete calls are kept in the operator's private ledger outside Git, not in this repository.
+Total: **$0.74/hour**, about $18 per day (it was $0.082/hour before the large worker). Resource IDs and the exact delete calls are kept in the operator's private ledger outside Git, not in this repository.
+
+## Large worker (2026-11-06)
+
+The public instance moved to a 16 vCPU / 64 GB worker so a large demo works: many people, or one script, running dozens of sessions at once.
+
+- **How it was added:** `scripts/install.sh --role worker` with the tested binary (10/10 host checks and 9/9 box checks on the first run), then the same mTLS front end as the original worker. It reuses the worker certificate, since that names `worker.agent-rush.internal`, not an IP, and the original worker's token. `ufw` lets only control reach port 8443.
+- **Switch:** control's `/etc/hosts` maps `worker.agent-rush.internal` to 10.42.0.5. Rolling back means pointing it at 10.42.0.4 and restarting control; backups are `*.bak-20261106h`.
+- **Moved data:** the three demo sessions' workspace disks were copied over and checked by hash.
+- **Control settings for scale:** `AR_SESSION_MAX_OPEN=150`, `AR_SESSION_MAX_STREAMS=64`, `AR_SESSION_MAX_LONG_REQUESTS=150`, `AR_SESSION_MAX_BOX_CALLS=200`, `AR_SESSION_BOX_MB=512`.
+- **Measured through the public URL**, so through Caddy and the 2 vCPU control plane:
+  - 64 box sessions at once, none refused.
+  - 72 agent sessions at once (48 everyday tasks and 24 hard ones): 69 of 71 passed in the first run. One run was lost to a TLS timeout on the tester's own connection, and Caddy logged no error.
+  - Control load stayed under 0.2 and its memory under 30 MB.
+  - Vultr rate-limited Flash once at that load, so the gateway now retries 429s for about 2.5 minutes instead of 45 s.
+  - Details: [BENCHMARKS.md](BENCHMARKS.md#live-large-demo).
 
 ## Worker host
 
