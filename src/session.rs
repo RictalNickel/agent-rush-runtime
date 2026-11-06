@@ -19,6 +19,7 @@ use crate::{
     },
 };
 use anyhow::{Context, Result, anyhow, bail, ensure};
+use axum::body::Bytes;
 use futures_util::future::BoxFuture;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -29,7 +30,7 @@ use std::{
     time::Duration,
 };
 use tokio::{
-    sync::{broadcast, watch},
+    sync::{OwnedSemaphorePermit, Semaphore, broadcast, watch},
     time::Instant,
 };
 
@@ -72,6 +73,19 @@ pub struct SessionLimits {
     pub max_turn_usd: f64,
     /// Model spend a session may reach before its next model call is refused.
     pub max_session_usd: f64,
+    /// Sessions one owner may have open (not closed) at once.
+    pub max_open_sessions_per_owner: usize,
+    /// Live event streams (SSE) one owner may hold open at once.
+    pub max_streams_per_owner: usize,
+    /// Long requests one owner may have in flight at once: MCP `wait_for_reply` and the
+    /// direct workspace calls (exec, file reads and writes) of the API and MCP server.
+    pub max_long_requests_per_owner: usize,
+    /// Box exec and file calls in flight across every session.
+    pub max_box_calls: usize,
+    /// Box exec and file calls in flight for one session; more wait their turn.
+    pub max_box_calls_per_session: usize,
+    /// JSON-RPC messages in one MCP batch.
+    pub max_mcp_batch: usize,
 }
 // The spend caps are finite configuration values, never NaN, so equality is total.
 impl Eq for SessionLimits {}
@@ -84,6 +98,12 @@ impl Default for SessionLimits {
             box_cpu_millis: 1000,
             max_turn_usd: 0.50,
             max_session_usd: 5.00,
+            max_open_sessions_per_owner: 20,
+            max_streams_per_owner: 8,
+            max_long_requests_per_owner: 8,
+            max_box_calls: 16,
+            max_box_calls_per_session: 4,
+            max_mcp_batch: 16,
         }
     }
 }
@@ -135,6 +155,52 @@ pub enum SessionError {
     NotFound,
     #[error("session is closed")]
     Closed,
+    /// The owner is at `max_open_sessions_per_owner` (429).
+    #[error("too many open sessions; close one")]
+    TooManySessions,
+    /// The owner is at `max_streams_per_owner` (429).
+    #[error("too many open event streams; close one")]
+    TooManyStreams,
+    /// The owner is at `max_long_requests_per_owner` (429).
+    #[error("too many requests in flight; wait for one to finish")]
+    TooManyRequests,
+}
+
+type OwnerCounts = Arc<Mutex<HashMap<String, usize>>>;
+fn lock_counts(counts: &OwnerCounts) -> MutexGuard<'_, HashMap<String, usize>> {
+    counts.lock().unwrap_or_else(|e| e.into_inner())
+}
+/// One of an owner's slots under a per-owner cap (streams, long requests). The slot is
+/// given back when this is dropped: when the request ends or its client goes away.
+#[derive(Debug)]
+pub struct OwnerSlot {
+    counts: OwnerCounts,
+    owner: String,
+}
+impl OwnerSlot {
+    fn take(counts: &OwnerCounts, owner: &str, max: usize) -> Option<Self> {
+        let mut map = lock_counts(counts);
+        let held = map.get(owner).copied().unwrap_or(0);
+        if held >= max {
+            return None;
+        }
+        map.insert(owner.to_string(), held + 1);
+        Some(Self {
+            counts: counts.clone(),
+            owner: owner.to_string(),
+        })
+    }
+}
+impl Drop for OwnerSlot {
+    fn drop(&mut self) {
+        let mut map = lock_counts(&self.counts);
+        if let Some(n) = map.get_mut(&self.owner) {
+            *n = n.saturating_sub(1);
+            if *n == 0 {
+                map.remove(&self.owner);
+            }
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -172,6 +238,12 @@ struct Inner {
     /// This lock also orders "queue an interjection" against "end the turn".
     turns: Mutex<HashMap<String, watch::Sender<bool>>>,
     box_locks: Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>,
+    /// Box exec and file calls in flight, across sessions (`max_box_calls`).
+    box_calls: Arc<Semaphore>,
+    /// Box exec and file calls in flight per session (`max_box_calls_per_session`).
+    session_box_calls: Mutex<HashMap<String, Arc<Semaphore>>>,
+    streams: OwnerCounts,
+    long_requests: OwnerCounts,
 }
 
 /// Settles a turn task that panicked or was dropped before it settled itself, so the
@@ -231,6 +303,10 @@ impl Sessions {
             events,
             turns: Mutex::new(HashMap::new()),
             box_locks: Mutex::new(HashMap::new()),
+            box_calls: Arc::new(Semaphore::new(limits.max_box_calls.max(1))),
+            session_box_calls: Mutex::new(HashMap::new()),
+            streams: OwnerCounts::default(),
+            long_requests: OwnerCounts::default(),
         });
         // A turn cannot survive a restart of this process.
         for session in inner.ledger.running_agent_sessions().unwrap_or_default() {
@@ -253,10 +329,35 @@ impl Sessions {
     pub fn limits(&self) -> SessionLimits {
         self.inner.limits
     }
+    /// Creates a session. Refused with `SessionError::TooManySessions` while the owner
+    /// already has `max_open_sessions_per_owner` sessions that are not closed.
     pub fn create(&self, owner: &str, title: Option<&str>) -> Result<SessionView> {
         self.inner
             .ledger
-            .create_agent_session(owner, title.unwrap_or(""))
+            .create_agent_session_within(
+                owner,
+                title.unwrap_or(""),
+                self.inner.limits.max_open_sessions_per_owner,
+            )?
+            .ok_or_else(|| SessionError::TooManySessions.into())
+    }
+    /// A slot for one live event stream, held until the stream ends.
+    pub fn stream_slot(&self, owner: &str) -> Result<OwnerSlot> {
+        OwnerSlot::take(
+            &self.inner.streams,
+            owner,
+            self.inner.limits.max_streams_per_owner,
+        )
+        .ok_or_else(|| SessionError::TooManyStreams.into())
+    }
+    /// A slot for one long request (waiting for a reply, a direct workspace call).
+    pub fn long_request_slot(&self, owner: &str) -> Result<OwnerSlot> {
+        OwnerSlot::take(
+            &self.inner.long_requests,
+            owner,
+            self.inner.limits.max_long_requests_per_owner,
+        )
+        .ok_or_else(|| SessionError::TooManyRequests.into())
     }
     pub fn list(&self, owner: &str) -> Result<Vec<SessionView>> {
         self.inner.ledger.agent_sessions(owner)
@@ -371,8 +472,9 @@ impl Sessions {
             inner.ledger.set_session_box(id, None)?;
         }
         drop(guard);
-        // A closed session never uses its box lock again.
+        // A closed session never uses its box lock or call limit again.
         inner.box_locks.lock().unwrap().remove(id);
+        inner.session_box_calls.lock().unwrap().remove(id);
         inner.emit(id, "status", json!({"status":"closed"}))?;
         Ok(())
     }
@@ -413,12 +515,13 @@ impl Sessions {
     pub async fn read_file(&self, owner: &str, id: &str, path: &str) -> Result<FileRead> {
         self.inner.read_in_box(owner, id, path).await
     }
+    /// Writes a file. The bytes are handed on to the box client without a copy.
     pub async fn write_file(
         &self,
         owner: &str,
         id: &str,
         path: &str,
-        bytes: &[u8],
+        bytes: Bytes,
     ) -> Result<WriteResult> {
         ensure!(bytes.len() <= MAX_FILE_BYTES, "file exceeds 25 MiB");
         self.inner.write_in_box(owner, id, path, bytes).await
@@ -868,7 +971,7 @@ impl Inner {
             )),
             ToolCall::WriteFile { path, content } => {
                 let written = self
-                    .write_in_box(owner, id, &path, content.as_bytes())
+                    .write_in_box(owner, id, &path, Bytes::from(content))
                     .await?;
                 Ok(ToolOutput::ok(format!(
                     "Wrote {} bytes to {path}.",
@@ -887,7 +990,7 @@ impl Inner {
                 let text = String::from_utf8(bytes)
                     .map_err(|_| anyhow!("{path} is not UTF-8 text; use write_file or bash"))?;
                 let (updated, count) = apply_edit(&text, &old, &new, replace_all)?;
-                self.write_in_box(owner, id, &path, updated.as_bytes())
+                self.write_in_box(owner, id, &path, Bytes::from(updated))
                     .await?;
                 Ok(ToolOutput::ok(format!(
                     "Replaced {count} occurrence{} in {path}.",
@@ -1059,7 +1162,7 @@ impl Inner {
                 };
                 let path = format!("/workspace/.skills/{}/SKILL.md", skill.name);
                 let copied = self
-                    .write_in_box(owner, id, &path, skill.to_markdown().as_bytes())
+                    .write_in_box(owner, id, &path, Bytes::from(skill.to_markdown()))
                     .await
                     .is_ok();
                 Ok(ToolOutput::ok(format!(
@@ -1198,6 +1301,7 @@ impl Inner {
         if session.status == SessionStatus::Closed {
             drop(guard);
             self.box_locks.lock().unwrap().remove(id);
+            self.session_box_calls.lock().unwrap().remove(id);
             return Err(SessionError::Closed.into());
         }
         if let Some(box_id) = session.box_id {
@@ -1258,12 +1362,45 @@ impl Inner {
         let box_id = self.ensure_box(owner, id).await?;
         op(self.boxes.clone(), box_id).await
     }
+    /// Waits for a box call slot: first the session's own (`max_box_calls_per_session`),
+    /// then a global one (`max_box_calls`). Checks ownership first, so an id that is not
+    /// the owner's never gets an entry in the per-session map.
+    async fn box_call_permits(
+        &self,
+        owner: &str,
+        id: &str,
+    ) -> Result<(OwnedSemaphorePermit, OwnedSemaphorePermit)> {
+        if self.owned(owner, id)?.status == SessionStatus::Closed {
+            return Err(SessionError::Closed.into());
+        }
+        let per_session = self
+            .session_box_calls
+            .lock()
+            .unwrap()
+            .entry(id.to_string())
+            .or_insert_with(|| {
+                Arc::new(Semaphore::new(self.limits.max_box_calls_per_session.max(1)))
+            })
+            .clone();
+        let local = per_session
+            .acquire_owned()
+            .await
+            .map_err(|_| anyhow!("box call limit closed"))?;
+        let global = self
+            .box_calls
+            .clone()
+            .acquire_owned()
+            .await
+            .map_err(|_| anyhow!("box call limit closed"))?;
+        Ok((local, global))
+    }
     async fn exec_in_box(
         &self,
         owner: &str,
         id: &str,
         request: &ExecRequest,
     ) -> Result<ExecResult> {
+        let _permits = self.box_call_permits(owner, id).await?;
         let limit = Duration::from_secs(
             request
                 .timeout_seconds
@@ -1282,6 +1419,7 @@ impl Inner {
         .await
     }
     async fn read_in_box(&self, owner: &str, id: &str, path: &str) -> Result<FileRead> {
+        let _permits = self.box_call_permits(owner, id).await?;
         self.with_box(owner, id, |boxes, box_id| {
             let path = path.to_string();
             async move {
@@ -1300,15 +1438,17 @@ impl Inner {
         owner: &str,
         id: &str,
         path: &str,
-        bytes: &[u8],
+        bytes: Bytes,
     ) -> Result<WriteResult> {
+        let _permits = self.box_call_permits(owner, id).await?;
         self.with_box(owner, id, |boxes, box_id| {
             let path = path.to_string();
-            let bytes = bytes.to_vec();
+            // A reference-counted handle: a retry on a new box does not copy the bytes.
+            let bytes = bytes.clone();
             async move {
                 tokio::time::timeout(
                     Duration::from_secs(BOX_FILE_SECONDS),
-                    boxes.write_file(&box_id, &path, &bytes),
+                    boxes.write_file_bytes(&box_id, &path, bytes),
                 )
                 .await
                 .map_err(|_| anyhow!("the workspace did not answer in time"))?

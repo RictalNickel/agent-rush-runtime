@@ -1,10 +1,11 @@
 mod common;
 
+use agent_rush::session::SessionLimits;
 use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use common::{App, app, bash, reply, send};
+use common::{App, app, app_with_limits, bash, reply, send};
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
 
@@ -363,4 +364,109 @@ async fn another_owners_session_is_not_found_on_every_session_tool() {
     let view = a.sessions.get("alice", &id).unwrap().unwrap();
     assert_eq!(view.last_seq, 0);
     assert!(view.box_id.is_none());
+}
+
+/// Regression: a batch could hold any number of calls (each one up to a 300 s wait).
+#[tokio::test]
+async fn batches_beyond_the_cap_are_refused() {
+    let a = app(vec![]);
+    let key = a.key("alice");
+    let ping = |id: usize| json!({"jsonrpc":"2.0","id":id,"method":"ping"});
+    let max = SessionLimits::default().max_mcp_batch;
+    assert_eq!(max, 16);
+    let (status, reply) = rpc(
+        &a,
+        Some(&key),
+        json!((0..max).map(ping).collect::<Vec<_>>()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(reply.as_array().unwrap().len(), max);
+    let (status, reply) = rpc(
+        &a,
+        Some(&key),
+        json!((0..=max).map(ping).collect::<Vec<_>>()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(reply["error"]["code"], -32600, "{reply}");
+    assert!(
+        reply["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("at most 16"),
+        "{reply}"
+    );
+}
+
+/// Regression: start_session had no cap on open sessions per owner.
+#[tokio::test]
+async fn start_session_beyond_the_open_session_cap_is_a_tool_error() {
+    let a = app_with_limits(
+        vec![],
+        SessionLimits {
+            max_open_sessions_per_owner: 1,
+            ..SessionLimits::default()
+        },
+    );
+    let key = a.key("alice");
+    let (is_error, first) = tool(&a, &key, "start_session", json!({})).await;
+    assert!(!is_error, "{first}");
+    let (is_error, second) = tool(&a, &key, "start_session", json!({})).await;
+    assert!(is_error);
+    assert_eq!(second, json!("too many open sessions; close one"));
+    let id = first["session_id"].as_str().unwrap();
+    let (is_error, _) = tool(&a, &key, "close_session", json!({"session_id": id})).await;
+    assert!(!is_error);
+    let (is_error, _) = tool(&a, &key, "start_session", json!({})).await;
+    assert!(!is_error);
+}
+
+/// Regression: wait_for_reply and workspace calls had no per-owner concurrency cap.
+#[tokio::test]
+async fn long_tool_calls_beyond_the_per_owner_cap_are_tool_errors() {
+    let a = app_with_limits(
+        vec![],
+        SessionLimits {
+            max_long_requests_per_owner: 1,
+            ..SessionLimits::default()
+        },
+    );
+    let key = a.key("alice");
+    let session = a.sessions.create("alice", None).unwrap();
+    let held = a.sessions.long_request_slot("alice").unwrap();
+    let id = session.id.as_str();
+    for (name, arguments) in [
+        (
+            "wait_for_reply",
+            json!({"session_id": id, "timeout_seconds": 1}),
+        ),
+        ("run_command", json!({"session_id": id, "command": "id"})),
+        ("read_file", json!({"session_id": id, "path": "a.txt"})),
+        (
+            "write_file",
+            json!({"session_id": id, "path": "a.txt", "content": "x"}),
+        ),
+        ("list_files", json!({"session_id": id})),
+    ] {
+        let (is_error, message) = tool(&a, &key, name, arguments).await;
+        assert!(is_error, "{name}: {message}");
+        assert_eq!(
+            message,
+            json!("too many requests in flight; wait for one to finish"),
+            "{name}"
+        );
+    }
+    // Quick calls are not capped.
+    let (is_error, _) = tool(&a, &key, "list_sessions", json!({})).await;
+    assert!(!is_error);
+    drop(held);
+    let (is_error, reply) = tool(
+        &a,
+        &key,
+        "wait_for_reply",
+        json!({"session_id": id, "timeout_seconds": 1}),
+    )
+    .await;
+    assert!(!is_error, "{reply}");
 }

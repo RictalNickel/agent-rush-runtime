@@ -195,6 +195,11 @@ impl App {
 
 /// The control router with fake sessions; webhooks may target loopback (test-only).
 pub fn app(steps: Vec<Value>) -> App {
+    app_with_limits(steps, SessionLimits::default())
+}
+
+/// `app` with explicit session limits.
+pub fn app_with_limits(steps: Vec<Value>, limits: SessionLimits) -> App {
     let mut settings = Settings::local();
     settings.operator_password = PASSWORD.into();
     let mut state = AppState::new(settings, Ledger::memory(1024).unwrap()).unwrap();
@@ -204,7 +209,7 @@ pub fn app(steps: Vec<Value>) -> App {
         FakeModel::new(steps),
         boxes.clone(),
         Arc::new(McpRegistry::empty()),
-        SessionLimits::default(),
+        limits,
     );
     state.sessions = Some(sessions.clone());
     state.webhook_guard = UrlGuard::allow_loopback_for_tests();
@@ -240,6 +245,60 @@ pub async fn call(
     let mut builder = Request::builder().method(method).uri(path);
     if let Some(key) = key {
         builder = builder.header("authorization", format!("Bearer {key}"));
+    }
+    let body = match body {
+        Some(v) => {
+            builder = builder.header("content-type", "application/json");
+            Body::from(v.to_string())
+        }
+        None => Body::empty(),
+    };
+    let response = send(router, builder.body(body).unwrap()).await;
+    let status = response.status();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let value = serde_json::from_slice(&bytes)
+        .unwrap_or_else(|_| json!({"raw": String::from_utf8_lossy(&bytes)}));
+    (status, value)
+}
+
+/// Signs in as the operator; returns the `ar_session=...` cookie pair and the CSRF token.
+pub async fn operator_login(router: &Router) -> (String, String) {
+    let response = send(
+        router,
+        Request::post("/api/login")
+            .header("content-type", "application/json")
+            .body(Body::from(json!({"password": PASSWORD}).to_string()))
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    let cookie = response.headers()["set-cookie"]
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .to_string();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let body: Value = serde_json::from_slice(&bytes).unwrap();
+    (cookie, body["csrf"].as_str().unwrap().to_string())
+}
+
+/// A JSON request with the operator cookie and, when given, the CSRF header.
+pub async fn call_operator(
+    router: &Router,
+    method: &str,
+    path: &str,
+    cookie: &str,
+    csrf: Option<&str>,
+    body: Option<Value>,
+) -> (StatusCode, Value) {
+    let mut builder = Request::builder()
+        .method(method)
+        .uri(path)
+        .header("cookie", cookie);
+    if let Some(csrf) = csrf {
+        builder = builder.header("x-csrf-token", csrf);
     }
     let body = match body {
         Some(v) => {

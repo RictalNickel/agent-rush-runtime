@@ -5,7 +5,8 @@
 //! Webhook URLs are operator-facing input, so the control plane refuses any URL whose
 //! host resolves to a private, loopback, link-local or otherwise non-public address, both
 //! when the webhook is created and again at every delivery. Each delivery connects to the
-//! address it checked (no second DNS lookup) and never follows redirects.
+//! address it checked (no second DNS lookup), ignores proxy settings from the environment
+//! and never follows redirects.
 use crate::{ledger::Ledger, session::Sessions, session_store::SessionEvent};
 use anyhow::{Context, Result, anyhow, bail, ensure};
 use serde_json::{Value, json};
@@ -159,6 +160,19 @@ impl UrlGuard {
     }
 }
 
+/// The client for one delivery: it connects only to `addr`, the address `UrlGuard::check`
+/// approved. `no_proxy` matters: a proxy from the environment (`HTTPS_PROXY`,
+/// `ALL_PROXY`, ...) would make the proxy resolve and connect to the host itself, which
+/// skips the pinned address and so the private-address check.
+fn delivery_client(host: &str, addr: SocketAddr) -> Result<reqwest::Client> {
+    Ok(reqwest::Client::builder()
+        .no_proxy()
+        .timeout(DELIVERY_TIMEOUT)
+        .redirect(reqwest::redirect::Policy::none())
+        .resolve(host, addr)
+        .build()?)
+}
+
 /// Sends one signed body, retrying twice. Re-checks the URL before each attempt.
 pub async fn deliver(guard: UrlGuard, url: &str, secret: &str, body: &[u8]) -> Result<()> {
     let signature = signature(secret, body);
@@ -172,11 +186,7 @@ pub async fn deliver(guard: UrlGuard, url: &str, secret: &str, body: &[u8]) -> R
             Err(e) => return Err(e),
         };
         let host = parsed.host_str().unwrap_or_default().to_string();
-        let client = reqwest::Client::builder()
-            .timeout(DELIVERY_TIMEOUT)
-            .redirect(reqwest::redirect::Policy::none())
-            .resolve(&host, addr)
-            .build()?;
+        let client = delivery_client(&host, addr)?;
         match client
             .post(parsed)
             .header(reqwest::header::CONTENT_TYPE, "application/json")

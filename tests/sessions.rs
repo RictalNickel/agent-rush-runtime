@@ -10,6 +10,7 @@ use agent_rush::{
     tools::{ToolCall, apply_edit, expand_template, parse_call, shell_quote, truncate_bytes},
 };
 use anyhow::{Result, anyhow, bail};
+use axum::body::Bytes;
 use futures_util::future::BoxFuture;
 use serde_json::{Value, json};
 use std::{
@@ -129,6 +130,11 @@ struct FakeBoxes {
     /// Releases a running `block` command.
     exec_release: Notify,
     creates: AtomicUsize,
+    /// Exec calls running now, and the most ever seen at once.
+    in_flight: AtomicUsize,
+    max_in_flight: AtomicUsize,
+    /// Address of the last buffer `write_file_bytes` received.
+    last_write_ptr: AtomicUsize,
 }
 fn normalize(path: &str) -> String {
     path.trim_start_matches("/workspace/")
@@ -161,6 +167,15 @@ impl BoxClient for FakeBoxes {
                 .lock()
                 .unwrap()
                 .push((box_id.to_string(), request.command.clone()));
+            let now = self.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
+            self.max_in_flight.fetch_max(now, Ordering::SeqCst);
+            struct Leave<'a>(&'a AtomicUsize);
+            impl Drop for Leave<'_> {
+                fn drop(&mut self) {
+                    self.0.fetch_sub(1, Ordering::SeqCst);
+                }
+            }
+            let _leave = Leave(&self.in_flight);
             let command = request.command.as_str();
             if command == "lose-the-box" && self.lose_once.swap(false, Ordering::SeqCst) {
                 self.boxes.lock().unwrap().remove(box_id);
@@ -226,6 +241,16 @@ impl BoxClient for FakeBoxes {
                 sha256: "fake".into(),
             })
         })
+    }
+    fn write_file_bytes<'a>(
+        &'a self,
+        box_id: &'a str,
+        path: &'a str,
+        bytes: Bytes,
+    ) -> BoxFuture<'a, Result<WriteResult>> {
+        self.last_write_ptr
+            .store(bytes.as_ptr() as usize, Ordering::SeqCst);
+        Box::pin(async move { self.write_file(box_id, path, &bytes).await })
     }
     fn destroy<'a>(&'a self, box_id: &'a str) -> BoxFuture<'a, Result<()>> {
         Box::pin(async move {
@@ -736,7 +761,7 @@ async fn ten_megabytes_of_output_is_truncated_to_the_context_budget() {
     let mut blob = vec![0xffu8; 10 * 1024 * 1024];
     blob[0] = 0;
     h.sessions
-        .write_file("alice", &session.id, "blob.bin", &blob)
+        .write_file("alice", &session.id, "blob.bin", Bytes::from(blob))
         .await
         .unwrap();
     h.sessions.send("alice", &session.id, "Make noise").unwrap();
@@ -859,7 +884,9 @@ async fn another_owner_cannot_get_send_exec_or_read_events() {
     ));
     assert!(not_found(s.read_file("bob", &id, "a").await.unwrap_err()));
     assert!(not_found(
-        s.write_file("bob", &id, "a", b"x").await.unwrap_err()
+        s.write_file("bob", &id, "a", Bytes::from_static(b"x"))
+            .await
+            .unwrap_err()
     ));
     assert!(not_found(s.close("bob", &id).await.unwrap_err()));
     assert!(not_found(s.wait_idle("bob", &id, WAIT).await.unwrap_err()));
@@ -1190,4 +1217,166 @@ async fn closing_a_session_forgets_its_box_lock() {
             .is_err()
     );
     assert_eq!(h.sessions.tracked_box_locks(), 0);
+}
+
+fn blocking_exec(sessions: &Sessions, id: &str) -> tokio::task::JoinHandle<Result<ExecResult>> {
+    let sessions = sessions.clone();
+    let id = id.to_string();
+    tokio::spawn(async move {
+        sessions
+            .exec(
+                "alice",
+                &id,
+                ExecRequest {
+                    command: "block".into(),
+                    ..Default::default()
+                },
+            )
+            .await
+    })
+}
+
+/// Waits until `n` fake execs are running, lets the rest queue, then releases them all.
+async fn settle_and_release(
+    h: &Harness,
+    n: usize,
+    tasks: Vec<tokio::task::JoinHandle<Result<ExecResult>>>,
+) {
+    tokio::time::timeout(WAIT, async {
+        while h.boxes.in_flight.load(Ordering::SeqCst) < n {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("box calls did not start");
+    // Give queued calls a chance to (wrongly) start.
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    assert_eq!(h.boxes.max_in_flight.load(Ordering::SeqCst), n);
+    let all = futures_util::future::join_all(tasks);
+    tokio::pin!(all);
+    let results = tokio::time::timeout(WAIT, async {
+        loop {
+            h.boxes.exec_release.notify_waiters();
+            tokio::select! {
+                results = &mut all => break results,
+                _ = tokio::time::sleep(Duration::from_millis(10)) => {}
+            }
+        }
+    })
+    .await
+    .expect("box calls did not finish");
+    for result in results {
+        result.unwrap().unwrap();
+    }
+    assert_eq!(h.boxes.max_in_flight.load(Ordering::SeqCst), n);
+}
+
+/// Regression: box exec and file calls were unbounded per session.
+#[tokio::test]
+async fn box_calls_per_session_are_limited() {
+    let h = harness(
+        vec![],
+        SessionLimits {
+            max_box_calls_per_session: 2,
+            ..SessionLimits::default()
+        },
+    );
+    let session = h.sessions.create("alice", None).unwrap();
+    let tasks = (0..5)
+        .map(|_| blocking_exec(&h.sessions, &session.id))
+        .collect();
+    settle_and_release(&h, 2, tasks).await;
+}
+
+/// Regression: box exec and file calls were unbounded across sessions.
+#[tokio::test]
+async fn box_calls_across_sessions_are_limited() {
+    let h = harness(
+        vec![],
+        SessionLimits {
+            max_box_calls: 3,
+            ..SessionLimits::default()
+        },
+    );
+    let mut tasks = Vec::new();
+    for _ in 0..3 {
+        let session = h.sessions.create("alice", None).unwrap();
+        tasks.push(blocking_exec(&h.sessions, &session.id));
+        tasks.push(blocking_exec(&h.sessions, &session.id));
+    }
+    settle_and_release(&h, 3, tasks).await;
+}
+
+/// Regression: an upload was copied on its way to the box client.
+#[tokio::test]
+async fn uploads_reach_the_box_client_without_a_copy() {
+    let h = harness(vec![], SessionLimits::default());
+    let session = h.sessions.create("alice", None).unwrap();
+    let upload = Bytes::from(vec![7u8; 1024 * 1024]);
+    let address = upload.as_ptr() as usize;
+    let written = h
+        .sessions
+        .write_file("alice", &session.id, "upload.bin", upload)
+        .await
+        .unwrap();
+    assert_eq!(written.bytes, 1024 * 1024);
+    assert_eq!(h.boxes.last_write_ptr.load(Ordering::SeqCst), address);
+}
+
+/// Regression: an owner could open sessions without bound.
+#[tokio::test]
+async fn open_sessions_are_capped_per_owner_and_closed_ones_do_not_count() {
+    let h = harness(
+        vec![],
+        SessionLimits {
+            max_open_sessions_per_owner: 3,
+            ..SessionLimits::default()
+        },
+    );
+    let ids: Vec<String> = (0..3)
+        .map(|_| h.sessions.create("alice", None).unwrap().id)
+        .collect();
+    let error = h.sessions.create("alice", None).unwrap_err();
+    assert!(matches!(
+        error.downcast_ref::<SessionError>(),
+        Some(SessionError::TooManySessions)
+    ));
+    assert_eq!(error.to_string(), "too many open sessions; close one");
+    h.sessions.create("bob", None).unwrap();
+    h.sessions.close("alice", &ids[1]).await.unwrap();
+    h.sessions.create("alice", None).unwrap();
+    assert!(h.sessions.create("alice", None).is_err());
+}
+
+#[tokio::test]
+async fn owner_slots_are_capped_and_given_back_on_drop() {
+    let h = harness(
+        vec![],
+        SessionLimits {
+            max_streams_per_owner: 2,
+            max_long_requests_per_owner: 1,
+            ..SessionLimits::default()
+        },
+    );
+    let s = &h.sessions;
+    let a = s.stream_slot("alice").unwrap();
+    let _b = s.stream_slot("alice").unwrap();
+    assert!(matches!(
+        s.stream_slot("alice")
+            .unwrap_err()
+            .downcast_ref::<SessionError>(),
+        Some(SessionError::TooManyStreams)
+    ));
+    s.stream_slot("bob").unwrap();
+    drop(a);
+    let _c = s.stream_slot("alice").unwrap();
+    let long = s.long_request_slot("alice").unwrap();
+    assert!(matches!(
+        s.long_request_slot("alice")
+            .unwrap_err()
+            .downcast_ref::<SessionError>(),
+        Some(SessionError::TooManyRequests)
+    ));
+    drop(long);
+    s.long_request_slot("alice").unwrap();
 }

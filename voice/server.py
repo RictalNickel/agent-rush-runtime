@@ -148,8 +148,36 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="Agent Rush voice", version="1", lifespan=lifespan)
 
 
+# The only input containers ffmpeg may open, as its demuxer names. "matroska" covers WebM
+# and "mov" covers MP4 and M4A audio. Anything else (playlists, image sequences, concat
+# lists and the like, which can make ffmpeg open other files or URLs) is refused.
+INPUT_DEMUXERS = ("matroska", "ogg", "wav", "mp3", "mov")
+
+
+def sniff_container(data: bytes) -> str | None:
+    """The demuxer for an upload, from its first bytes, or None if it is not allowed."""
+    if data[:4] == b"\x1a\x45\xdf\xa3":  # EBML: WebM or Matroska
+        return "matroska"
+    if data[:4] == b"OggS":
+        return "ogg"
+    if data[:4] == b"RIFF" and data[8:12] == b"WAVE":
+        return "wav"
+    if data[:3] == b"ID3" or (len(data) >= 2 and data[0] == 0xFF and data[1] & 0xE0 == 0xE0):
+        return "mp3"
+    if data[4:8] == b"ftyp":  # ISO base media: MP4, M4A
+        return "mov"
+    return None
+
+
 def to_pcm_16k_mono(data: bytes) -> bytes:
-    """Convert any audio container ffmpeg understands to raw 16 kHz mono signed 16-bit PCM."""
+    """Convert WebM, Ogg, WAV, MP3 or MP4/M4A audio to raw 16 kHz mono signed 16-bit PCM.
+
+    ffmpeg reads only from the pipe (no file or network protocols) and only with the
+    demuxer the upload's leading bytes name, from the INPUT_DEMUXERS allowlist.
+    """
+    container = sniff_container(data)
+    if container is None:
+        raise ValueError("unsupported audio container")
     proc = subprocess.run(
         [
             "ffmpeg",
@@ -157,6 +185,12 @@ def to_pcm_16k_mono(data: bytes) -> bytes:
             "-hide_banner",
             "-loglevel",
             "error",
+            "-protocol_whitelist",
+            "pipe",
+            "-format_whitelist",
+            ",".join(INPUT_DEMUXERS),
+            "-f",
+            container,
             "-i",
             "pipe:0",
             "-vn",

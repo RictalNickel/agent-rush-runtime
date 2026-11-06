@@ -8,6 +8,7 @@ use crate::{
     },
 };
 use anyhow::{Context, Result, ensure};
+use axum::body::Bytes;
 use futures_util::{StreamExt, future::BoxFuture};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -166,6 +167,15 @@ impl BoxClient for HttpBoxClient {
         path: &'a str,
         bytes: &'a [u8],
     ) -> BoxFuture<'a, Result<WriteResult>> {
+        self.write_file_bytes(box_id, path, Bytes::copy_from_slice(bytes))
+    }
+    /// Sends the bytes as the request body as they are (no copy).
+    fn write_file_bytes<'a>(
+        &'a self,
+        box_id: &'a str,
+        path: &'a str,
+        bytes: Bytes,
+    ) -> BoxFuture<'a, Result<WriteResult>> {
         Box::pin(async move {
             ensure!(
                 bytes.len() <= MAX_FILE_BYTES,
@@ -179,7 +189,7 @@ impl BoxClient for HttpBoxClient {
                 )
                 .query(&[("path", path)])
                 .header(reqwest::header::CONTENT_TYPE, "application/octet-stream")
-                .body(bytes.to_vec())
+                .body(bytes)
                 .send()
                 .await
                 .context("box worker unreachable")?;

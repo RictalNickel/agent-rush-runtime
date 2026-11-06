@@ -16,10 +16,11 @@ The operator's browser login (the `ar_session` cookie) also works. With a cookie
 
 - Create a key with `POST /v1/keys`. The response shows the key once. Only its SHA-256 is stored.
 - Revoke a key with `DELETE /v1/keys/{id}`. A revoked key gets 401 straight away.
+- **Creating and revoking keys, and registering and deleting webhooks, need the operator login** (the cookie plus `X-CSRF-Token`). An API key gets 403 on `POST /v1/keys`, `DELETE /v1/keys/{id}`, `POST /v1/webhooks` and `DELETE /v1/webhooks/{id}`, so a leaked key cannot mint more keys, revoke the operator's other keys or send turn results somewhere new. `GET /v1/keys` and `GET /v1/webhooks` accept a key; they never show a key, its hash or a webhook secret.
 - A missing, unknown or revoked key gets 401.
 - A session that does not exist and a session that belongs to another owner both get 404 with the same body. The API never reveals that someone else's session exists.
 
-To get the first key, sign in once and use the cookie:
+To create a key, sign in and use the cookie:
 
 ```sh
 HOST=https://agent.example.com
@@ -38,11 +39,12 @@ Errors are JSON: `{"error": "Session not found"}`.
 | --- | --- |
 | 400 | The request is invalid (the message says why) |
 | 401 | No API key, or the key is unknown or revoked |
-| 403 | Cookie login without the CSRF header |
+| 403 | Cookie login without the CSRF header, or an API key on a route that needs the operator login (creating or revoking keys, managing webhooks) |
 | 404 | Not found, or not yours |
 | 409 | The session is closed |
 | 413 | The body is too large |
 | 422 | The JSON does not match the expected shape |
+| 429 | A per-owner cap is reached: open sessions, live streams or long requests (see Limits) |
 | 502 | The workspace (worker) or the voice service failed |
 | 503 | Sessions are not configured: no worker is connected (`AR_WORKER_URL`) |
 
@@ -53,9 +55,9 @@ All times are Unix milliseconds.
 | Method and path | Body | Returns |
 | --- | --- | --- |
 | `GET /v1/status` | | provider, worker reachability, whether sessions and voice are available, MCP server names, limits |
-| `POST /v1/keys` | `{name?}` | 201 `{id, name, prefix, created_at, key}` (the key is shown once) |
+| `POST /v1/keys` (operator login) | `{name?}` | 201 `{id, name, prefix, created_at, key}` (the key is shown once) |
 | `GET /v1/keys` | | `{keys: [{id, name, prefix, created_at, last_used_at, revoked}]}` |
-| `DELETE /v1/keys/{id}` | | `{revoked: true}` |
+| `DELETE /v1/keys/{id}` (operator login) | | `{revoked: true}` |
 | `POST /v1/sessions` | `{title?, message?}` | 201 `{session, sent}`; a `message` starts the first turn |
 | `GET /v1/sessions` | | `{sessions: [...]}`, newest first |
 | `GET /v1/sessions/{id}` | | the session: `{id, title, status, box_id, created_at, updated_at, spend_usd, last_seq}` |
@@ -77,8 +79,8 @@ All times are Unix milliseconds.
 | `GET /v1/agent-config/history` | | `{history: [{version, reason, author, created_at}]}` |
 | `POST /v1/agent-config/revert` | `{version}` | `{version, config}`; the old version is saved as a new one |
 | `GET /v1/webhooks` | | `{webhooks: [{id, url, created_at}]}` |
-| `POST /v1/webhooks` | `{url}` | 201 `{id, url, created_at, secret}` (the secret is shown once) |
-| `DELETE /v1/webhooks/{id}` | | `{deleted: true}` |
+| `POST /v1/webhooks` (operator login) | `{url}` | 201 `{id, url, created_at, secret}` (the secret is shown once) |
+| `DELETE /v1/webhooks/{id}` (operator login) | | `{deleted: true}` |
 | `POST /v1/voice/transcribe` | audio bytes (up to 25 MiB) | the voice service's transcript JSON |
 | `POST /v1/voice/speak` | `{text}` | audio bytes |
 
@@ -166,7 +168,14 @@ When a turn ends, each of your webhooks receives a POST:
 
 - `status` is `idle` or `failed`. `last_reply` is the agent's reply from that turn, or `null`.
 - The `X-Agent-Signature` header is `sha256=` followed by the hex HMAC-SHA256 of the exact body, keyed with the webhook's `secret`.
-- Each delivery has a 5 second timeout and is retried twice. Redirects are not followed.
+- Each delivery has a 5 second timeout and is retried twice. Redirects are not followed, and proxy settings from the environment (`HTTPS_PROXY` and the like) are ignored, so a delivery always connects to the address that was checked.
+- Webhooks belong to the operator, the owner of the sessions started through the browser login or the operator's keys.
+- Register one with the operator login:
+
+```sh
+curl -sb jar -H 'x-csrf-token: <csrf>' -H 'content-type: application/json' \
+  -d '{"url":"https://hooks.example.com/agent"}' $HOST/v1/webhooks   # prints {"secret": "whsec_...", ...}
+```
 - Webhook URLs must use `https` and resolve to public addresses. Private, loopback, link-local, carrier-grade NAT and other reserved ranges are refused. The check runs when the webhook is created and again before every delivery.
 
 Verify a delivery (Python):
@@ -201,3 +210,8 @@ curl -s -H "authorization: Bearer $AR_KEY" -H 'content-type: application/json' -
 | Events per page | 1000 |
 | API keys per owner | 50 active |
 | Webhooks per owner | 10 |
+| Open (not closed) sessions per owner | 20; one more is 429 `too many open sessions; close one` |
+| Live event streams (SSE) per owner | 8; one more is 429 until a stream ends |
+| Long requests in flight per owner (exec, file reads and writes; MCP `wait_for_reply`, `run_command`, `read_file`, `write_file`, `list_files`) | 8; one more is 429 |
+| Workspace exec and file calls in flight | 4 per session and 16 in all; more wait their turn |
+| MCP batch | 16 messages |
