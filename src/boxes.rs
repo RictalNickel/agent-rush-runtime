@@ -40,7 +40,13 @@ pub const DEFAULT_IDLE_SECONDS: u64 = 1800;
 pub const DEFAULT_CEILING_MB: u32 = 4096;
 pub const CPU_CEILING_MILLIS: u32 = 2000;
 /// Boxes with a running container at once; parked workspaces do not count.
+/// Default number of boxes one worker runs at once (`AR_BOX_MAX`).
 pub const MAX_BOXES: usize = 8;
+/// Upper bound for `AR_BOX_MAX`: the box network is a /24.
+pub const MAX_BOXES_LIMIT: usize = 200;
+/// What a caller sees when the sandbox under a command dies mid-call.
+const BOX_CRASHED: &str = "the box stopped unexpectedly (for example too many processes or too much \
+memory); it restarts on the next call and the files in /workspace are kept";
 pub const DEFAULT_DISK_MB: u32 = 4096;
 pub const MIN_DISK_MB: u32 = 256;
 pub const MAX_DISK_MB: u32 = 262_144;
@@ -350,6 +356,8 @@ pub struct BoxConfig {
     /// Written by deploy/box-network.sh once the egress filter and host input guard are in
     /// place for this boot; no box starts without it.
     pub guard_marker: PathBuf,
+    /// Boxes this worker runs at once (`AR_BOX_MAX`), on top of the memory capacity check.
+    pub max_boxes: usize,
 }
 
 /// Memory reservations shared by one-shot runs and boxes, keyed by run id or
@@ -656,6 +664,10 @@ impl BoxManager {
             "box disk quota must be {MIN_DISK_MB}–{MAX_DISK_MB} MiB"
         );
         ensure!(
+            (1..=MAX_BOXES_LIMIT).contains(&config.max_boxes),
+            "box count limit must be 1–{MAX_BOXES_LIMIT}"
+        );
+        ensure!(
             config.retention_seconds >= config.idle_seconds,
             "box workspace retention must be at least the idle time"
         );
@@ -670,6 +682,7 @@ impl BoxManager {
             std::fs::set_permissions(&resolv, std::fs::Permissions::from_mode(0o644))?;
             std::fs::set_permissions(&disks, std::fs::Permissions::from_mode(0o700))?;
         }
+        let calls = MAX_CONCURRENT_CALLS.max(2 * config.max_boxes);
         Ok(Self {
             inner: Arc::new(Inner {
                 runner,
@@ -679,7 +692,7 @@ impl BoxManager {
                 boxes: Mutex::new(HashMap::new()),
                 leases,
                 capacity_mb,
-                calls: Arc::new(Semaphore::new(MAX_CONCURRENT_CALLS)),
+                calls: Arc::new(Semaphore::new(calls)),
                 retry: Mutex::default(),
                 gateway: Mutex::default(),
             }),
@@ -1104,7 +1117,9 @@ impl BoxManager {
                 .filter(|(k, _)| **k != lease)
                 .map(|(_, l)| l.memory_mb)
                 .sum();
-            if boxes >= MAX_BOXES || used.saturating_add(meta.memory_mb) > self.inner.capacity_mb {
+            if boxes >= self.inner.config.max_boxes
+                || used.saturating_add(meta.memory_mb) > self.inner.capacity_mb
+            {
                 return Err(BoxError::Capacity.into());
             }
             leases.insert(lease.clone(), crate::node::ActiveLease::new(meta.memory_mb));
@@ -1603,17 +1618,17 @@ impl BoxManager {
             });
         }
         if let Some((header, body)) = split_header(&out.stdout, b'\n') {
-            return parse_exec_report(header, body);
+            return parse_exec_report(header, body).map_err(|e| {
+                tracing::warn!(box_id=%box_id, error=%e, "box exec report unreadable");
+                BoxError::Unavailable(BOX_CRASHED.into()).into()
+            });
         }
         if out.stderr.contains("no such file or directory") && out.stderr.contains("chdir") {
             return Err(invalid(format!("working directory {cwd} does not exist")).into());
         }
         let Some((exit_code, note)) = killed_shell_exit(out.code) else {
-            anyhow::bail!(
-                "box exec failed (docker exit {}): {}",
-                out.code.map_or("none".into(), |c| c.to_string()),
-                out.stderr
-            );
+            tracing::warn!(box_id=%box_id, code=?out.code, stderr=%out.stderr, "box exec failed");
+            return Err(BoxError::Unavailable(BOX_CRASHED.into()).into());
         };
         tracing::info!(box_id=%box_id, exit_code, "the command killed the shell running it");
         let collect = vec![

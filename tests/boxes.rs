@@ -409,6 +409,7 @@ fn box_disk_and_retention_settings_are_validated() {
         disk_mb,
         retention_seconds,
         guard_marker: dir.path().join("m.env"),
+        max_boxes: agent_rush::boxes::MAX_BOXES,
     };
     let manager =
         |c| agent_rush::boxes::BoxManager::new(DockerRunner::new(IMAGE).unwrap(), c, 4096);
@@ -426,6 +427,31 @@ fn box_disk_and_retention_settings_are_validated() {
             .permissions()
             .mode();
         assert_eq!(mode & 0o777, 0o700);
+    }
+}
+
+#[test]
+fn box_count_limit_is_validated() {
+    let dir = tempfile::tempdir().unwrap();
+    let config = |max_boxes: usize| BoxConfig {
+        image: format!("ws@sha256:{}", "a".repeat(64)),
+        network: "ar-box".into(),
+        report: dir.path().join("r.json"),
+        state_dir: dir.path().join("boxes"),
+        idle_seconds: 1800,
+        ceiling_mb: 4096,
+        disk_mb: 4096,
+        retention_seconds: 604_800,
+        guard_marker: dir.path().join("m.env"),
+        max_boxes,
+    };
+    let manager =
+        |c| agent_rush::boxes::BoxManager::new(DockerRunner::new(IMAGE).unwrap(), c, 4096);
+    for ok in [1, 8, 64, agent_rush::boxes::MAX_BOXES_LIMIT] {
+        assert!(manager(config(ok)).is_ok(), "{ok}");
+    }
+    for bad in [0, agent_rush::boxes::MAX_BOXES_LIMIT + 1] {
+        assert!(manager(config(bad)).is_err(), "{bad}");
     }
 }
 
@@ -460,6 +486,7 @@ fn node(dir: &std::path::Path, boxes: bool) -> NodeState {
             disk_mb: agent_rush::boxes::DEFAULT_DISK_MB,
             retention_seconds: agent_rush::boxes::DEFAULT_RETENTION_SECONDS,
             guard_marker: dir.join("box-network.env"),
+            max_boxes: agent_rush::boxes::MAX_BOXES,
         })
         .unwrap()
 }
@@ -576,6 +603,7 @@ async fn live_box_round_trip() {
         guard_marker: std::env::var("AR_TEST_BOX_GUARD_MARKER")
             .unwrap_or_else(|_| agent_rush::boxes::DEFAULT_GUARD_MARKER.into())
             .into(),
+        max_boxes: agent_rush::boxes::MAX_BOXES,
     })
     .unwrap();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -971,6 +999,7 @@ async fn live_workspace_quota_parking_and_retention() {
         disk_mb: 300,
         retention_seconds: 5,
         guard_marker: var("AR_TEST_BOX_GUARD_MARKER").into(),
+        max_boxes: agent_rush::boxes::MAX_BOXES,
     };
     let log = |label: &str, value: String| println!("## {label}\n{value}\n");
     let disks = state_dir.join("disks");

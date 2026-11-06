@@ -177,6 +177,9 @@ struct BoxArgs {
     /// Marker written by deploy/box-network.sh once the box network filter is in place.
     #[arg(long, env = "AR_BOX_GUARD_MARKER", default_value = agent_rush::boxes::DEFAULT_GUARD_MARKER)]
     box_guard_marker: PathBuf,
+    /// Boxes this worker runs at once; memory capacity (AR_CAPACITY_MB) still applies.
+    #[arg(long, env = "AR_BOX_MAX", default_value_t = agent_rush::boxes::MAX_BOXES)]
+    box_max: usize,
 }
 impl BoxArgs {
     fn config(&self, settings: &Settings) -> Option<BoxConfig> {
@@ -190,8 +193,50 @@ impl BoxArgs {
             disk_mb: self.box_disk_mb,
             retention_seconds: self.box_retention_seconds,
             guard_marker: self.box_guard_marker.clone(),
+            max_boxes: self.box_max,
         })
     }
+}
+
+/// Session limits, each overridable for a larger host. Unset variables keep the defaults.
+fn session_limits_from_env() -> Result<SessionLimits> {
+    fn var<T: std::str::FromStr>(name: &str, default: T) -> Result<T> {
+        match std::env::var(name) {
+            Ok(v) if !v.trim().is_empty() => v
+                .trim()
+                .parse()
+                .map_err(|_| anyhow::anyhow!("{name} is not a valid number")),
+            _ => Ok(default),
+        }
+    }
+    let d = SessionLimits::default();
+    let limits = SessionLimits {
+        max_open_sessions_per_owner: var("AR_SESSION_MAX_OPEN", d.max_open_sessions_per_owner)?,
+        max_streams_per_owner: var("AR_SESSION_MAX_STREAMS", d.max_streams_per_owner)?,
+        max_long_requests_per_owner: var(
+            "AR_SESSION_MAX_LONG_REQUESTS",
+            d.max_long_requests_per_owner,
+        )?,
+        max_box_calls: var("AR_SESSION_MAX_BOX_CALLS", d.max_box_calls)?,
+        max_turn_usd: var("AR_SESSION_TURN_USD", d.max_turn_usd)?,
+        max_session_usd: var("AR_SESSION_USD", d.max_session_usd)?,
+        ..d
+    };
+    anyhow::ensure!(
+        (1..=1000).contains(&limits.max_open_sessions_per_owner)
+            && (1..=1000).contains(&limits.max_streams_per_owner)
+            && (1..=1000).contains(&limits.max_long_requests_per_owner)
+            && (1..=1000).contains(&limits.max_box_calls),
+        "AR_SESSION_MAX_* limits must be 1–1000"
+    );
+    anyhow::ensure!(
+        limits.max_turn_usd.is_finite()
+            && limits.max_turn_usd > 0.0
+            && limits.max_session_usd.is_finite()
+            && limits.max_session_usd >= limits.max_turn_usd,
+        "AR_SESSION_TURN_USD must be positive and at most AR_SESSION_USD"
+    );
+    Ok(limits)
 }
 
 #[tokio::main]
@@ -242,7 +287,7 @@ async fn main() -> Result<()> {
                     Arc::new(model),
                     Arc::new(boxes),
                     state.mcp.clone(),
-                    SessionLimits::default(),
+                    session_limits_from_env()?,
                 );
                 webhooks::spawn(sessions.clone(), state.ledger.clone(), state.webhook_guard);
                 state.sessions = Some(sessions);

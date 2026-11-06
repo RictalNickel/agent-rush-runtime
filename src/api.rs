@@ -424,9 +424,12 @@ struct MemoryQuery {
 async fn memories(
     State(s): State<AppState>,
     headers: HeaderMap,
-    Query(query): Query<MemoryQuery>,
+    uri: axum::http::Uri,
 ) -> Result<Json<Value>, ApiError> {
+    // Authenticate before parsing the query, so anonymous callers learn nothing about it.
     let owner = s.owner(&headers, false)?;
+    let Query(query) = Query::<MemoryQuery>::try_from_uri(&uri)
+        .map_err(|e| ApiError(StatusCode::BAD_REQUEST, e.body_text()))?;
     Ok(Json(json!(
         s.ledger
             .memory_search(&owner, &query.query)
