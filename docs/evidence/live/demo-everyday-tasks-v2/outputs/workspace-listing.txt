@@ -1,0 +1,23 @@
+/workspace:
+total 154
+drwxr-xr-x 3 agent agent  4096 Nov  6 03:48 .
+drwxr-xr-x 1 root  root   4096 Nov  6 03:47 ..
+drwxr-xr-x 2 agent agent  4096 Nov  6 03:48 inbox
+-rw-r--r-- 1 agent agent 11088 Nov  6 03:47 memo.docx
+-rw-r--r-- 1 agent agent  1424 Nov  6 03:47 memo.md
+-rw-r--r-- 1 agent agent 56627 Nov  6 03:48 memo.pdf
+-rw-r--r-- 1 agent agent 34193 Nov  6 03:48 revenue.jpg
+-rw-r--r-- 1 agent agent 40020 Nov  6 03:47 revenue.png
+-rw-r--r-- 1 agent agent   950 Nov  6 03:47 sales.csv
+
+/workspace/inbox:
+total 8
+drwxr-xr-x 2 agent agent 4096 Nov  6 03:48 .
+drwxr-xr-x 3 agent agent 4096 Nov  6 03:48 ..
+-rw-r--r-- 1 agent agent    0 Nov  6 03:48 budget-notes-final-2.txt
+-rw-r--r-- 1 agent agent    0 Nov  6 03:48 q1-report-final-2.txt
+-rw-r--r-- 1 agent agent    0 Nov  6 03:48 q2-report-final-2.txt
+-rw-r--r-- 1 agent agent    0 Nov  6 03:48 q3-report-final-2.txt
+-rw-r--r-- 1 agent agent    0 Nov  6 03:48 q4-report-final-2.txt
+revenue.jpg (800, 571)
+

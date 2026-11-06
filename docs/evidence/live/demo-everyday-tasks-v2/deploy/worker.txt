@@ -1,0 +1,11 @@
+## binary
+42c9ee697d2cfe704cd973f8b42fb93412d85948b5c4335829a45c22707c0ab5  /opt/agent-rush/agent-rush
+## AR_BOX_IMAGE
+AR_BOX_IMAGE=agent-rush-workspace@sha256:434b60c2f82492e94b1fd00b88b54ecf78472670167f231e0352fbcfc10a9bbd
+## box qualification
+{"qualified": true, "image": "agent-rush-workspace@sha256:434b60c2f82492e94b1fd00b88b54ecf78472670167f231e0352fbcfc10a9bbd", "created_at": 1793936714, "expires_at": 1793943914, "checks": [["metadata_blocked", true], ["private_blocked", true], ["host_services_blocked", true], ["smtp_blocked", true], ["public_https_allowed", true], ["no_credentials", true], ["non_root_readonly", true], ["disk_quota_enforced", true], ["volume_destroyed", true]]}
+## job qualification
+{"qualified": true, "finished_at": "2026-11-06T03:46:25.524Z", "checks": [["containment", true], ["timeout", true], ["output", true], ["memory", true], ["scaling", true], ["scratch", true], ["pids", true], ["cpu", true], ["cancel", true], ["concurrency", true]]}
+## worker
+active
+active

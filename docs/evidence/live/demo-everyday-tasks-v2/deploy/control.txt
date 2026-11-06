@@ -1,0 +1,4 @@
+## binary
+42c9ee697d2cfe704cd973f8b42fb93412d85948b5c4335829a45c22707c0ab5  /opt/agent-rush/agent-rush
+active
+active
