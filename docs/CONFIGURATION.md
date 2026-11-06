@@ -28,7 +28,7 @@ A variable marked "none" has no default and is unset unless you set it.
 | `AR_VOICE_URL` | none | Voice service base URL, `http` or `https`, with no credentials. Without it, `/v1/voice/*` returns 404 |
 | `RUST_LOG` | `agent_rush=info` | Log filter for the tracing subscriber |
 
-Fixed in code and not settable: per-turn limits (60 model steps, 30 minutes, $0.50 spend), per-session spend ($5), and the per-owner and box call caps listed in [API.md](API.md#limits). See [SECURITY.md](SECURITY.md#known-limits).
+Fixed in code and not settable: per-turn limits (30 minutes, $0.50 spend; there is no step count), per-session spend ($5), and the per-owner and box call caps listed in [API.md](API.md#limits). See [SECURITY.md](SECURITY.md#known-limits).
 
 ## Worker
 

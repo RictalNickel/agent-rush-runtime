@@ -288,7 +288,6 @@ async fn status(State(s): State<AppState>, Owner(_): Owner) -> Json<Value> {
         "voice_available": s.settings.voice_url.is_some(),
         "mcp_servers": s.mcp.names(),
         "limits": {
-            "max_turn_steps": limits.max_turn_steps,
             "max_turn_seconds": limits.max_turn_seconds,
             "box_memory_mb": limits.box_memory_mb,
             "box_cpu_millis": limits.box_cpu_millis,

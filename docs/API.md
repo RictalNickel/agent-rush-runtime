@@ -205,7 +205,6 @@ curl -s -H "authorization: Bearer $AR_KEY" -H 'content-type: application/json' -
 | File upload or download | 25 MiB |
 | Exec timeout | 120 s by default, 600 s at most |
 | Exec output kept | 256 KiB per stream |
-| Model steps per turn | 60 |
 | Turn wall time | 30 min |
 | Events per page | 1000 |
 | API keys per owner | 50 active |

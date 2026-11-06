@@ -531,28 +531,15 @@ async fn cancel_during_a_model_call_still_records_its_cost() {
 }
 
 #[tokio::test]
-async fn step_cap_ends_the_turn_failed() {
-    let h = harness(
-        vec![],
-        SessionLimits {
-            max_turn_steps: 3,
-            ..Default::default()
-        },
-    );
-    *h.model.fallback.lock().unwrap() = Some(bash("true").to_string());
-    let id = h.run("Loop").await;
+async fn a_long_turn_is_not_cut_off_by_a_step_count() {
+    let mut script: Vec<Value> = (0..80).map(|_| bash("true")).collect();
+    script.push(reply("Done after 80 steps"));
+    let h = harness(script, SessionLimits::default());
+    let id = h.run("Work for a long time").await;
     let view = h.sessions.get("alice", &id).unwrap().unwrap();
-    assert_eq!(view.status, SessionStatus::Failed);
-    assert_eq!(h.model.calls().len(), 3);
-    let events = h.events(&id);
-    let error = events.iter().find(|e| e.kind == "error").unwrap();
-    assert!(
-        error.payload["message"]
-            .as_str()
-            .unwrap()
-            .contains("step limit")
-    );
-    assert_eq!(events.last().unwrap().payload["reason"], "step_limit");
+    assert_eq!(view.status, SessionStatus::Idle);
+    assert_eq!(h.model.calls().len(), 81);
+    assert!(h.events(&id).iter().all(|e| e.kind != "error"));
 }
 
 #[tokio::test]

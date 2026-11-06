@@ -18,7 +18,7 @@ const EXAMPLES = {
 };
 const PROVIDER_LABEL = { vultr: 'Vultr Serverless Inference', anthropic: 'Anthropic Claude' };
 const STATE_LABEL = { idle: 'Ready', running: 'Working', failed: 'Failed', closed: 'Closed' };
-const FAILED_LABEL = { time_limit: 'The turn reached its time limit.', step_limit: 'The turn reached its step limit.' };
+const FAILED_LABEL = { time_limit: 'The turn reached its time limit.' };
 
 // 24 px stroke icons, one per tool family.
 const ICONS = {

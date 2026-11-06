@@ -33,7 +33,7 @@ The control VM runs sessions, the inference gateway and the API. It never runs a
 - **Egress filter.** Boxes can reach the public internet. They cannot reach cloud metadata (169.254.169.254), private and CGNAT ranges, loopback, SMTP ports 25, 465 and 587, or any service on the host itself, SSH included. A host input guard enforces the last part at every boot. Boxes cannot reach each other. Details are in [SECURITY.md](docs/SECURITY.md#egress-policy).
 - **Fail-closed qualification.** A worker runs one-shot jobs only with a passing report of its 10 containment checks. It starts boxes only with a passing report of 9 box checks made on this host, this boot and this box network. Reports expire after two hours, and the box report is rerun every 45 minutes.
 - **Owner isolation.** Keys, sessions, files and skills belong to one owner. Another owner's session returns 404, the same as a session that does not exist.
-- **Spend caps.** Each model call reserves its worst-case cost before it is sent. The operator budget defaults to $5 (maximum $25). A turn stops before its next model call at $0.50, and a session at $5. A turn also ends after 60 steps or 30 minutes.
+- **Spend caps.** Each model call reserves its worst-case cost before it is sent. The operator budget defaults to $5 (maximum $25). A turn stops before its next model call at $0.50, and a session at $5. A turn also ends after 30 minutes; there is no cap on the number of steps.
 - **The agent cannot widen its own limits.** It can change its prompt addendum, tool choices, custom tools and skills. Trusted code still enforces the limits, the egress rules and the operator's list of MCP servers. See [what the agent can edit](docs/SECURITY.md#what-the-agent-can-and-cannot-edit).
 
 ## Quick start

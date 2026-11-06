@@ -64,8 +64,6 @@ pub trait SessionModel: Send + Sync {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SessionLimits {
-    /// Model calls per turn.
-    pub max_turn_steps: u32,
     pub max_turn_seconds: u64,
     pub box_memory_mb: u32,
     pub box_cpu_millis: u32,
@@ -92,7 +90,6 @@ impl Eq for SessionLimits {}
 impl Default for SessionLimits {
     fn default() -> Self {
         Self {
-            max_turn_steps: 60,
             max_turn_seconds: 1800,
             box_memory_mb: 1024,
             box_cpu_millis: 1000,
@@ -616,8 +613,6 @@ impl Inner {
                         "time_limit"
                     } else if e.is::<SpendLimit>() {
                         "spend_limit"
-                    } else if e.to_string().contains("step limit") {
-                        "step_limit"
                     } else {
                         "error"
                     };
@@ -757,7 +752,7 @@ impl Inner {
         }
         let pinned = history.len() - 1;
         let mut turn_usd = 0.0;
-        for _ in 0..self.limits.max_turn_steps {
+        loop {
             if *cancel.borrow() {
                 return Err(Cancelled.into());
             }
@@ -870,10 +865,6 @@ impl Inner {
                 tool_result_message(&name, output.ok, &text),
             ));
         }
-        bail!(
-            "turn step limit reached ({} model calls)",
-            self.limits.max_turn_steps
-        )
     }
 
     /// Refuses the next model call once the turn or the session reached its spend cap.
