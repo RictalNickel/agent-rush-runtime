@@ -1,0 +1,32 @@
+# POST https://144-202-59-108.sslip.io/mcp
+# headers sent: authorization: Bearer ar_<redacted>; content-type: application/json; accept: application/json, text/event-stream; mcp-protocol-version: 2025-06-18
+## request
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "name": "send_message",
+    "arguments": {
+      "session_id": "d2055b5f-5e35-4156-932a-89bf48180b8a",
+      "text": "Use bash to find the installed Python, Node and Rust versions, write them to /workspace/versions.txt, and reply with the three versions."
+    }
+  }
+}
+## response status line and headers
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: no-store
+content-security-policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
+content-type: application/json
+permissions-policy: camera=(), microphone=(self), geolocation=()
+referrer-policy: no-referrer
+strict-transport-security: max-age=31536000
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: DENY
+content-length: 261
+
+## response body (last line: http_code and curl time_total)
+{"id":4,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"interjection\": false,\n  \"next\": \"Call wait_for_reply to get the agent's answer.\",\n  \"seq\": 1,\n  \"session_id\": \"d2055b5f-5e35-4156-932a-89bf48180b8a\"\n}","type":"text"}],"isError":false}}
+200 0.066418s

@@ -1,0 +1,14 @@
+{
+  "note": "POST /v1/sessions/3257ac93-3f79-4b46-9a7b-9c7d77594e13/exec (direct shell, no model): TCP connects from a box to SSH on the host gateway, the worker VPC address, the control VPC address and docker0",
+  "request": {
+    "command": "for t in 172.30.0.1:22 10.42.0.4:22 10.42.0.3:22 172.17.0.1:22; do h=${t%:*}; p=${t#*:}; if timeout 6 bash -c \"exec 3<>/dev/tcp/$h/$p\" 2>/tmp/e; then echo \"$t CONNECTED\"; else echo \"$t blocked: $(tr -d '\\n' </tmp/e | sed 's/.*: //')\"; fi; done; id; ip -4 -o addr show 2>/dev/null | awk '{print $2,$4}' || true",
+    "timeout_seconds": 60
+  },
+  "response": {
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "172.30.0.1:22 blocked: No route to host\n10.42.0.4:22 blocked: No route to host\n10.42.0.3:22 blocked: No route to host\n172.17.0.1:22 blocked: No route to host\nuid=1000(agent) gid=1000(agent) groups=1000(agent)\n",
+    "timed_out": false,
+    "truncated": false
+  }
+}

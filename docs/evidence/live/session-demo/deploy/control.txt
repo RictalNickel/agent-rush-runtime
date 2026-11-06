@@ -1,0 +1,21 @@
+144-202-59-108.sslip.io {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+	# Session event streams (SSE): no compression, flush every event at once.
+	@stream path_regexp ^/v1/sessions/[^/]+/stream$
+	handle @stream {
+		reverse_proxy 127.0.0.1:8080 {
+			flush_interval -1
+		}
+	}
+	handle {
+		encode gzip
+		reverse_proxy 127.0.0.1:8080
+	}
+}
+---
+a07f24c2547b85615acb0a6547f0ec22a103896804033d68e25176ccec355c6d  /opt/agent-rush/agent-rush

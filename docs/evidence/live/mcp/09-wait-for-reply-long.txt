@@ -1,0 +1,34 @@
+# POST https://144-202-59-108.sslip.io/mcp
+# headers sent: authorization: Bearer ar_<redacted>; content-type: application/json; accept: application/json, text/event-stream; mcp-protocol-version: 2025-06-18
+## request
+{
+  "jsonrpc": "2.0",
+  "id": 8,
+  "method": "tools/call",
+  "params": {
+    "name": "wait_for_reply",
+    "arguments": {
+      "session_id": "d2055b5f-5e35-4156-932a-89bf48180b8a",
+      "timeout_seconds": 300,
+      "after_seq": 6
+    }
+  }
+}
+## response status line and headers
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: no-store
+content-security-policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
+content-type: application/json
+permissions-policy: camera=(), microphone=(self), geolocation=()
+referrer-policy: no-referrer
+strict-transport-security: max-age=31536000
+vary: Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: DENY
+content-length: 955
+
+## response body (last line: http_code and curl time_total)
+{"id":8,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"attachments\": [],\n  \"events\": [\n    \"#7 user: Run exactly this with bash (timeout_seconds 200): sleep 100 && cat /workspace/versions.txt — then reply with its output.\",\n    \"#8 status: running\",\n    \"#9 tool_call: bash {\\\"command\\\":\\\"sleep 100 && cat /workspace/versions.txt\\\",\\\"timeout_seconds\\\":200,\\\"tool\\\":\\\"bash\\\"}\",\n    \"#10 tool_result: ok exit code 0 stdout: Python 3.12.3 v26.13.0 rustc 1.90.0 (1159e78c4 2025-09-14) \",\n    \"#11 assistant: Python 3.12.3 v26.13.0 rustc 1.90.0 (1159e78c4 2025-09-14)\",\n    \"#12 status: idle (replied)\"\n  ],\n  \"events_omitted\": 0,\n  \"hint\": \"\",\n  \"next_after\": 12,\n  \"reply\": \"Python 3.12.3\\nv26.13.0\\nrustc 1.90.0 (1159e78c4 2025-09-14)\",\n  \"session_id\": \"d2055b5f-5e35-4156-932a-89bf48180b8a\",\n  \"status\": \"idle\",\n  \"still_running\": false\n}","type":"text"}],"isError":false}}
+200 103.887881s

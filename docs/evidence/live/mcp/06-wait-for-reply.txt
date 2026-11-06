@@ -1,0 +1,33 @@
+# POST https://144-202-59-108.sslip.io/mcp
+# headers sent: authorization: Bearer ar_<redacted>; content-type: application/json; accept: application/json, text/event-stream; mcp-protocol-version: 2025-06-18
+## request
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "name": "wait_for_reply",
+    "arguments": {
+      "session_id": "d2055b5f-5e35-4156-932a-89bf48180b8a",
+      "timeout_seconds": 300
+    }
+  }
+}
+## response status line and headers
+HTTP/2 200 
+alt-svc: h3=":443"; ma=2592000
+cache-control: no-store
+content-security-policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
+content-type: application/json
+permissions-policy: camera=(), microphone=(self), geolocation=()
+referrer-policy: no-referrer
+strict-transport-security: max-age=31536000
+vary: Accept-Encoding
+via: 1.1 Caddy
+x-content-type-options: nosniff
+x-frame-options: DENY
+content-length: 1100
+
+## response body (last line: http_code and curl time_total)
+{"id":5,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"attachments\": [],\n  \"events\": [\n    \"#1 user: Use bash to find the installed Python, Node and Rust versions, write them to /workspace/versions.txt, and reply with the three versions.\",\n    \"#2 status: running\",\n    \"#3 tool_call: bash {\\\"command\\\":\\\"cd /workspace && { python3 --version; node --version; rustc --version; } | tee versions.txt\\\",\\\"tool\\\":\\\"bash\\\"}\",\n    \"#4 tool_result: ok exit code 0 stdout: Python 3.12.3 v26.13.0 rustc 1.90.0 (1159e78c4 2025-09-14) \",\n    \"#5 assistant: Versions written to /workspace/versions.txt: - Python 3.12.3 - Node v26.13.0 - Rust 1.90.0 (1159e78c4 2025-09-14)\",\n    \"#6 status: idle (replied)\"\n  ],\n  \"events_omitted\": 0,\n  \"hint\": \"\",\n  \"next_after\": 6,\n  \"reply\": \"Versions written to /workspace/versions.txt:\\n- Python 3.12.3\\n- Node v26.13.0\\n- Rust 1.90.0 (1159e78c4 2025-09-14)\",\n  \"session_id\": \"d2055b5f-5e35-4156-932a-89bf48180b8a\",\n  \"status\": \"idle\",\n  \"still_running\": false\n}","type":"text"}],"isError":false}}
+200 6.283991s

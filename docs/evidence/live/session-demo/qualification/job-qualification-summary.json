@@ -1,0 +1,59 @@
+{
+  "schema": "agent-rush.qualification.v1",
+  "qualified": true,
+  "started_at": "2026-11-06T01:56:07.644Z",
+  "finished_at": "2026-11-06T01:56:48.503Z",
+  "health": {
+    "cpu_quota_supported": true,
+    "host_fingerprint": "b8a8c5d6eb30a63cc688a11717ee8b7c49a4b290f33b245f6e5a4dbce5c926f7",
+    "image": "rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+    "local_image_id": "sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f",
+    "memory_limit_supported": true,
+    "note": "Availability check only; run containment qualification before public deployment",
+    "runtime": "runsc",
+    "security_qualified": false
+  },
+  "checks": [
+    {
+      "name": "containment",
+      "passed": true
+    },
+    {
+      "name": "timeout",
+      "passed": true
+    },
+    {
+      "name": "output",
+      "passed": true
+    },
+    {
+      "name": "memory",
+      "passed": true
+    },
+    {
+      "name": "scaling",
+      "passed": true
+    },
+    {
+      "name": "scratch",
+      "passed": true
+    },
+    {
+      "name": "pids",
+      "passed": true
+    },
+    {
+      "name": "cpu",
+      "passed": true
+    },
+    {
+      "name": "cancel",
+      "passed": true
+    },
+    {
+      "name": "concurrency",
+      "passed": true
+    }
+  ],
+  "note": "Summary of /var/lib/agent-rush/qualification.json on the worker (full report 196 KB, written by the requalify service with binary a07f24c2)"
+}
