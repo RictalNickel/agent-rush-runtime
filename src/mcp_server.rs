@@ -166,7 +166,7 @@ async fn dispatch(s: &AppState, owner: &str, message: Value) -> Option<Value> {
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "vultr-placeholder-test123", "title": "Vultr-Placeholder-Test123", "version": env!("CARGO_PKG_VERSION")},
-                "instructions": "Agent sessions with a persistent Linux workspace. Call start_session (optionally with a first message and a model from list_models), then wait_for_reply. Use send_message for follow-ups; messages sent while a turn runs are delivered to the agent as interjections. run_command, read_file, write_file and list_files act directly on the session's workspace. get_usage reports spend and tokens per model.",
+                "instructions": "Agent sessions with a persistent Linux workspace. Call start_session (optionally with a first message and a model from list_models), then wait_for_reply. Use send_message for follow-ups; messages sent while a turn runs are delivered to the agent as interjections. run_command, read_file, write_file and list_files act directly on the session's workspace. fork_session copies a session's workspace and conversation into a new session, for example to run the same task on another model; get_usage reports spend and tokens per model.",
             }),
         ),
         "ping" => rpc_result(id, json!({})),
@@ -327,6 +327,12 @@ fn tool_definitions() -> Value {
             &[]
         ),
         tool(
+            "fork_session",
+            "Create a new session that starts with a copy of this session's workspace files and its earlier requests and replies (not its tool steps), for example to run the same task on another model. Optionally send the fork its first message.",
+            json!({"session_id": session_id, "title": {"type": "string"}, "model": {"type": "string", "description": "A model ID from list_models; the source session's model otherwise."}, "message": {"type": "string", "description": "First message for the fork."}}),
+            &["session_id"]
+        ),
+        tool(
             "get_usage",
             "Your model spend and token totals, per model and per session.",
             json!({}),
@@ -354,6 +360,7 @@ const TOOL_NAMES: &[&str] = &[
     "close_session",
     "list_sessions",
     "list_models",
+    "fork_session",
     "get_usage",
     "manage_skills",
 ];
@@ -382,9 +389,8 @@ async fn call_tool(s: &AppState, owner: &str, name: &str, args: Args<'_>) -> Too
     // Waiting for a reply and direct workspace calls hold one of the owner's long-request
     // slots while they run.
     let _slot = match name {
-        "wait_for_reply" | "run_command" | "read_file" | "write_file" | "list_files" => {
-            Some(sessions.long_request_slot(owner).map_err(lookup_error)?)
-        }
+        "wait_for_reply" | "run_command" | "read_file" | "write_file" | "list_files"
+        | "fork_session" => Some(sessions.long_request_slot(owner).map_err(lookup_error)?),
         _ => None,
     };
     match name {
@@ -400,6 +406,7 @@ async fn call_tool(s: &AppState, owner: &str, name: &str, args: Args<'_>) -> Too
             })))
         }
         "wait_for_reply" => wait_for_reply(s, sessions, owner, id, &args).await,
+        "fork_session" => fork_session(sessions, owner, id, &args).await,
         "get_events" => {
             let after = args.opt_u64("after")?.unwrap_or(0) as i64;
             let limit = args
@@ -533,6 +540,32 @@ fn start_session(sessions: &Sessions, owner: &str, args: &Args<'_>) -> ToolResul
         "status": if sent.is_some() { "running" } else { "idle" },
         "sent_seq": sent.map(|o| o.seq),
         "next": if sent.is_some() { "Call wait_for_reply with this session_id." } else { "Call send_message to give the agent a task." },
+    })))
+}
+
+async fn fork_session(sessions: &Sessions, owner: &str, id: &str, args: &Args<'_>) -> ToolResult {
+    let title = args.opt_str("title")?;
+    let model = args.opt_str("model")?;
+    let message = args.opt_str("message")?;
+    if message.is_some_and(|m| m.trim().is_empty()) {
+        return Err(ToolError::Params("message must not be empty".into()));
+    }
+    let fork = sessions
+        .fork(owner, id, title, model)
+        .await
+        .map_err(workspace_error)?;
+    let sent = match message {
+        Some(text) => Some(sessions.send(owner, &fork.id, text).map_err(input_error)?),
+        None => None,
+    };
+    Ok(json_text(&json!({
+        "session_id": fork.id,
+        "title": fork.title,
+        "model": fork.model,
+        "forked_from": id,
+        "status": if sent.is_some() { "running" } else { "idle" },
+        "sent_seq": sent.map(|o| o.seq),
+        "next": if sent.is_some() { "Call wait_for_reply with this session_id." } else { "Call send_message to give the fork its task." },
     })))
 }
 

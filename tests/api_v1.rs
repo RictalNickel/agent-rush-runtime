@@ -41,6 +41,7 @@ fn key_scoped_routes(id: &str) -> Vec<(&'static str, String)> {
         ("GET", format!("/v1/sessions/{id}/events")),
         ("GET", format!("/v1/sessions/{id}/stream")),
         ("GET", format!("/v1/sessions/{id}/archive")),
+        ("POST", format!("/v1/sessions/{id}/fork")),
         ("GET", "/v1/models".into()),
         ("GET", "/v1/usage".into()),
         ("GET", format!("/v1/sessions/{id}/files?path=a.txt")),
@@ -416,6 +417,7 @@ async fn another_owner_gets_404_on_every_session_route() {
             ("GET", format!("/v1/sessions/{target}/events"), None),
             ("GET", format!("/v1/sessions/{target}/stream"), None),
             ("GET", format!("/v1/sessions/{target}/archive"), None),
+            ("POST", format!("/v1/sessions/{target}/fork"), None),
             (
                 "GET",
                 format!("/v1/sessions/{target}/files?path=a.txt"),
@@ -1129,7 +1131,7 @@ async fn turn_end_webhook_is_signed_with_the_webhook_secret() {
     );
 }
 
-// Models, usage and workspace archives.
+// Models, usage, workspace archives and forks.
 
 use agent_rush::config::{ModelCatalog, ModelPrice};
 use common::{app_with_models, glm_catalog};
@@ -1457,5 +1459,164 @@ async fn the_workspace_downloads_as_a_tarball_and_over_25_mib_is_413() {
         None,
     )
     .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+}
+
+#[tokio::test]
+async fn a_fork_copies_files_and_the_conversation_and_runs_on_its_own_model() {
+    let a = glm_app(vec![bash("make"), reply("Built it"), reply("Added tests")]);
+    let key = a.key("alice");
+    let source = run_session(
+        &a,
+        &key,
+        "alice",
+        json!({"title":"Benchmark","message":"Build the app"}),
+    )
+    .await;
+    let id = source["id"].as_str().unwrap().to_string();
+    a.sessions.send("alice", &id, "Add tests").unwrap();
+    a.sessions.wait_idle("alice", &id, WAIT).await.unwrap();
+    a.sessions
+        .write_file("alice", &id, "app/main.py", Bytes::from("print('hi')"))
+        .await
+        .unwrap();
+    let source_events = events_of(&a, &key, &id).await.len();
+
+    let (status, forked) = call(
+        &a.router,
+        "POST",
+        &format!("/v1/sessions/{id}/fork"),
+        Some(&key),
+        Some(json!({"model":"glm-5.3","message":"Run it once more"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{forked}");
+    let fork = &forked["session"];
+    let fork_id = fork["id"].as_str().unwrap().to_string();
+    assert_eq!(fork["model"], "glm-5.3");
+    assert_eq!(fork["forked_from"], id.as_str());
+    assert_eq!(fork["title"], "Benchmark (fork)");
+    assert_eq!(forked["sent"]["interjection"], false);
+    a.sessions.wait_idle("alice", &fork_id, WAIT).await.unwrap();
+
+    // The fork's workspace is a copy of the source's files.
+    let fork_box = a
+        .sessions
+        .get("alice", &fork_id)
+        .unwrap()
+        .unwrap()
+        .box_id
+        .unwrap();
+    assert_eq!(a.boxes.files(&fork_box), ["app/main.py"]);
+    // Its log starts with the source's requests and replies, without the tool steps.
+    let events = events_of(&a, &key, &fork_id).await;
+    let copied: Vec<(String, String)> = events
+        .iter()
+        .take_while(|e| e["payload"]["forked_from"] == id.as_str())
+        .map(|e| {
+            (
+                e["kind"].as_str().unwrap().to_string(),
+                e["payload"]["text"].as_str().unwrap().to_string(),
+            )
+        })
+        .collect();
+    let pair = |k: &str, t: &str| (k.to_string(), t.to_string());
+    assert_eq!(
+        copied,
+        [
+            pair("user", "Build the app"),
+            pair("assistant", "Built it"),
+            pair("user", "Add tests"),
+            pair("assistant", "Added tests"),
+        ]
+    );
+    // The fork's first call ran on its model and saw the earlier conversation, but not
+    // the source's tool output.
+    let (model, messages) = a.model.calls().pop().unwrap();
+    assert_eq!(model, "glm-5.3");
+    let text = messages
+        .iter()
+        .map(|m| m["content"].as_str().unwrap_or(""))
+        .collect::<Vec<_>>()
+        .join("\n");
+    for expected in [
+        "Build the app",
+        "Built it",
+        "Add tests",
+        "Added tests",
+        "Run it once more",
+    ] {
+        assert!(text.contains(expected), "{expected} missing from {text}");
+    }
+    assert!(!text.contains("ran: make"), "{text}");
+    // The source is unchanged.
+    assert_eq!(events_of(&a, &key, &id).await.len(), source_events);
+
+    // Without a model, a fork keeps the source's.
+    let (status, again) = call(
+        &a.router,
+        "POST",
+        &format!("/v1/sessions/{id}/fork"),
+        Some(&key),
+        Some(json!({"title":"Second"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{again}");
+    assert_eq!(again["session"]["model"], "glm-5.3-flash");
+    assert_eq!(again["session"]["title"], "Second");
+    assert!(again["sent"].is_null());
+}
+
+#[tokio::test]
+async fn a_fork_is_refused_cleanly_by_the_cap_an_unknown_model_or_a_large_workspace() {
+    let limits = SessionLimits {
+        max_open_sessions_per_owner: 2,
+        ..SessionLimits::default()
+    };
+    let a = app_with_models(vec![], limits, glm_catalog(), PRICES);
+    let key = a.key("alice");
+    let source = a.sessions.create("alice", Some("source")).unwrap();
+    let id = source.id.clone();
+    a.sessions
+        .write_file("alice", &id, "a.txt", Bytes::from("a"))
+        .await
+        .unwrap();
+    let other = a.sessions.create("alice", None).unwrap();
+    let fork_path = format!("/v1/sessions/{id}/fork");
+
+    let (status, body) = call(&a.router, "POST", &fork_path, Some(&key), None).await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS, "{body}");
+    assert_eq!(body["error"], "too many open sessions; close one");
+    a.sessions.close("alice", &other.id).await.unwrap();
+
+    let (status, body) = call(
+        &a.router,
+        "POST",
+        &fork_path,
+        Some(&key),
+        Some(json!({"model":"gpt-9"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+
+    let box_id = a
+        .sessions
+        .get("alice", &id)
+        .unwrap()
+        .unwrap()
+        .box_id
+        .unwrap();
+    a.boxes.put_file(
+        &box_id,
+        "big.bin",
+        vec![1; agent_rush::sandbox_api::MAX_FILE_BYTES + 1],
+    );
+    let (status, body) = call(&a.router, "POST", &fork_path, Some(&key), None).await;
+    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE, "{body}");
+    // Neither refusal left a session behind.
+    assert_eq!(a.sessions.list("alice").unwrap().len(), 2);
+
+    a.sessions.close("alice", &id).await.unwrap();
+    let (status, _) = call(&a.router, "POST", &fork_path, Some(&key), None).await;
     assert_eq!(status, StatusCode::CONFLICT);
 }

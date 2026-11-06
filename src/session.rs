@@ -423,6 +423,51 @@ impl Sessions {
         }
         self.inner.archive_box(owner, id).await
     }
+    /// Creates a session for the same owner that starts where `id` is: its workspace is a
+    /// copy of the source's files, and its history holds the source's requests and
+    /// replies (the conversation spine, not the tool steps). The new session runs on
+    /// `model`, or on the source's model while that is still allowed. It counts against
+    /// the owner's open-session cap, and nothing of it is left behind if a step fails.
+    pub async fn fork(
+        &self,
+        owner: &str,
+        id: &str,
+        title: Option<&str>,
+        model: Option<&str>,
+    ) -> Result<SessionView> {
+        let inner = &self.inner;
+        let source = inner.owned(owner, id)?;
+        if source.status == SessionStatus::Closed {
+            return Err(SessionError::Closed.into());
+        }
+        let model = match model {
+            Some(model) => inner.choose_model(Some(model))?,
+            None => inner
+                .choose_model(Some(&source.model))
+                .or_else(|_| inner.choose_model(None))?,
+        };
+        let title = match title {
+            Some(title) => title.to_string(),
+            None => format!("{} (fork)", source.title),
+        };
+        let fork = inner.create_session(owner, &title, &model, Some(id))?;
+        let copied = async {
+            // A session without a box has an empty workspace; none is started to copy it.
+            if source.box_id.is_some() {
+                let archive = inner.archive_box(owner, id).await?;
+                inner.unpack_box(owner, &fork.id, archive).await?;
+            }
+            inner.copy_spine(id, &fork.id)
+        }
+        .await;
+        if let Err(error) = copied {
+            if let Err(e) = self.delete(owner, &fork.id).await {
+                tracing::warn!(session = fork.id, "removing a failed fork failed: {e:#}");
+            }
+            return Err(error);
+        }
+        Ok(self.get(owner, &fork.id)?.unwrap_or(fork))
+    }
     /// A slot for one live event stream, held until the stream ends.
     pub fn stream_slot(&self, owner: &str) -> Result<OwnerSlot> {
         OwnerSlot::take(
@@ -804,6 +849,30 @@ impl Inner {
             )?
             .ok_or_else(|| SessionError::TooManySessions.into())
     }
+    /// Writes the source's conversation spine into a new fork's event log: each request
+    /// as `user` (an interjection is a user message too) and each reply as `assistant`,
+    /// marked `forked_from`. Tool calls and results are not copied.
+    fn copy_spine(&self, source: &str, fork: &str) -> Result<()> {
+        for entry in self.rebuild_history(source)? {
+            let content = entry.message["content"].as_str().unwrap_or("");
+            match entry.part {
+                Part::User => {
+                    let text = content.strip_prefix(INTERJECTION_PREFIX).unwrap_or(content);
+                    self.emit(fork, "user", json!({"text": text, "forked_from": source}))?;
+                }
+                Part::Reply => {
+                    let reply: Value = serde_json::from_str(content).unwrap_or(Value::Null);
+                    self.emit(
+                        fork,
+                        "assistant",
+                        json!({"text": reply["text"], "attachments": reply["attachments"], "forked_from": source}),
+                    )?;
+                }
+                Part::Step => {}
+            }
+        }
+        Ok(())
+    }
     /// Packs `/workspace` in the box (see `archive_command`) and reads the archive back.
     async fn archive_box(&self, owner: &str, id: &str) -> Result<Vec<u8>> {
         let path = format!("/tmp/.ar-archive-{}.tar.gz", uuid::Uuid::new_v4());
@@ -850,6 +919,26 @@ impl Inner {
             tracing::warn!(session = id, "removing a workspace archive failed: {e:#}");
         }
         result
+    }
+    /// Writes an archive from `archive_box` into the box and unpacks it into `/workspace`.
+    async fn unpack_box(&self, owner: &str, id: &str, archive: Vec<u8>) -> Result<()> {
+        let path = format!("/tmp/.ar-fork-{}.tar.gz", uuid::Uuid::new_v4());
+        self.write_in_box(owner, id, &path, Bytes::from(archive))
+            .await?;
+        let unpack = ExecRequest {
+            command: extract_command(&path),
+            cwd: None,
+            timeout_seconds: Some(ARCHIVE_SECONDS),
+            stdin: None,
+        };
+        let result = self.exec_in_box(owner, id, &unpack).await?;
+        ensure!(
+            result.exit_code == 0 && !result.timed_out,
+            "copying the workspace failed (exit {}): {}",
+            result.exit_code,
+            clip(&result.stderr, 500)
+        );
+        Ok(())
     }
     fn emit(&self, id: &str, kind: &str, payload: Value) -> Result<SessionEvent> {
         let event = self.ledger.append_event(id, kind, payload)?;
@@ -1869,6 +1958,13 @@ pub fn archive_command(path: &str) -> String {
     format!(
         "# agent-rush: archive {path}\ntar -czf - -C /workspace . | head -c {} > {file}\necho \"${{PIPESTATUS[0]}} $(stat -c %s {file})\"",
         MAX_FILE_BYTES + 1
+    )
+}
+/// The command that unpacks the archive at `path` into `/workspace` and removes it.
+pub fn extract_command(path: &str) -> String {
+    let file = shell_quote(path);
+    format!(
+        "# agent-rush: extract {path}\ntar -xzf {file} -C /workspace --no-same-owner\ncode=$?\nrm -f {file}\nexit $code"
     )
 }
 /// tar's exit code and the archive size from the last line `archive_command` prints.

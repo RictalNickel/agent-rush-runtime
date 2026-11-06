@@ -57,6 +57,7 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/v1/sessions/{id}/events", get(list_events))
         .route("/v1/sessions/{id}/stream", get(stream_events))
         .route("/v1/sessions/{id}/archive", get(archive))
+        .route("/v1/sessions/{id}/fork", post(fork_session))
         .route(
             "/v1/sessions/{id}/files",
             get(read_file)
@@ -502,6 +503,45 @@ async fn get_session(
         .map_err(ApiError::internal)?
         .ok_or_else(|| session_status(&SessionError::NotFound))?;
     Ok(Json(json!(session)))
+}
+#[derive(Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+struct ForkInput {
+    #[serde(default)]
+    title: Option<String>,
+    /// The fork's model; the source's model otherwise.
+    #[serde(default)]
+    model: Option<String>,
+    /// Optional first message for the fork; starts its first turn.
+    #[serde(default)]
+    message: Option<String>,
+}
+/// Forks a session: a new session with a copy of its workspace and its conversation.
+async fn fork_session(
+    State(s): State<AppState>,
+    BusyOwner { owner, _slot }: BusyOwner,
+    Path(id): Path<String>,
+    body: Bytes,
+) -> Result<impl IntoResponse, ApiError> {
+    let engine = engine(&s)?;
+    let input: ForkInput = optional_json(&body)?;
+    check_message(input.message.as_deref())?;
+    let fork = engine
+        .fork(&owner, &id, input.title.as_deref(), input.model.as_deref())
+        .await
+        .map_err(workspace_error)?;
+    let sent = match &input.message {
+        Some(text) => Some(engine.send(&owner, &fork.id, text).map_err(input_error)?),
+        None => None,
+    };
+    let session = engine
+        .get(&owner, &fork.id)
+        .map_err(ApiError::internal)?
+        .unwrap_or(fork);
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({"session": session, "sent": sent})),
+    ))
 }
 /// Unknown parameters are ignored, as they were before `purge` existed.
 #[derive(Deserialize)]
