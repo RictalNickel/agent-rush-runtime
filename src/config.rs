@@ -56,6 +56,8 @@ pub struct Settings {
     pub capacity_mb: u32,
     pub sandbox_image: String,
     pub qualification_report: Option<PathBuf>,
+    /// Operator-configured remote MCP servers (`AR_MCP_SERVERS_FILE`); credentials stay here.
+    pub mcp_servers_file: Option<PathBuf>,
 }
 impl Settings {
     pub fn local() -> Self {
@@ -79,6 +81,7 @@ impl Settings {
             capacity_mb: 2048,
             sandbox_image: String::new(),
             qualification_report: None,
+            mcp_servers_file: None,
         }
     }
     pub fn from_env() -> Result<Self> {
@@ -140,6 +143,10 @@ impl Settings {
         }
         s.sandbox_image = env::var("AR_SANDBOX_IMAGE").unwrap_or_default();
         s.qualification_report = env::var("AR_QUALIFICATION_REPORT")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .map(PathBuf::from);
+        s.mcp_servers_file = env::var("AR_MCP_SERVERS_FILE")
             .ok()
             .filter(|s| !s.is_empty())
             .map(PathBuf::from);

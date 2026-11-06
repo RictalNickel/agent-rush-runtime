@@ -9,6 +9,7 @@ pub mod domain;
 pub mod engine;
 pub mod inference;
 pub mod ledger;
+pub mod mcp_client;
 pub mod memory;
 pub mod node;
 pub mod qualification;
