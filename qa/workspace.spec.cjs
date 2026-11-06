@@ -28,9 +28,10 @@ async function signIn(page){
 }
 
 // A fake /v1 backend with a session event log. `sse:false` makes the stream fail so the
-// page has to fall back to polling /events.
-async function fakeApi(page,{voice=false,sse=true,seed=[]}={}){
-  const st={sessions:[],events:new Map(),csrf:[],streams:0,polls:0,speak:0,transcribe:0,cancelled:0};
+// page has to fall back to polling /events. `throttleImages` refuses the first request for
+// each screenshot with 429, the way the server does past its per-session limit.
+async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false}={}){
+  const st={sessions:[],events:new Map(),csrf:[],streams:0,polls:0,speak:0,transcribe:0,cancelled:0,images:{inFlight:0,maxInFlight:0,requests:{}}};
   const emit=(id,kind,payload)=>{const log=st.events.get(id);const event={session_id:id,seq:log.length+1,kind,payload,at:Date.now()};log.push(event);st.sessions.find(s=>s.id===id).last_seq=event.seq;return event;};
   const status=(id,value,reason)=>{st.sessions.find(s=>s.id===id).status=value;emit(id,'status',reason?{status:value,reason}:{status:value});};
   st.emit=emit;st.status=status;
@@ -45,6 +46,17 @@ async function fakeApi(page,{voice=false,sse=true,seed=[]}={}){
     emit(id,'tool_result',{tool:'browser',ok:true,output:'exit code 0\nstdout:\n{"url":"https://example.com/","title":"Example Domain"}',truncated:false});
     emit(id,'tool_call',{tool:'browser',call:{tool:'browser',action:'screenshot'}});
     emit(id,'tool_result',{tool:'browser',ok:true,output:'exit code 0\nstdout:\n{"path":"/workspace/.screenshots/shot-1.png"}',truncated:false});
+  };
+  // Every screenshot request holds for 120 ms, so overlapping requests show up in maxInFlight.
+  const serveShot=async(route,p)=>{
+    const images=st.images;
+    images.requests[p]=(images.requests[p]??0)+1;
+    images.inFlight+=1;images.maxInFlight=Math.max(images.maxInFlight,images.inFlight);
+    try{
+      await new Promise(resolve=>setTimeout(resolve,120));
+      if(throttleImages&&images.requests[p]===1)return await route.fulfill({status:429,json:{error:'too many workspace calls'}});
+      return await route.fulfill({status:200,headers:{'content-type':'image/png','content-disposition':'attachment; filename="shot-1.png"'},body:PNG});
+    }finally{images.inFlight-=1;}
   };
   await page.route(/\/v1\//,async route=>{
     const req=route.request(),url=new URL(req.url()),path=url.pathname,method=req.method();
@@ -94,7 +106,7 @@ async function fakeApi(page,{voice=false,sse=true,seed=[]}={}){
       const p=url.searchParams.get('path');
       if(p==='.')return route.fulfill({json:{path:'.',entries:[{name:'report.pdf',is_dir:false,size:2048},{name:'app',is_dir:true,size:0}]}});
       if(p==='app')return route.fulfill({json:{path:'app',entries:[{name:'main.py',is_dir:false,size:312}]}});
-      if(p.endsWith('.png'))return route.fulfill({status:200,headers:{'content-type':'image/png','content-disposition':'attachment; filename="shot-1.png"'},body:PNG});
+      if(p.endsWith('.png'))return serveShot(route,p);
       return route.fulfill({status:200,headers:{'content-type':'application/pdf','content-disposition':`attachment; filename="${p.split('/').pop()}"`},body:'%PDF-1.4\n%fake\n'});
     }
     if(path==='/v1/voice/speak'){st.speak+=1;return route.fulfill({status:200,headers:{'content-type':'audio/wav'},body:wav()});}
@@ -144,7 +156,9 @@ test('session chat: send, tool rows, screenshot, interjection, stop, reply, file
   await expect(steps.nth(0).locator('pre')).toContainText('$ npm test');
   await expect(steps.nth(0).locator('pre')).toContainText('2 passing');
   // The screenshot renders inline from a blob: URL (the CSP allows img-src blob:).
+  // Pictures load once they scroll near the viewport, so bring this step on screen first.
   const shot=steps.nth(2).locator('img');
+  await steps.nth(2).scrollIntoViewIfNeeded();
   await expect(shot).toHaveAttribute('src',/^blob:/);
   expect(await shot.evaluate(img=>img.complete&&img.naturalWidth)).toBe(640);
   // The drawer lists the session as working.
@@ -193,6 +207,7 @@ test('session chat: send, tool rows, screenshot, interjection, stop, reply, file
   await expect(body).toContainText('Preview: Open the preview (javascript:alert(1))');
   const attached=answer.getByRole('link',{name:'report.pdf'});
   await expect(attached).toHaveAttribute('href',/\/v1\/sessions\/s1\/files\?path=report\.pdf$/);
+  await answer.locator('.shot').scrollIntoViewIfNeeded();
   await expect(answer.locator('.shot img')).toHaveAttribute('src',/^blob:/);
   const replyDownload=page.waitForEvent('download');
   await attached.click();
@@ -286,6 +301,7 @@ test('mobile at 390 px: no overflow, drawer works, polling fallback when SSE fai
   await expect(steps).toHaveCount(2);
   await expect(steps.nth(0)).toContainText('— exit 2');
   await expect(steps.nth(0)).toHaveClass(/bad/);
+  await steps.nth(1).scrollIntoViewIfNeeded();
   await expect(steps.nth(1).locator('img')).toHaveAttribute('src',/^blob:/);
   await steps.nth(0).locator('summary').click();
   await expect(steps.nth(0).locator('.step-note')).toHaveText('The agent saw a shortened copy of this output.');
@@ -301,5 +317,39 @@ test('mobile at 390 px: no overflow, drawer works, polling fallback when SSE fai
   await expect(page.locator('#files-dialog').getByRole('link',{name:'report.pdf'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.getByRole('button',{name:'Close files'}).click();
+  expect(errors).toEqual([]);
+});
+
+test('eight browser screenshots: 429s are retried, at most two load at once, all eight display',async({page})=>{
+  // Chromium logs each refused request. The fake counts them, so only that message is ignored.
+  const errors=watchErrors(page,['429 (Too Many Requests)']);
+  const paths=[...Array(8)].map((_,n)=>`/workspace/shot-${n+1}.png`);
+  const api=await fakeApi(page,{throttleImages:true,seed:[{id:'s1',title:'Eight screenshots',events:[
+    ['user',{text:'Take a screenshot of each page.'}],
+    ...paths.flatMap(path=>[
+      ['tool_call',{tool:'browser',call:{tool:'browser',action:'screenshot'}}],
+      ['tool_result',{tool:'browser',ok:true,output:`exit code 0\nstdout:\n{"path":"${path}"}`,truncated:false}],
+    ]),
+  ]}]});
+  await page.goto('/');
+  await signIn(page);
+  await page.locator('#session-list .session',{hasText:'Eight screenshots'}).click();
+  const steps=page.locator('#log .step');
+  await expect(steps).toHaveCount(8);
+  // Each picture loads once it scrolls near the viewport. Its first request gets a 429, and the
+  // retry after the 500 ms backoff is served, so every picture ends up displayed at full size.
+  for(const n of paths.keys()){
+    const figure=steps.nth(n).locator('figure.shot');
+    await figure.scrollIntoViewIfNeeded();
+    const shot=figure.locator('img');
+    await expect(shot).toHaveAttribute('src',/^blob:/);
+    await expect.poll(()=>shot.evaluate(img=>img.complete&&img.naturalWidth)).toBe(640);
+  }
+  await expect(page.locator('#log')).not.toContainText('could not be loaded');
+  // At most two image requests were in flight at once, and each picture was asked for exactly twice:
+  // refused, then served.
+  expect(api.images.maxInFlight).toBeLessThanOrEqual(2);
+  expect(Object.keys(api.images.requests).sort()).toEqual([...paths].sort());
+  for(const path of paths)expect(api.images.requests[path]).toBe(2);
   expect(errors).toEqual([]);
 });
