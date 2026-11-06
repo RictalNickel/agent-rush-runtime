@@ -1500,7 +1500,7 @@ impl Inner {
                     id,
                     "error",
                     json!({
-                        "message": "The workspace box was lost (reaped, out of memory or a worker restart). A new box was created; files from the old one are gone.",
+                        "message": "The workspace box was lost (its files were removed after 7 days unused, or the worker failed). A new box was created; files from the old one are gone.",
                         "box_id": box_id,
                     }),
                 )?;
