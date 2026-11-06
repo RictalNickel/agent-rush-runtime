@@ -220,8 +220,15 @@ impl Settings {
             );
         }
         s.worker_token = env::var("AR_WORKER_TOKEN").unwrap_or_default();
-        s.worker_ca_path = env::var("AR_WORKER_CA_PATH").ok().map(PathBuf::from);
-        s.worker_identity_path = env::var("AR_WORKER_IDENTITY_PATH").ok().map(PathBuf::from);
+        // Blank means unset, as with the other optional paths.
+        s.worker_ca_path = env::var("AR_WORKER_CA_PATH")
+            .ok()
+            .filter(|v| !v.trim().is_empty())
+            .map(PathBuf::from);
+        s.worker_identity_path = env::var("AR_WORKER_IDENTITY_PATH")
+            .ok()
+            .filter(|v| !v.trim().is_empty())
+            .map(PathBuf::from);
         s.inference_provider =
             Provider::parse(&env::var("AR_INFERENCE_PROVIDER").unwrap_or_default())?;
         s.anthropic_key = env::var("ANTHROPIC_API_KEY").unwrap_or_default();

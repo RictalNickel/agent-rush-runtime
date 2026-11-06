@@ -112,6 +112,21 @@ env_get() {
 }
 
 # env_set FILE KEY VALUE fill|force: fill sets the key only when empty; force always sets it.
+# Remove KEY from an env file (no-op when absent).
+env_unset() {
+  local file="$1" key="$2" tmp
+  grep -q "^$key=" "$file" 2>/dev/null || return 0
+  if [ "$DRY_RUN" -eq 1 ]; then
+    note "would remove $key from $file"
+    return 0
+  fi
+  tmp="$(mktemp "$file.XXXXXX")"
+  grep -v "^$key=" "$file" > "$tmp" || true
+  chmod 0600 "$tmp"
+  mv -f "$tmp" "$file"
+  changed "removed $key from $file"
+}
+
 env_set() {
   local file="$1" key="$2" value="$3" mode="$4" current tmp
   current="$(env_get "$file" "$key")"
@@ -434,6 +449,10 @@ env_files() {
 
     if [ "$ROLE" = all ]; then
       env_set "$control_env" AR_WORKER_URL "http://127.0.0.1:$WORKER_PORT" force
+      # One host: the worker is on loopback over plain http, so no mTLS files are used
+      # (and the control user could not read the root-only $ETC/tls anyway).
+      env_unset "$control_env" AR_WORKER_CA_PATH
+      env_unset "$control_env" AR_WORKER_IDENTITY_PATH
       env_set "$control_env" AR_WORKER_TOKEN "$(env_get "$worker_env" AR_WORKER_TOKEN)" fill
     else
       env_set "$control_env" AR_WORKER_URL "$WORKER_URL_SPLIT" force
