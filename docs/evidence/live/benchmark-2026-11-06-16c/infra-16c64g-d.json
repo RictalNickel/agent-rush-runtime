@@ -1,0 +1,94 @@
+{
+ "mode": "infra",
+ "label": "bench voc-g-16c-64gb (512 MB start, 2 GB disk)",
+ "host": "bench VM voc-g-16c-64gb (45.76.26.62, deleted) through an SSH tunnel",
+ "model": null,
+ "suite": "basic",
+ "started_at": 1793992923,
+ "seconds": 91.0,
+ "status": {
+  "inference_configured": true,
+  "limits": {
+   "box_cpu_millis": 1000,
+   "box_memory_mb": 512,
+   "max_audio_bytes": 26214400,
+   "max_box_calls_per_session": 4,
+   "max_event_page": 1000,
+   "max_exec_timeout_seconds": 600,
+   "max_file_bytes": 26214400,
+   "max_long_requests_per_owner": 150,
+   "max_mcp_batch": 16,
+   "max_message_bytes": 65536,
+   "max_open_sessions_per_owner": 150,
+   "max_streams_per_owner": 32,
+   "max_turn_seconds": 1800
+  },
+  "models": {
+   "default": "glm-5.3-flash",
+   "models": [
+    {
+     "default": true,
+     "id": "glm-5.3-flash",
+     "input_usd_per_million": 0.1,
+     "output_usd_per_million": 0.35
+    },
+    {
+     "default": false,
+     "id": "glm-5.3",
+     "input_usd_per_million": 0.75,
+     "output_usd_per_million": 3.0
+    }
+   ],
+   "per_session": true,
+   "provider": "vultr"
+  },
+  "provider": "vultr",
+  "sessions_available": true,
+  "version": "0.1.0",
+  "voice_available": false,
+  "worker_connected": true
+ },
+ "results": [
+  {
+   "concurrency": 96,
+   "wall_seconds": 91.0,
+   "workloads": {
+    "cold_start": {
+     "ok": 96,
+     "failed": 0,
+     "median_s": 5.08,
+     "max_s": 9.75,
+     "first_failure": null
+    },
+    "cpu_python": {
+     "ok": 96,
+     "failed": 0,
+     "median_s": 4.06,
+     "max_s": 5.6,
+     "first_failure": null
+    },
+    "numpy_matmul": {
+     "ok": 96,
+     "failed": 0,
+     "median_s": 48.28,
+     "max_s": 53.74,
+     "first_failure": null
+    },
+    "disk_write_256mb": {
+     "ok": 96,
+     "failed": 0,
+     "median_s": 6.13,
+     "max_s": 8.04,
+     "first_failure": null
+    },
+    "npm_install": {
+     "ok": 96,
+     "failed": 0,
+     "median_s": 21.52,
+     "max_s": 30.66,
+     "first_failure": null
+    }
+   }
+  }
+ ]
+}

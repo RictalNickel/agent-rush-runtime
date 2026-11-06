@@ -1,0 +1,440 @@
+Vultr-Placeholder-Test123 install: role=all features=none
+
+== Preflight
+   host: Ubuntu 24.04, 16 CPU, 62.8 GiB RAM
+   cgroup v2: yes
+
+== System packages
+   missing: docker.io
+Hit:1 http://ubuntu.mirror.constant.com noble InRelease
+Fetched 12.2 MB in 5s (2,303 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  bridge-utils containerd dns-root-data dnsmasq-base pigz runc ubuntu-fan
+Suggested packages:
+  ifupdown aufs-tools cgroupfs-mount | cgroup-lite debootstrap docker-buildx
+  docker-compose-v2 docker-doc rinse zfs-fuse | zfsutils
+The following NEW packages will be installed:
+  bridge-utils containerd dns-root-data dnsmasq-base docker.io pigz runc
+  ubuntu-fan
+0 upgraded, 8 newly installed, 0 to remove and 17 not upgraded.
+Need to get 73.8 MB of archives.
+After this operation, 279 MB of additional disk space will be used.
+Preconfiguring packages ...
+Fetched 73.8 MB in 1s (147 MB/s)
+Created symlink /etc/systemd/system/multi-user.target.wants/containerd.service → /usr/lib/systemd/system/containerd.service.
+Created symlink /etc/systemd/system/multi-user.target.wants/ubuntu-fan.service → /usr/lib/systemd/system/ubuntu-fan.service.
+info: Selecting GID from range 100 to 999 ...
+info: Adding group `docker' (GID 110) ...
+Created symlink /etc/systemd/system/multi-user.target.wants/docker.service → /usr/lib/systemd/system/docker.service.
+Created symlink /etc/systemd/system/sockets.target.wants/docker.socket → /usr/lib/systemd/system/docker.socket.
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+   changed: installed docker.io
+
+== Docker and gVisor (runsc)
+   present: docker
+   runsc missing: installing from the signed gVisor apt repository
+Hit:1 http://ubuntu.mirror.constant.com noble InRelease
+Hit:2 http://security.ubuntu.com/ubuntu noble-security InRelease
+Hit:3 http://ubuntu.mirror.constant.com noble-updates InRelease
+Hit:4 http://ubuntu.mirror.constant.com noble-backports InRelease
+Fetched 4,272 B in 0s (17.2 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following NEW packages will be installed:
+  runsc
+0 upgraded, 1 newly installed, 0 to remove and 17 not upgraded.
+Need to get 77.9 MB of archives.
+After this operation, 0 B of additional disk space will be used.
+Fetched 77.9 MB in 1s (123 MB/s)
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+   changed: installed runsc
+   changed: wrote /etc/docker/daemon.json and restarted docker (live-restore keeps running containers)
+
+== agent-rush binary
+rustup-init: OK
+info: profile set to minimal
+info: default host tuple is x86_64-unknown-linux-gnu
+info: syncing channel updates for 1.90.0-x86_64-unknown-linux-gnu
+info: latest update on 2025-09-18 for version 1.90.0 (1159e78c4 2025-09-14)
+info: downloading 3 components
+info: default toolchain set to 1.90.0-x86_64-unknown-linux-gnu
+
+  1.90.0-x86_64-unknown-linux-gnu installed - rustc 1.90.0 (1159e78c4 2025-09-14)
+
+
+Rust is installed now. Great!
+
+To get started you need Cargo's bin directory ($HOME/.cargo/bin) in your PATH
+environment variable. This has not been done automatically.
+
+To configure your current shell, you need to source
+the corresponding env file under $HOME/.cargo.
+
+Consider running the right command for your shell (note the leading DOT):
+. "$HOME/.cargo/env" # For sh/ash/dash/pdksh/bash
+cargo:rerun-if-env-changed=CC_x86_64-unknown-linux-gnu
+CC_x86_64-unknown-linux-gnu = None
+cargo:rerun-if-env-changed=CC_x86_64_unknown_linux_gnu
+CC_x86_64_unknown_linux_gnu = None
+cargo:rerun-if-env-changed=HOST_CC
+HOST_CC = None
+cargo:rerun-if-env-changed=CC
+CC = None
+cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+cargo:rerun-if-env-changed=CPATH
+cargo:rerun-if-env-changed=C_INCLUDE_PATH
+cargo:rerun-if-env-changed=CPLUS_INCLUDE_PATH
+cargo:rerun-if-env-changed=OBJC_INCLUDE_PATH
+cargo:rerun-if-env-changed=OBJCPLUS_INCLUDE_PATH
+cargo:rerun-if-env-changed=COMPILER_PATH
+cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH
+cargo:rerun-if-env-changed=GCC_EXEC_PREFIX
+cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+CRATE_CC_NO_DEFAULTS = None
+cargo:rerun-if-env-changed=CFLAGS
+CFLAGS = None
+cargo:rerun-if-env-changed=HOST_CFLAGS
+HOST_CFLAGS = None
+cargo:rerun-if-env-changed=CFLAGS_x86_64_unknown_linux_gnu
+CFLAGS_x86_64_unknown_linux_gnu = None
+cargo:rerun-if-env-changed=CFLAGS_x86_64-unknown-linux-gnu
+CFLAGS_x86_64-unknown-linux-gnu = None
+   changed: installed rustup and the Rust toolchain from rust-toolchain.toml
+info: syncing channel updates for 1.90.0-x86_64-unknown-linux-gnu
+info: latest update on 2025-09-18 for version 1.90.0 (1159e78c4 2025-09-14)
+info: downloading 2 components
+    Updating crates.io index
+ Downloading crates ...
+  Downloaded errno v0.3.14
+  Downloaded axum-core v0.5.6
+  Downloaded find-msvc-tools v0.1.15
+  Downloaded futures-channel v0.3.34
+  Downloaded ahash v0.8.12
+  Downloaded atomic-waker v1.1.2
+  Downloaded axum v0.8.9
+  Downloaded anstyle-query v1.1.5
+  Downloaded slab v0.4.12
+  Downloaded quote v1.0.47
+  Downloaded futures-macro v0.3.34
+  Downloaded reqwest v0.12.28
+  Downloaded rustix v1.1.6
+  Downloaded serde_urlencoded v0.7.1
+  Downloaded strsim v0.11.1
+  Downloaded tar v0.4.46
+  Downloaded want v0.3.2
+  Downloaded socket2 v0.6.5
+  Downloaded rand_core v0.10.1
+  Downloaded version_check v0.9.5
+  Downloaded zmij v1.0.23
+  Downloaded icu_collections v2.4.0
+  Downloaded sync_wrapper v1.0.2
+  Downloaded rand_chacha v0.3.1
+  Downloaded httparse v1.10.1
+  Downloaded utf_types v1.0.0
+  Downloaded tracing-log v0.2.0
+  Downloaded proc-macro2 v1.0.107
+  Downloaded clap v4.6.7
+  Downloaded percent-encoding v2.3.2
+  Downloaded lazy_static v1.5.1
+  Downloaded utf8parse v0.2.2
+  Downloaded potential_utf v0.1.6
+  Downloaded untrusted v0.9.0
+  Downloaded tower-layer v0.3.3
+  Downloaded synstructure v0.14.0
+  Downloaded idna_adapter v1.2.2
+  Downloaded hex v0.4.3
+  Downloaded crypto-common v0.1.7
+  Downloaded tracing-attributes v0.1.31
+  Downloaded rand_pcg v0.10.2
+  Downloaded thread_local v1.1.10
+  Downloaded sha2 v0.10.9
+  Downloaded zerofrom v0.1.8
+  Downloaded zerofrom-derive v0.1.8
+  Downloaded tokio-rustls v0.26.6
+  Downloaded zerovec-derive v0.11.7
+  Downloaded yoke v0.8.4
+  Downloaded uuid v1.29.0
+  Downloaded zerotrie v0.2.5
+  Downloaded typenum v1.20.1
+  Downloaded rand v0.10.3
+  Downloaded zerovec v0.11.9
+  Downloaded tower-http v0.6.11
+  Downloaded tracing-subscriber v0.3.23
+  Downloaded quinn v0.11.12
+  Downloaded mio v1.2.4
+  Downloaded hyper-util v0.1.21
+  Downloaded vcpkg v0.2.15
+  Downloaded futures-util v0.3.34
+  Downloaded zerocopy v0.8.63
+  Downloaded syn v2.0.119
+  Downloaded icu_properties_data v2.4.0
+  Downloaded syn v3.0.9
+  Downloaded quinn-proto v0.11.19
+  Downloaded rustls v0.23.46
+  Downloaded clap_builder v4.6.7
+  Downloaded hashbrown v0.14.5
+  Downloaded cc v1.11.0
+  Downloaded idna v1.1.0
+  Downloaded tracing v0.1.44
+  Downloaded http v1.5.0
+  Downloaded base64 v0.22.1
+  Downloaded memchr v2.8.3
+  Downloaded rusqlite v0.32.1
+  Downloaded icu_provider v2.4.0
+  Downloaded icu_normalizer_data v2.4.0
+  Downloaded icu_locale_core v2.4.0
+  Downloaded tokio-util v0.7.20
+  Downloaded serde_json v1.0.154
+  Downloaded parking_lot v0.12.5
+  Downloaded icu_normalizer v2.4.0
+  Downloaded num-traits v0.2.19
+  Downloaded log v0.4.35
+  Downloaded iana-time-zone v0.1.65
+  Downloaded hyper-rustls v0.27.10
+  Downloaded hyper v1.12.0
+  Downloaded filetime v0.2.29
+  Downloaded clap_derive v4.6.7
+  Downloaded ppv-lite86 v0.2.21
+  Downloaded parking_lot_core v0.9.12
+  Downloaded once_cell v1.21.4
+  Downloaded nu-ansi-term v0.50.3
+  Downloaded litemap v0.8.3
+  Downloaded ipnet v2.12.2
+  Downloaded libc v0.2.191
+  Downloaded http-body-util v0.1.5
+  Downloaded http-body v1.1.0
+  Downloaded fastrand v2.5.0
+  Downloaded displaydoc v0.2.7
+  Downloaded tokio v1.54.1
+  Downloaded digest v0.10.7
+  Downloaded serde v1.0.229
+  Downloaded rand v0.8.8
+  Downloaded openssl-probe v0.2.2
+  Downloaded matchit v0.8.4
+  Downloaded matchers v0.2.0
+  Downloaded lock_api v0.4.14
+  Downloaded is_terminal_polyfill v1.70.2
+  Downloaded futures-task v0.3.34
+  Downloaded futures-core v0.3.34
+  Downloaded cfg-if v1.0.5
+  Downloaded url v2.5.8
+  Downloaded tracing-core v0.1.36
+  Downloaded tower v0.5.3
+  Downloaded lru-slab v0.1.3
+  Downloaded icu_properties v2.4.0
+  Downloaded tinyvec v1.13.3
+  Downloaded sharded-slab v0.1.7
+  Downloaded ryu v1.0.23
+  Downloaded writeable v0.6.4
+  Downloaded tinystr v0.8.5
+  Downloaded rustls-webpki v0.103.16
+  Downloaded rand_core v0.6.4
+  Downloaded zeroize v1.9.1
+  Downloaded unicode-ident v1.0.27
+  Downloaded tower-service v0.3.3
+  Downloaded ring v0.17.14
+  Downloaded yoke-derive v0.8.4
+  Downloaded xattr v1.7.0
+  Downloaded utf8_iter v1.1.0
+  Downloaded tokio-macros v2.7.2
+  Downloaded thiserror-impl v2.0.21
+  Downloaded stable_deref_trait v1.2.1
+  Downloaded pkg-config v0.3.34
+  Downloaded itoa v1.0.18
+  Downloaded form_urlencoded v1.2.2
+  Downloaded try-lock v0.2.5
+  Downloaded smallvec v1.16.4
+  Downloaded shlex v2.0.1
+  Downloaded rustc-hash v2.1.3
+  Downloaded thiserror v2.0.21
+  Downloaded tempfile v3.27.0
+  Downloaded serde_path_to_error v0.1.20
+  Downloaded subtle v2.6.1
+  Downloaded signal-hook-registry v1.4.8
+  Downloaded httpdate v1.0.3
+  Downloaded heck v0.5.0
+  Downloaded futures-io v0.3.34
+  Downloaded clap_lex v1.1.1
+  Downloaded cfg_aliases v0.2.2
+  Downloaded serde_derive v1.0.229
+  Downloaded fallible-streaming-iterator v0.1.9
+  Downloaded chacha20 v0.10.2
+  Downloaded bitflags v2.13.2
+  Downloaded serde_core v1.0.229
+  Downloaded scopeguard v1.2.0
+  Downloaded rustls-pki-types v1.15.1
+  Downloaded rustls-native-certs v0.8.5
+  Downloaded pin-project-lite v0.2.17
+  Downloaded mime v0.3.17
+  Downloaded hashlink v0.9.1
+  Downloaded getrandom v0.4.3
+  Downloaded getrandom v0.2.17
+  Downloaded generic-array v0.14.7
+  Downloaded colorchoice v1.0.5
+  Downloaded chrono v0.4.45
+  Downloaded regex-syntax v0.8.11
+  Downloaded regex-automata v0.4.18
+  Downloaded futures-sink v0.3.34
+  Downloaded fallible-iterator v0.3.0
+  Downloaded cpufeatures v0.3.1
+  Downloaded cpufeatures v0.2.17
+  Downloaded bytes v1.12.1
+  Downloaded block-buffer v0.10.4
+  Downloaded base64 v0.23.1
+  Downloaded autocfg v1.5.1
+  Downloaded aho-corasick v1.1.5
+  Downloaded quinn-udp v0.5.16
+  Downloaded anstyle-parse v1.0.0
+  Downloaded anyhow v1.0.104
+  Downloaded anstyle v1.0.14
+  Downloaded anstream v1.0.0
+  Downloaded linux-raw-sys v0.12.1
+  Downloaded libsqlite3-sys v0.30.1
+    Finished `release` profile [optimized] target(s) in 45.02s
+   changed: built target/release/agent-rush
+   changed: installed /opt/agent-rush/agent-rush
+
+== Service user and directories
+   changed: created user agent-rush
+   changed: added agent-rush to the docker group
+   changed: added agent-rush to the disk group
+
+== Configuration files (mode 0600; secrets generated once)
+   changed: created /etc/agent-rush/worker.env (mode 0600) from worker.env.example
+   changed: set AR_WORKER_TOKEN in /etc/agent-rush/worker.env (value not shown)
+   changed: created /etc/agent-rush/control.env (mode 0600) from control.env.example
+   changed: set VULTR_INFERENCE_API_KEY in /etc/agent-rush/control.env (value not shown)
+   changed: set AR_OPERATOR_PASSWORD in /etc/agent-rush/control.env (value not shown)
+   changed: set AR_WORKER_URL in /etc/agent-rush/control.env (value not shown)
+   changed: removed AR_WORKER_CA_PATH from /etc/agent-rush/control.env
+   changed: removed AR_WORKER_IDENTITY_PATH from /etc/agent-rush/control.env
+   changed: set AR_WORKER_TOKEN in /etc/agent-rush/control.env (value not shown)
+
+== Worker: box network, sandbox image and workspace image
+   changed: wrote /opt/agent-rush/box-network.sh
+   changed: wrote /etc/systemd/system/agent-rush-box-network.service
+network ar-box created
+host input guard installed
+egress rules installed (17)
+marker written: /run/agent-rush/box-network.env
+Created symlink /etc/systemd/system/multi-user.target.wants/agent-rush-box-network.service → /etc/systemd/system/agent-rush-box-network.service.
+   box network, egress filter and host input guard in place
+docker.io/library/rust@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f: Pulling from library/rust
+cd01849e3cbd: Pulling fs layer
+f279d33abc52: Pulling fs layer
+da3556d62e9b: Pulling fs layer
+5daa5a418829: Pulling fs layer
+42cabf358425: Pulling fs layer
+f279d33abc52: Download complete
+447779a4f4a3: Download complete
+cd01849e3cbd: Download complete
+5daa5a418829: Download complete
+4abe2dd3e5b0: Download complete
+42cabf358425: Download complete
+da3556d62e9b: Download complete
+cd01849e3cbd: Pull complete
+f279d33abc52: Pull complete
+5daa5a418829: Pull complete
+da3556d62e9b: Pull complete
+42cabf358425: Pull complete
+Digest: sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f
+Status: Downloaded newer image for rust@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f
+docker.io/library/rust:1.90.0-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f
+   changed: pulled the pinned sandbox image
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+   changed: set AR_BOX_IMAGE in /etc/agent-rush/worker.env (value not shown)
+   workspace image: agent-rush-workspace@sha256:819d89770e9ac0db5928aca37da3db8e29ceda5f0edfbd7830c2f52b1ff2524e
+
+== Worker: qualification (real containment checks)
+{"checks":10,"output":"/var/lib/agent-rush/qualification.next.json","qualified":true}
+   changed: wrote the worker qualification report
+[2m2026-11-06T18:58:05.676651Z[0m [32m INFO[0m [2magent_rush::boxes[0m[2m:[0m box created [3mbox_id[0m[2m=[0md281642915384abfb32a877854f3c7b9 [3msession[0m[2m=[0mqualify-693230dc548b4f6bbff395c6fc9184d4 [3mdisk_mb[0m[2m=[0m512
+[2m2026-11-06T18:58:29.349274Z[0m [32m INFO[0m [2magent_rush::boxes[0m[2m:[0m box destroyed [3mbox_id[0m[2m=[0md281642915384abfb32a877854f3c7b9 [3mcontainer_removed[0m[2m=[0mtrue [3mworkspace_removed[0m[2m=[0mtrue
+{"checks":[{"name":"metadata_blocked","passed":true},{"name":"private_blocked","passed":true},{"name":"host_services_blocked","passed":true},{"name":"smtp_blocked","passed":true},{"name":"public_https_allowed","passed":true},{"name":"no_credentials","passed":true},{"name":"non_root_readonly","passed":true},{"name":"disk_quota_enforced","passed":true},{"name":"volume_destroyed","passed":true}],"output":"/var/lib/agent-rush/box-qualification.next.json","qualified":true}
+   changed: wrote the box qualification report
+
+== Worker: systemd units and requalification timer
+   changed: wrote /etc/systemd/system/agent-rush-worker.service
+   changed: wrote /opt/agent-rush/requalify.sh
+   changed: wrote /etc/systemd/system/agent-rush-requalify.service
+   changed: wrote /etc/systemd/system/agent-rush-requalify.timer
+   changed: wrote /opt/agent-rush/requalify-box.sh
+   changed: wrote /etc/systemd/system/agent-rush-requalify-box.service
+   changed: wrote /etc/systemd/system/agent-rush-requalify-box.timer
+Created symlink /etc/systemd/system/timers.target.wants/agent-rush-requalify.timer → /etc/systemd/system/agent-rush-requalify.timer.
+Created symlink /etc/systemd/system/timers.target.wants/agent-rush-requalify-box.timer → /etc/systemd/system/agent-rush-requalify-box.timer.
+Created symlink /etc/systemd/system/multi-user.target.wants/agent-rush-worker.service → /etc/systemd/system/agent-rush-worker.service.
+   changed: worker service enabled and running
+
+== Control: systemd unit
+   changed: wrote /etc/systemd/system/agent-rush-control.service
+Created symlink /etc/systemd/system/multi-user.target.wants/agent-rush-control.service → /etc/systemd/system/agent-rush-control.service.
+   healthz on 127.0.0.1:8080: ok
+
+== Summary
+Changes:
+  - installed docker.io
+  - installed runsc
+  - wrote /etc/docker/daemon.json and restarted docker (live-restore keeps running containers)
+  - installed rustup and the Rust toolchain from rust-toolchain.toml
+  - built target/release/agent-rush
+  - installed /opt/agent-rush/agent-rush
+  - created user agent-rush
+  - added agent-rush to the docker group
+  - added agent-rush to the disk group
+  - created /etc/agent-rush/worker.env (mode 0600) from worker.env.example
+  - set AR_WORKER_TOKEN in /etc/agent-rush/worker.env (value not shown)
+  - created /etc/agent-rush/control.env (mode 0600) from control.env.example
+  - set VULTR_INFERENCE_API_KEY in /etc/agent-rush/control.env (value not shown)
+  - set AR_OPERATOR_PASSWORD in /etc/agent-rush/control.env (value not shown)
+  - set AR_WORKER_URL in /etc/agent-rush/control.env (value not shown)
+  - removed AR_WORKER_CA_PATH from /etc/agent-rush/control.env
+  - removed AR_WORKER_IDENTITY_PATH from /etc/agent-rush/control.env
+  - set AR_WORKER_TOKEN in /etc/agent-rush/control.env (value not shown)
+  - wrote /opt/agent-rush/box-network.sh
+  - wrote /etc/systemd/system/agent-rush-box-network.service
+  - pulled the pinned sandbox image
+  - set AR_BOX_IMAGE in /etc/agent-rush/worker.env (value not shown)
+  - wrote the worker qualification report
+  - wrote the box qualification report
+  - wrote /etc/systemd/system/agent-rush-worker.service
+  - wrote /opt/agent-rush/requalify.sh
+  - wrote /etc/systemd/system/agent-rush-requalify.service
+  - wrote /etc/systemd/system/agent-rush-requalify.timer
+  - wrote /opt/agent-rush/requalify-box.sh
+  - wrote /etc/systemd/system/agent-rush-requalify-box.service
+  - wrote /etc/systemd/system/agent-rush-requalify-box.timer
+  - worker service enabled and running
+  - wrote /etc/systemd/system/agent-rush-control.service
+
+Open the control plane through an SSH tunnel: ssh -L 8080:127.0.0.1:8080 <this-host>
+Admin password (keep it private): sudo grep '^AR_OPERATOR_PASSWORD=' /etc/agent-rush/control.env
+Worker status: systemctl status agent-rush-worker
+Uninstall: see docs/INSTALL.md.

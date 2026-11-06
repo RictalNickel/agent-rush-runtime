@@ -1,0 +1,157 @@
+{
+ "mode": "soak",
+ "label": "16c64g soak, 48 workers",
+ "host": "bench VM voc-g-16c-64gb (45.76.26.62, deleted) through an SSH tunnel",
+ "model": null,
+ "suite": "basic",
+ "started_at": 1793993740,
+ "seconds": 722.8,
+ "status": {
+  "inference_configured": true,
+  "limits": {
+   "box_cpu_millis": 1000,
+   "box_memory_mb": 512,
+   "max_audio_bytes": 26214400,
+   "max_box_calls_per_session": 4,
+   "max_event_page": 1000,
+   "max_exec_timeout_seconds": 600,
+   "max_file_bytes": 26214400,
+   "max_long_requests_per_owner": 150,
+   "max_mcp_batch": 16,
+   "max_message_bytes": 65536,
+   "max_open_sessions_per_owner": 150,
+   "max_streams_per_owner": 32,
+   "max_turn_seconds": 1800
+  },
+  "models": {
+   "default": "glm-5.3-flash",
+   "models": [
+    {
+     "default": true,
+     "id": "glm-5.3-flash",
+     "input_usd_per_million": 0.1,
+     "output_usd_per_million": 0.35
+    },
+    {
+     "default": false,
+     "id": "glm-5.3",
+     "input_usd_per_million": 0.75,
+     "output_usd_per_million": 3.0
+    }
+   ],
+   "per_session": true,
+   "provider": "vultr"
+  },
+  "provider": "vultr",
+  "sessions_available": true,
+  "version": "0.1.0",
+  "voice_available": false,
+  "worker_connected": true
+ },
+ "results": [
+  {
+   "minute": 1,
+   "cycles": 486,
+   "failed": 0,
+   "median_s": 6.14,
+   "p95_s": 9.72,
+   "first_failure": null
+  },
+  {
+   "minute": 2,
+   "cycles": 593,
+   "failed": 0,
+   "median_s": 4.18,
+   "p95_s": 6.81,
+   "first_failure": null
+  },
+  {
+   "minute": 3,
+   "cycles": 544,
+   "failed": 0,
+   "median_s": 5.69,
+   "p95_s": 7.32,
+   "first_failure": null
+  },
+  {
+   "minute": 4,
+   "cycles": 591,
+   "failed": 0,
+   "median_s": 4.2,
+   "p95_s": 7.28,
+   "first_failure": null
+  },
+  {
+   "minute": 5,
+   "cycles": 557,
+   "failed": 0,
+   "median_s": 5.53,
+   "p95_s": 7.28,
+   "first_failure": null
+  },
+  {
+   "minute": 6,
+   "cycles": 586,
+   "failed": 17,
+   "median_s": 4.32,
+   "p95_s": 7.16,
+   "first_failure": "AssertionError(('put', 502, '{\"error\":\"Workspace error: creating the workspace box: box worker returned HTTP 500: Box operation failed; consult worker logs\"}'))"
+  },
+  {
+   "minute": 7,
+   "cycles": 486,
+   "failed": 0,
+   "median_s": 6.4,
+   "p95_s": 7.59,
+   "first_failure": null
+  },
+  {
+   "minute": 8,
+   "cycles": 562,
+   "failed": 0,
+   "median_s": 4.7,
+   "p95_s": 7.54,
+   "first_failure": null
+  },
+  {
+   "minute": 9,
+   "cycles": 614,
+   "failed": 0,
+   "median_s": 4.2,
+   "p95_s": 6.96,
+   "first_failure": null
+  },
+  {
+   "minute": 10,
+   "cycles": 591,
+   "failed": 0,
+   "median_s": 4.36,
+   "p95_s": 7.37,
+   "first_failure": null
+  },
+  {
+   "minute": 11,
+   "cycles": 587,
+   "failed": 0,
+   "median_s": 4.21,
+   "p95_s": 7.37,
+   "first_failure": null
+  },
+  {
+   "minute": 12,
+   "cycles": 595,
+   "failed": 0,
+   "median_s": 4.25,
+   "p95_s": 7.06,
+   "first_failure": null
+  },
+  {
+   "minute": 13,
+   "cycles": 48,
+   "failed": 0,
+   "median_s": 4.05,
+   "p95_s": 4.42,
+   "first_failure": null
+  }
+ ]
+}

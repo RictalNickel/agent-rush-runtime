@@ -1,0 +1,251 @@
+{
+ "mode": "infra",
+ "label": "bench voc-g-16c-64gb (reserve fix)",
+ "host": "bench VM voc-g-16c-64gb (45.76.26.62, deleted) through an SSH tunnel",
+ "model": null,
+ "suite": "basic",
+ "started_at": 1793992679,
+ "seconds": 152.2,
+ "status": {
+  "inference_configured": true,
+  "limits": {
+   "box_cpu_millis": 1000,
+   "box_memory_mb": 1024,
+   "max_audio_bytes": 26214400,
+   "max_box_calls_per_session": 4,
+   "max_event_page": 1000,
+   "max_exec_timeout_seconds": 600,
+   "max_file_bytes": 26214400,
+   "max_long_requests_per_owner": 150,
+   "max_mcp_batch": 16,
+   "max_message_bytes": 65536,
+   "max_open_sessions_per_owner": 150,
+   "max_streams_per_owner": 32,
+   "max_turn_seconds": 1800
+  },
+  "models": {
+   "default": "glm-5.3-flash",
+   "models": [
+    {
+     "default": true,
+     "id": "glm-5.3-flash",
+     "input_usd_per_million": 0.1,
+     "output_usd_per_million": 0.35
+    },
+    {
+     "default": false,
+     "id": "glm-5.3",
+     "input_usd_per_million": 0.75,
+     "output_usd_per_million": 3.0
+    }
+   ],
+   "per_session": true,
+   "provider": "vultr"
+  },
+  "provider": "vultr",
+  "sessions_available": true,
+  "version": "0.1.0",
+  "voice_available": false,
+  "worker_connected": true
+ },
+ "results": [
+  {
+   "concurrency": 64,
+   "wall_seconds": 50.3,
+   "workloads": {
+    "cold_start": {
+     "ok": 56,
+     "failed": 8,
+     "median_s": 2.38,
+     "max_s": 3.83,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.37,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "cpu_python": {
+     "ok": 56,
+     "failed": 8,
+     "median_s": 2.34,
+     "max_s": 3.02,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.16,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "numpy_matmul": {
+     "ok": 56,
+     "failed": 8,
+     "median_s": 28.64,
+     "max_s": 30.88,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.14,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "disk_write_256mb": {
+     "ok": 56,
+     "failed": 8,
+     "median_s": 1.48,
+     "max_s": 5.99,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.16,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "npm_install": {
+     "ok": 56,
+     "failed": 8,
+     "median_s": 11.84,
+     "max_s": 15.59,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.16,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    }
+   }
+  },
+  {
+   "concurrency": 80,
+   "wall_seconds": 50.4,
+   "workloads": {
+    "cold_start": {
+     "ok": 56,
+     "failed": 24,
+     "median_s": 2.42,
+     "max_s": 4.0,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.29,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "cpu_python": {
+     "ok": 56,
+     "failed": 24,
+     "median_s": 2.38,
+     "max_s": 3.04,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.14,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "numpy_matmul": {
+     "ok": 56,
+     "failed": 24,
+     "median_s": 28.03,
+     "max_s": 30.23,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.13,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "disk_write_256mb": {
+     "ok": 56,
+     "failed": 24,
+     "median_s": 1.9,
+     "max_s": 6.07,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.1,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "npm_install": {
+     "ok": 56,
+     "failed": 24,
+     "median_s": 11.11,
+     "max_s": 14.01,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.1,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    }
+   }
+  },
+  {
+   "concurrency": 96,
+   "wall_seconds": 51.5,
+   "workloads": {
+    "cold_start": {
+     "ok": 56,
+     "failed": 40,
+     "median_s": 2.41,
+     "max_s": 4.08,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.35,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "cpu_python": {
+     "ok": 56,
+     "failed": 40,
+     "median_s": 2.38,
+     "max_s": 3.16,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.12,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "numpy_matmul": {
+     "ok": 56,
+     "failed": 40,
+     "median_s": 29.06,
+     "max_s": 31.2,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.16,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "disk_write_256mb": {
+     "ok": 56,
+     "failed": 40,
+     "median_s": 1.99,
+     "max_s": 6.32,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.12,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "npm_install": {
+     "ok": 56,
+     "failed": 40,
+     "median_s": 10.88,
+     "max_s": 14.69,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.08,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    }
+   }
+  }
+ ]
+}

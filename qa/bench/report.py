@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Print Markdown tables from bench.py result files.
 
-Usage: report.py infra A.json [B.json ...]   |   report.py agent A.json [B.json ...]
+Usage: report.py infra|agent|matrix|soak A.json [B.json ...]
 """
-import json, sys
+import json, statistics, sys
 
 
 def infra(files):
@@ -37,5 +37,32 @@ def agent(files):
         print(f"| {label} | {ok}/{n} | {mean:.1f} | {cost:.4f} |")
 
 
+def matrix(files):
+    """Passes per task and model, with median time and mean cost per model."""
+    rows = [r for f in files for r in json.load(open(f))["results"] if "task" in r]
+    models = sorted({r["model"] for r in rows})
+    tasks = sorted({r["task"] for r in rows})
+    print("| Task | " + " | ".join(models) + " |\n| --- | " + " | ".join("---" for _ in models) + " |")
+    for t in tasks:
+        cells = []
+        for m in models:
+            rs = [r for r in rows if r["task"] == t and r["model"] == m]
+            cells.append(f"{sum(r['passed'] for r in rs)}/{len(rs)}")
+        print(f"| {t} | " + " | ".join(cells) + " |")
+    print("\n| Model | Passed | Median time (s) | Mean cost per task (USD) | Mean tool calls |\n| --- | --- | --- | --- | --- |")
+    for m in models:
+        rs = [r for r in rows if r["model"] == m]
+        print(f"| {m} | {sum(r['passed'] for r in rs)}/{len(rs)} | {statistics.median(r['seconds'] for r in rs):.1f} | "
+              f"{sum(r['spend_usd'] or 0 for r in rs) / len(rs):.4f} | {sum(r['tool_calls'] for r in rs) / len(rs):.1f} |")
+
+
+def soak(files):
+    print("| Run | Minute | Cycles | Failed | Median cycle (s) | p95 cycle (s) |\n| --- | --- | --- | --- | --- | --- |")
+    for f in files:
+        d = json.load(open(f))
+        for r in d["results"]:
+            print(f"| {d['label']} | {r['minute']} | {r['cycles']} | {r['failed']} | {r['median_s']} | {r['p95_s']} |")
+
+
 if __name__ == "__main__":
-    {"infra": infra, "agent": agent}[sys.argv[1]](sys.argv[2:])
+    {"infra": infra, "agent": agent, "matrix": matrix, "soak": soak}[sys.argv[1]](sys.argv[2:])

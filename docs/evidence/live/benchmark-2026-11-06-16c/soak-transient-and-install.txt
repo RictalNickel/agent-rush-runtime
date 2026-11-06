@@ -1,0 +1,64 @@
+Nov 06 19:40:40 agent-rush-bench agent-rush[214979]: 2026-11-06T19:40:40.257360Z  WARN agent_rush::boxes: box operation failed error=docker run failed: docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: creating container: cannot set up cgroup for root: error parsing systemd version: unable to get systemd version
+Nov 06 19:40:40 agent-rush-bench agent-rush[214979]: 2026-11-06T19:40:40.258844Z  WARN agent_rush::boxes: box operation failed error=docker run failed: docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: creating container: cannot set up cgroup for root: error parsing systemd version: unable to get systemd version
+Nov 06 19:40:39 agent-rush-bench systemd[1]: Reexecuting requested from client PID 1220081 ('systemctl') (unit apt-daily-upgrade.service)...
+Nov 06 19:40:39 agent-rush-bench systemd[1]: Reexecuting.
+
+Start-Date: 2026-11-06  19:40:11
+Commandline: /usr/bin/unattended-upgrade
+Upgrade: ca-certificates:amd64 (20260816ubuntu0.24.04.1, 20260816ubuntu0.24.04.2)
+End-Date: 2026-11-06  19:40:13
+
+Start-Date: 2026-11-06  19:40:15
+Commandline: /usr/bin/unattended-upgrade
+Upgrade: apt:amd64 (2.8.3, 2.8.4ubuntu0.1), libapt-pkg6.0t64:amd64 (2.8.3, 2.8.4ubuntu0.1), apt-utils:amd64 (2.8.3, 2.8.4ubuntu0.1)
+End-Date: 2026-11-06  19:40:17
+
+Start-Date: 2026-11-06  19:40:21
+Commandline: /usr/bin/unattended-upgrade
+Upgrade: libmspack0t64:amd64 (0.11-1.1build1, 0.11-1.1ubuntu0.24.04.1)
+End-Date: 2026-11-06  19:40:21
+
+Start-Date: 2026-11-06  19:40:26
+Commandline: /usr/bin/unattended-upgrade
+Upgrade: python3-twisted:amd64 (24.3.0-1ubuntu0.2, 24.3.0-1ubuntu0.3)
+End-Date: 2026-11-06  19:40:28
+
+Start-Date: 2026-11-06  19:40:33
+Commandline: /usr/bin/unattended-upgrade
+Upgrade: bind9-host:amd64 (1:9.18.39-0ubuntu0.24.04.8, 1:9.18.39-0ubuntu0.24.04.9), bind9-dnsutils:amd64 (1:9.18.39-0ubuntu0.24.04.8, 1:9.18.39-0ubuntu0.24.04.9), bind9-libs:amd64 (1:9.18.39-0ubuntu0.24.04.8, 1:9.18.39-0ubuntu0.24.04.9)
+End-Date: 2026-11-06  19:40:34
+
+Start-Date: 2026-11-06  19:40:38
+Commandline: /usr/bin/unattended-upgrade
+Upgrade: libpcre2-8-0:amd64 (10.42-4ubuntu2.1, 10.42-4ubuntu2.2)
+End-Date: 2026-11-06  19:40:38
+== Preflight
+== System packages
+== Docker and gVisor (runsc)
+== agent-rush binary
+== Service user and directories
+== Configuration files (mode 0600; secrets generated once)
+== Worker: box network, sandbox image and workspace image
+== Worker: qualification (real containment checks)
+{"checks":10,"output":"/var/lib/agent-rush/qualification.next.json","qualified":true}
+   changed: wrote the worker qualification report
+[2m2026-11-06T18:58:05.676651Z[0m [32m INFO[0m [2magent_rush::boxes[0m[2m:[0m box created [3mbox_id[0m[2m=[0md281642915384abfb32a877854f3c7b9 [3msession[0m[2m=[0mqualify-693230dc548b4f6bbff395c6fc9184d4 [3mdisk_mb[0m[2m=[0m512
+{"checks":[{"name":"metadata_blocked","passed":true},{"name":"private_blocked","passed":true},{"name":"host_services_blocked","passed":true},{"name":"smtp_blocked","passed":true},{"name":"public_https_allowed","passed":true},{"name":"no_credentials","passed":true},{"name":"non_root_readonly","passed":true},{"name":"disk_quota_enforced","passed":true},{"name":"volume_destroyed","passed":true}],"output":"/var/lib/agent-rush/box-qualification.next.json","qualified":true}
+   changed: wrote the box qualification report
+== Worker: systemd units and requalification timer
+   changed: wrote /opt/agent-rush/requalify.sh
+   changed: wrote /etc/systemd/system/agent-rush-requalify.service
+   changed: wrote /etc/systemd/system/agent-rush-requalify.timer
+   changed: wrote /opt/agent-rush/requalify-box.sh
+   changed: wrote /etc/systemd/system/agent-rush-requalify-box.service
+   changed: wrote /etc/systemd/system/agent-rush-requalify-box.timer
+Created symlink /etc/systemd/system/timers.target.wants/agent-rush-requalify.timer → /etc/systemd/system/agent-rush-requalify.timer.
+Created symlink /etc/systemd/system/timers.target.wants/agent-rush-requalify-box.timer → /etc/systemd/system/agent-rush-requalify-box.timer.
+== Control: systemd unit
+== Summary
+  - wrote the worker qualification report
+  - wrote the box qualification report
+  - wrote /opt/agent-rush/requalify.sh
+  - wrote /etc/systemd/system/agent-rush-requalify.service
+  - wrote /etc/systemd/system/agent-rush-requalify.timer
+  - wrote /opt/agent-rush/requalify-box.sh

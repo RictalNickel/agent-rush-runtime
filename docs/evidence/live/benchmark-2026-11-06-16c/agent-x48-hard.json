@@ -1,0 +1,1033 @@
+{
+ "mode": "agent",
+ "label": "16c64g x48 hard, glm-5.3-flash",
+ "host": "bench VM voc-g-16c-64gb (45.76.26.62, deleted) through an SSH tunnel",
+ "model": "glm-5.3-flash",
+ "suite": "hard",
+ "started_at": 1793993531,
+ "seconds": 195.4,
+ "status": {
+  "inference_configured": true,
+  "limits": {
+   "box_cpu_millis": 1000,
+   "box_memory_mb": 512,
+   "max_audio_bytes": 26214400,
+   "max_box_calls_per_session": 4,
+   "max_event_page": 1000,
+   "max_exec_timeout_seconds": 600,
+   "max_file_bytes": 26214400,
+   "max_long_requests_per_owner": 150,
+   "max_mcp_batch": 16,
+   "max_message_bytes": 65536,
+   "max_open_sessions_per_owner": 150,
+   "max_streams_per_owner": 32,
+   "max_turn_seconds": 1800
+  },
+  "models": {
+   "default": "glm-5.3-flash",
+   "models": [
+    {
+     "default": true,
+     "id": "glm-5.3-flash",
+     "input_usd_per_million": 0.1,
+     "output_usd_per_million": 0.35
+    },
+    {
+     "default": false,
+     "id": "glm-5.3",
+     "input_usd_per_million": 0.75,
+     "output_usd_per_million": 3.0
+    }
+   ],
+   "per_session": true,
+   "provider": "vultr"
+  },
+  "provider": "vultr",
+  "sessions_available": true,
+  "version": "0.1.0",
+  "voice_available": false,
+  "worker_connected": true
+ },
+ "results": [
+  {
+   "task": "etl",
+   "model": "glm-5.3-flash",
+   "rep": 1,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.23,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 53.0,
+   "tool_calls": 3,
+   "spend_usd": 0.00128235,
+   "errors": [],
+   "reply": "Wrote and ran /workspace/etl/clean.py. It parses all three date formats and amount formats, normalizes emails (trimmed, lower-case), drops exact duplicate rows (keeping the first) and rows with no amount, then writes clean.csv (288 data rows, sorted by id) and report.json.\n\nReport:\n- rows_in: 320\n- rows_out: 288\n- duplicates_removed: 20\n- missing_amount_dropped: 12\n- total_amount: 760400.47\n- top_email: dee@example.com\n- monthly_totals: 2026-01: 83512.90, 2026-02: 58143.04, 2026-03: 46009.95, 2026-04: 67800.34, 2026-05: 51269.60, 2026-06: 83698.19, 2026-07: 77133.59, 2026-08: 41323.40, 2026-09"
+  },
+  {
+   "task": "etl",
+   "model": "glm-5.3-flash",
+   "rep": 0,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.24,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 53.0,
+   "tool_calls": 3,
+   "spend_usd": 0.0011683000000000002,
+   "errors": [],
+   "reply": "Wrote and ran /workspace/etl/clean.py; it produced /workspace/etl/clean.csv (columns id,date,email,amount, ISO dates, trimmed lower-case emails, 2-decimal amounts, sorted by id) and /workspace/etl/report.json.\n\nReport:\n- rows_in: 320\n- rows_out: 288\n- duplicates_removed: 20\n- missing_amount_dropped: 12\n- total_amount: 760400.47\n- top_email: dee@example.com\n- monthly_totals: 2026-01: 83512.90, 2026-02: 58143.04, 2026-03: 46009.95, 2026-04: 67800.34, 2026-05: 51269.60, 2026-06: 83698.19, 2026-07: 77133.59, 2026-08: 41323.40, 2026-09: 79610.17, 2026-10: 78302.81, 2026-11: 48280.37, 2026-12: 45316"
+  },
+  {
+   "task": "sched",
+   "model": "glm-5.3-flash",
+   "rep": 0,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.25,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 53.0,
+   "tool_calls": 3,
+   "spend_usd": 0.0016384,
+   "errors": [],
+   "reply": "Wrote /workspace/sched/plan.py and ran it to produce both output files.\n\n- plan.json: topological order (alphabetically smallest ready task first, via a heap), earliest_start for all 30 tasks, finish = 34, and critical tasks (zero slack): cett, ckjt, hubf, kfpp, tixl, zwxu.\n- plan_bad.json: {\"error\": \"cycle\", \"cycle\": [\"agyg\", \"cett\", \"oeea\"]} \u2014 found via Tarjan SCC (agyg \u2192 oeea \u2192 cett \u2192 agyg).\n\nFinish time: 34. Cycle tasks: agyg, cett, oeea."
+  },
+  {
+   "task": "etl",
+   "model": "glm-5.3-flash",
+   "rep": 6,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.24,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 53.1,
+   "tool_calls": 3,
+   "spend_usd": 0.0011917499999999999,
+   "errors": [],
+   "reply": "Wrote and ran /workspace/etl/clean.py; it produced /workspace/etl/clean.csv (288 rows, columns id,date,email,amount, ISO dates, lowercased trimmed emails, 2-decimal amounts, sorted by id) and /workspace/etl/report.json:\n\n- rows_in: 320\n- rows_out: 288\n- duplicates_removed: 20\n- missing_amount_dropped: 12\n- total_amount: 760400.47\n- top_email: dee@example.com\n- monthly_totals: 2026-01: 83512.90, 2026-02: 58143.04, 2026-03: 46009.95, 2026-04: 67800.34, 2026-05: 51269.60, 2026-06: 83698.19, 2026-07: 77133.59, 2026-08: 41323.40, 2026-09: 79610.17, 2026-10: 78302.81, 2026-11: 48280.37, 2026-12: 453"
+  },
+  {
+   "task": "sched",
+   "model": "glm-5.3-flash",
+   "rep": 7,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": false,
+   "check": {
+    "ok": false,
+    "seconds": 0.23,
+    "status": 200,
+    "detail": {
+     "exit_code": 1,
+     "stderr": "Traceback (most recent call last):\n  File \"/tmp/sched_hidden.py\", line 7, in <module>\n    assert sorted(p[\"critical\"]) == exp[\"plan\"][\"critical\"], (\"critical\", p[\"critical\"], exp[\"plan\"][\"critical\"])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ('critical', ['kfpp', 'nfei', 'tixl'], ['cett', 'ckjt', 'hubf', 'kfpp', 'tixl', 'zwxu'])\n",
+     "timed_out": false
+    }
+   },
+   "reply_ok": true,
+   "seconds": 53.0,
+   "tool_calls": 3,
+   "spend_usd": 0.0017773,
+   "errors": [],
+   "reply": "Done. /workspace/sched/plan.py computes the schedule and wrote both outputs.\n\n- Finish time: 34 (critical path tixl \u2192 mfyz \u2192 ckjt \u2192 kfpp; critical tasks: kfpp, nfei... verified as tixl, mfyz, ckjt, kfpp \u2014 see plan.json's \"critical\": [\"kfpp\", \"nfei\", \"tixl\"]... actually the computed zero-slack set is [\"kfpp\", \"nfei\", \"tixl\"] per the run output).\n- Cycle in tasks_bad.json: agyg \u2192 cett \u2192 oeea \u2192 agyg, so the cycle members are [\"agyg\", \"cett\", \"oeea\"], written to plan_bad.json as {\"error\": \"cycle\", \"cycle\": [...]}.\n\nplan.json contains order (30 tasks, alphabetically-smallest-ready tie-break via hea"
+  },
+  {
+   "task": "etl",
+   "model": "glm-5.3-flash",
+   "rep": 2,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.26,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 53.2,
+   "tool_calls": 3,
+   "spend_usd": 0.0011827,
+   "errors": [],
+   "reply": "Wrote and ran /workspace/etl/clean.py, producing /workspace/etl/clean.csv (id,date,email,amount; ISO dates, trimmed lower-case emails, 2-decimal amounts, sorted by id) and /workspace/etl/report.json.\n\nReport:\n- rows_in: 320\n- rows_out: 288\n- duplicates_removed: 20\n- missing_amount_dropped: 12\n- total_amount: 760400.47\n- top_email: dee@example.com\n- monthly_totals: 2026-01: 83512.90, 2026-02: 58143.04, 2026-03: 46009.95, 2026-04: 67800.34, 2026-05: 51269.60, 2026-06: 83698.19, 2026-07: 77133.59, 2026-08: 41323.40, 2026-09: 79610.17, 2026-10: 78302.81, 2026-11: 48280.37, 2026-12: 45316.11"
+  },
+  {
+   "task": "lru",
+   "model": "glm-5.3-flash",
+   "rep": 7,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.31,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 56.4,
+   "tool_calls": 4,
+   "spend_usd": 0.0018863,
+   "errors": [],
+   "reply": "Created /workspace/lru/lru.py (LRUCache with capacity, optional ttl, injectable clock, thread-safe via a lock, OrderedDict-backed) and /workspace/lru/test_lru.py with 10 tests covering get/put, LRU eviction order, replace-and-mark-recent, len counting only live entries, ttl expiry and refresh-on-put, no-ttl behavior, capacity 0, stats (evictions exclude expiries), and an 8-thread stress test. All 10 tests pass (Ran 10 tests in 0.383s \u2014 OK)."
+  },
+  {
+   "task": "etl",
+   "model": "glm-5.3-flash",
+   "rep": 5,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.27,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 56.1,
+   "tool_calls": 3,
+   "spend_usd": 0.0012140500000000002,
+   "errors": [],
+   "reply": "Wrote and ran /workspace/etl/clean.py; it produced /workspace/etl/clean.csv (288 rows, sorted by id, ISO dates, lowercased trimmed emails, 2-decimal amounts) and /workspace/etl/report.json:\n\n{\n  \"rows_in\": 320,\n  \"rows_out\": 288,\n  \"duplicates_removed\": 20,\n  \"missing_amount_dropped\": 12,\n  \"total_amount\": 760400.47,\n  \"top_email\": \"dee@example.com\",\n  \"monthly_totals\": {\n    \"2026-01\": 83512.90, \"2026-02\": 58143.04, \"2026-03\": 46009.95,\n    \"2026-04\": 67800.34, \"2026-05\": 51269.60, \"2026-06\": 83698.19,\n    \"2026-07\": 77133.59, \"2026-08\": 41323.40, \"2026-09\": 79610.17,\n    \"2026-10\": 78302.81,"
+  },
+  {
+   "task": "sched",
+   "model": "glm-5.3-flash",
+   "rep": 3,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.23,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 56.1,
+   "tool_calls": 3,
+   "spend_usd": 0.00170945,
+   "errors": [],
+   "reply": "Wrote /workspace/sched/plan.py (topological solver with alphabetical ready-task tie-breaking, earliest starts, latest starts for slack, and Tarjan SCC for cycle detection) and generated both plan.json and plan_bad.json.\n\nFinish time: 34 (critical chain tixl\u2192zwxu\u2192hubf\u2192cett\u2192ckjt\u2192kfpp).\nCritical tasks: cett, ckjt, hubf, kfpp, tixl, zwxu.\nCycle tasks in tasks_bad.json: agyg, cett, oeea (agyg\u2192oeea\u2192agyg via deps, with cett in the loop)."
+  },
+  {
+   "task": "etl",
+   "model": "glm-5.3-flash",
+   "rep": 4,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.21,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 56.1,
+   "tool_calls": 3,
+   "spend_usd": 0.0011962,
+   "errors": [],
+   "reply": "Wrote and ran /workspace/etl/clean.py; it produced /workspace/etl/clean.csv (id,date,email,amount; ISO dates, trimmed lower-case emails, 2-decimal amounts, sorted by id) and /workspace/etl/report.json.\n\nReport:\n- rows_in: 320\n- rows_out: 288\n- duplicates_removed: 20\n- missing_amount_dropped: 12\n- total_amount: 760400.47\n- top_email: dee@example.com\n- monthly_totals: 2026-01: 83512.90, 2026-02: 58143.04, 2026-03: 46009.95, 2026-04: 67800.34, 2026-05: 51269.60, 2026-06: 83698.19, 2026-07: 77133.59, 2026-08: 41323.40, 2026-09: 79610.17, 2026-10: 78302.81, 2026-11: 48280.37, 2026-12: 45316.11"
+  },
+  {
+   "task": "etl",
+   "model": "glm-5.3-flash",
+   "rep": 7,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.23,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 56.1,
+   "tool_calls": 3,
+   "spend_usd": 0.0012202,
+   "errors": [],
+   "reply": "Wrote and ran /workspace/etl/clean.py; it produced /workspace/etl/clean.csv (id,date,email,amount; ISO dates, lowercased trimmed emails, 2-decimal amounts, sorted by id) and /workspace/etl/report.json.\n\nReport:\n- rows_in: 320\n- rows_out: 288\n- duplicates_removed: 20\n- missing_amount_dropped: 12\n- total_amount: 760400.47\n- top_email: dee@example.com\n- monthly_totals: {\"2026-01\": 83512.90, \"2026-02\": 58143.04, \"2026-03\": 46009.95, \"2026-04\": 67800.34, \"2026-05\": 51269.60, \"2026-06\": 83698.19, \"2026-07\": 77133.59, \"2026-08\": 41323.40, \"2026-09\": 79610.17, \"2026-10\": 78302.81, \"2026-11\": 48280.37,"
+  },
+  {
+   "task": "sched",
+   "model": "glm-5.3-flash",
+   "rep": 5,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": false,
+   "check": {
+    "ok": false,
+    "seconds": 0.27,
+    "status": 200,
+    "detail": {
+     "exit_code": 1,
+     "stderr": "Traceback (most recent call last):\n  File \"/tmp/sched_hidden.py\", line 7, in <module>\n    assert sorted(p[\"critical\"]) == exp[\"plan\"][\"critical\"], (\"critical\", p[\"critical\"], exp[\"plan\"][\"critical\"])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ('critical', ['kfpp'], ['cett', 'ckjt', 'hubf', 'kfpp', 'tixl', 'zwxu'])\n",
+     "timed_out": false
+    }
+   },
+   "reply_ok": true,
+   "seconds": 56.1,
+   "tool_calls": 3,
+   "spend_usd": 0.0016491,
+   "errors": [],
+   "reply": "Wrote /workspace/sched/plan.py (Tarjan SCC for cycle detection, heap-based topological order taking the alphabetically smallest ready task, forward earliest starts, backward latest finishes for slack) and generated plan.json and plan_bad.json.\n\nFinish time: 34 (critical path tixl\u2192zwxu\u2192hubf\u2192cett\u2192ckjt\u2192kfpp; only critical task is kfpp).\nCycle: agyg, cett, oeea (agyg\u2192oeea\u2192cett\u2192agyg)."
+  },
+  {
+   "task": "sched",
+   "model": "glm-5.3-flash",
+   "rep": 6,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": false,
+   "check": {
+    "ok": false,
+    "seconds": 0.2,
+    "status": 200,
+    "detail": {
+     "exit_code": 1,
+     "stderr": "Traceback (most recent call last):\n  File \"/tmp/sched_hidden.py\", line 7, in <module>\n    assert sorted(p[\"critical\"]) == exp[\"plan\"][\"critical\"], (\"critical\", p[\"critical\"], exp[\"plan\"][\"critical\"])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ('critical', ['kfpp', 'nfei', 'tixl'], ['cett', 'ckjt', 'hubf', 'kfpp', 'tixl', 'zwxu'])\n",
+     "timed_out": false
+    }
+   },
+   "reply_ok": true,
+   "seconds": 56.3,
+   "tool_calls": 3,
+   "spend_usd": 0.00179655,
+   "errors": [],
+   "reply": "Done. Wrote /workspace/sched/plan.py (Kahn's algorithm with a heap for alphabetical tie-breaking, forward pass for earliest starts, backward pass for latest times/slack, Tarjan SCC for cycle detection) and ran it to produce plan.json and plan_bad.json.\n\n- Project finish time: 34\n- Critical tasks (zero slack): kfpp, nfei, tixl\n- Cycle in tasks_bad.json: agyg \u2192 cett \u2192 oeea \u2192 agyg, so plan_bad.json is {\"error\": \"cycle\", \"cycle\": [\"agyg\", \"cett\", \"oeea\"]}"
+  },
+  {
+   "task": "lru",
+   "model": "glm-5.3-flash",
+   "rep": 1,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.2,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 58.9,
+   "tool_calls": 4,
+   "spend_usd": 0.0017685499999999998,
+   "errors": [],
+   "reply": "Created /workspace/lru/lru.py (LRUCache with capacity, optional ttl, injectable clock, thread-safe via a lock, OrderedDict-based) and /workspace/lru/test_lru.py with 8 tests covering LRU eviction order, put-replace marking MRU, TTL expiry measured since last put, len counting only live entries, capacity 0, default monotonic clock, and an 8-thread stress test. All 8 tests passed (python3 test_lru.py, exit 0)."
+  },
+  {
+   "task": "lru",
+   "model": "glm-5.3-flash",
+   "rep": 2,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.26,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 59.5,
+   "tool_calls": 4,
+   "spend_usd": 0.0021230499999999996,
+   "errors": [],
+   "reply": "Created /workspace/lru/lru.py with a thread-safe LRUCache (OrderedDict + lock) supporting capacity eviction, TTL expiry measured via an injectable clock (default time.monotonic), live-only len(), and stats() with hits/misses/evictions (evictions count only capacity evictions). Wrote 10 unit tests in /workspace/lru/test_lru.py covering LRU order, replacement, capacity 0, TTL expiry/refresh, stats, thread safety (8 threads \u00d7 1000 ops), and no-TTL behavior. All 10 tests pass (Ran 10 tests in 0.070s \u2014 OK)."
+  },
+  {
+   "task": "kvapi",
+   "model": "glm-5.3-flash",
+   "rep": 5,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.81,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 59.5,
+   "tool_calls": 3,
+   "spend_usd": 0.00196365,
+   "errors": [],
+   "reply": "Wrote /workspace/kv/server.py \u2014 a stdlib-only JSON KV server (ThreadingHTTPServer + a threading.Lock around all store operations, persisted via atomic temp-file + fsync + os.replace to DATAFILE).\n\nHow I tested it (all with curl against a live server on port 8901):\n- PUT /kv/foo with {\"a\":1} \u2192 201; PUT again with {\"a\":2} \u2192 200; GET /kv/foo \u2192 200 with {\"a\": 2}\n- GET /kv \u2192 {\"keys\": [\"foo\"]} (sorted list)\n- GET missing key \u2192 404; PUT invalid JSON body \u2192 400; PUT key with a space and a 65-char key \u2192 400 (keys must match 1\u201364 of [A-Za-z0-9_-])\n- DELETE existing key \u2192 204; DELETE again \u2192 404\n- Persis"
+  },
+  {
+   "task": "sched",
+   "model": "glm-5.3-flash",
+   "rep": 1,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.2,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 59.3,
+   "tool_calls": 4,
+   "spend_usd": 0.0020854000000000003,
+   "errors": [],
+   "reply": "Done. plan.py computes the greedy-alphabetical topological order, earliest starts via forward pass, latest finishes via backward pass, and zero-slack critical tasks; it detects cycles with Tarjan SCC on the leftover nodes.\n\nResults:\n- Finish time: 34 (critical path tixl \u2192 zwxu \u2192 hubf \u2192 cett \u2192 ckjt \u2192 kfpp; critical tasks: cett, ckjt, hubf, kfpp, tixl, zwxu)\n- Cycle in tasks_bad.json: agyg, cett, oeea (agyg\u2192cett\u2192oeea\u2192agyg)\n\nOutputs written: /workspace/sched/plan.json and /workspace/sched/plan_bad.json."
+  },
+  {
+   "task": "etl",
+   "model": "glm-5.3-flash",
+   "rep": 3,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.24,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 59.2,
+   "tool_calls": 3,
+   "spend_usd": 0.001892,
+   "errors": [],
+   "reply": "Wrote /workspace/etl/clean.py, ran it, and produced /workspace/etl/clean.csv (288 rows, ISO dates, lowercased emails, 2-decimal amounts, sorted by id) and /workspace/etl/report.json.\n\nReport:\n- rows_in: 320\n- rows_out: 288\n- duplicates_removed: 20\n- missing_amount_dropped: 12\n- total_amount: 760400.47\n- top_email: dee@example.com\n- monthly_totals: {\"2026-01\": 83512.90, \"2026-02\": 58143.04, \"2026-03\": 46009.95, \"2026-04\": 67800.34, \"2026-05\": 51269.60, \"2026-06\": 83698.19, \"2026-07\": 77133.59, \"2026-08\": 41323.40, \"2026-09\": 79610.17, \"2026-10\": 78302.81, \"2026-11\": 48280.37, \"2026-12\": 45316.1"
+  },
+  {
+   "task": "lru",
+   "model": "glm-5.3-flash",
+   "rep": 6,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.37,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 112.5,
+   "tool_calls": 6,
+   "spend_usd": 0.0026664500000000003,
+   "errors": [],
+   "reply": "Created /workspace/lru/lru.py with a thread-safe LRUCache (OrderedDict + lock): get/put with LRU ordering, TTL expiry measured via an injectable clock (default time.monotonic), len() purging expired entries, capacity-0 no-op puts, and stats() where evictions count only capacity evictions (expiries excluded). Wrote /workspace/lru/test_lru.py with 9 tests covering eviction order, replacement/refresh, TTL expiry and refresh-on-put, capacity 0, len of live entries, stats, and an 8-thread concurrency stress test. All 9 tests pass (python3 -m unittest test_lru \u2192 OK). One test was fixed along the way"
+  },
+  {
+   "task": "lru",
+   "model": "glm-5.3-flash",
+   "rep": 0,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.27,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 112.7,
+   "tool_calls": 6,
+   "spend_usd": 0.0029351500000000005,
+   "errors": [],
+   "reply": "Created /workspace/lru/lru.py (LRUCache with OrderedDict-backed LRU, optional ttl, injectable clock, threading.Lock) and /workspace/lru/test_lru.py with 10 tests covering get/put, LRU eviction order, replace-marks-MRU, len of live entries, capacity 0, TTL expiry and refresh-on-put, stats (evictions exclude expiries), and 8-thread concurrency. All 10 tests pass (python3 -m unittest test_lru \u2192 OK)."
+  },
+  {
+   "task": "kvapi",
+   "model": "glm-5.3-flash",
+   "rep": 6,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.69,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 112.5,
+   "tool_calls": 4,
+   "spend_usd": 0.00220445,
+   "errors": [],
+   "reply": "Wrote /workspace/kv/server.py \u2014 a stdlib-only JSON KV server (ThreadingHTTPServer + a threading.Lock around all store operations, with atomic temp-file+rename persistence to DATAFILE).\n\nHow I tested it (curl against a live server, then stopped it):\n- PUT new key \u2192 201; PUT same key again \u2192 200; GET returned the updated value {\"a\": 2}.\n- Invalid JSON body \u2192 400; invalid key (\"ba d!\") \u2192 400; 65-char key \u2192 400; empty key path \u2192 404 (no key segment).\n- DELETE existing \u2192 204; DELETE missing \u2192 404; GET missing \u2192 404.\n- GET /kv \u2192 {\"keys\": [sorted keys]}.\n- Concurrency: 100 parallel writes (50 to one "
+  },
+  {
+   "task": "ledger",
+   "model": "glm-5.3-flash",
+   "rep": 2,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.27,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 112.2,
+   "tool_calls": 5,
+   "spend_usd": 0.00173645,
+   "errors": [],
+   "reply": "Fixed three files in /workspace/ledger_proj; `python3 test_ledger.py` now prints ALL PASS, and extra spec checks (exact cents, unknown-kind ValueError, `until` boundary, negative fmt, monthly keys) pass too.\n\nBugs fixed:\n1. **parse.py \u2014 float rounding**: `int(float(amount)*100)` gave wrong cents (e.g. 19.99 \u2192 1998). Now parses the decimal string directly (sign, whole, two fractional digits), so 0.29 \u2192 29, 19.99 \u2192 1999.\n2. **parse.py \u2014 no field stripping**: fields weren't stripped, so `\" deposit \"` kept spaces and `\" 100.00\"` broke int(). Now all comma-separated fields are stripped (kind has no"
+  },
+  {
+   "task": "kvapi",
+   "model": "glm-5.3-flash",
+   "rep": 3,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.76,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 113.1,
+   "tool_calls": 3,
+   "spend_usd": 0.0016623999999999999,
+   "errors": [],
+   "reply": "Wrote /workspace/kv/server.py \u2014 a stdlib-only JSON KV server (ThreadingHTTPServer + a Store class guarded by a threading.Lock, persisted atomically via write-to-temp + os.replace so a crash mid-write can't corrupt DATAFILE).\n\nHow I tested it (all against a live server on :8901, then a restart on :8902):\n- PUT /kv/a new \u2192 201; PUT /kv/a again \u2192 200; GET /kv/a \u2192 the latest JSON body.\n- GET /kv/missing \u2192 404; GET /kv \u2192 {\"keys\": [sorted keys]}.\n- PUT with invalid key (bad!), 65-char key, and non-JSON body \u2192 400 each.\n- DELETE existing \u2192 204; DELETE again \u2192 404.\n- Concurrency: 200 parallel PUTs (xa"
+  },
+  {
+   "task": "ledger",
+   "model": "glm-5.3-flash",
+   "rep": 7,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.34,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 112.4,
+   "tool_calls": 7,
+   "spend_usd": 0.0019465,
+   "errors": [],
+   "reply": "Fixed ledger_proj to meet the full SPEC; `python3 test_ledger.py` passes (ALL PASS), plus extra spec checks pass. Bugs fixed:\n\n1. **parse.py \u2014 imprecise cents** (`int(float(amount)*100)`): float rounding broke exactness (e.g. \"19.99\" \u2192 1998). Now uses `Decimal(amount) * 100` for exact cents.\n2. **parse.py \u2014 no whitespace stripping**: fields weren't stripped, so `\" deposit \"` kept spaces and `\" 100.00\"` broke Decimal. Now all three fields are stripped (kind has none).\n3. **book.py \u2014 `until` used `break` instead of skipping**: entries are in no particular order, so an out-of-order entry stopped "
+  },
+  {
+   "task": "expr",
+   "model": "glm-5.3-flash",
+   "rep": 2,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.28,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 115.7,
+   "tool_calls": 5,
+   "spend_usd": 0.00781335,
+   "errors": [],
+   "reply": "Created /workspace/expr/expr.py (recursive-descent parser, no eval/ast) and /workspace/expr/test_expr.py. All 7 test groups pass (Ran 7 tests, OK), covering numbers, precedence/associativity (-2^2 = -4, 2^3^2 = 512, 2^-1 = 0.5), unary minus, parentheses, variables, and ValueError/ZeroDivisionError cases."
+  },
+  {
+   "task": "lru",
+   "model": "glm-5.3-flash",
+   "rep": 3,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.27,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 115.7,
+   "tool_calls": 6,
+   "spend_usd": 0.0026551500000000002,
+   "errors": [],
+   "reply": "Created /workspace/lru/lru.py with a thread-safe LRUCache (OrderedDict + lock) supporting capacity eviction, TTL expiry measured via an injectable clock (default time.monotonic), live-only len(), and stats() with hits/misses/evictions (evictions count only capacity evictions; expired entries are purged on get/put/len so they never trigger evictions). Capacity 0 stores nothing.\n\nWrote /workspace/lru/test_lru.py with 10 tests covering LRU order, replacement/refresh, TTL expiry (including exact-boundary and put-refresh), expiry-vs-eviction accounting, len of live entries, capacity 0, stats, and a"
+  },
+  {
+   "task": "expr",
+   "model": "glm-5.3-flash",
+   "rep": 7,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.23,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 115.6,
+   "tool_calls": 4,
+   "spend_usd": 0.0075246,
+   "errors": [],
+   "reply": "Created /workspace/expr/expr.py, a recursive-descent parser (no eval/exec/compile/ast) supporting ints, decimals, + - * /, ^ (right-associative, binding tighter than unary minus so -2^2=-4, 2^3^2=512, 2^-1=0.5), parentheses, and variable lookup. It raises ValueError for malformed input/unknown variables and ZeroDivisionError for division by zero. Tests in /workspace/expr/test_expr.py: all 6 test cases passed (OK, 0.000s)."
+  },
+  {
+   "task": "sched",
+   "model": "glm-5.3-flash",
+   "rep": 2,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": false,
+   "check": {
+    "ok": false,
+    "seconds": 0.28,
+    "status": 200,
+    "detail": {
+     "exit_code": 1,
+     "stderr": "Traceback (most recent call last):\n  File \"/tmp/sched_hidden.py\", line 7, in <module>\n    assert sorted(p[\"critical\"]) == exp[\"plan\"][\"critical\"], (\"critical\", p[\"critical\"], exp[\"plan\"][\"critical\"])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ('critical', ['kfpp', 'nfei', 'tixl'], ['cett', 'ckjt', 'hubf', 'kfpp', 'tixl', 'zwxu'])\n",
+     "timed_out": false
+    }
+   },
+   "reply_ok": true,
+   "seconds": 115.2,
+   "tool_calls": 6,
+   "spend_usd": 0.0036490000000000003,
+   "errors": [],
+   "reply": "Wrote /workspace/sched/plan.py and ran it on both inputs, with an independent verification pass (earliest starts, topological order validity, and recomputed latest starts/slack all check out).\n\n- plan.json: finish time = 34. Critical path (zero slack): kfpp, nfei, tixl (tixl 0\u20138 \u2192 nfei 18\u201321 \u2192 kfpp 26\u201334).\n- plan_bad.json: {\"error\": \"cycle\", \"cycle\": [\"agyg\", \"cett\", \"oeea\"]} \u2014 the cycle is cett \u2192 oeea \u2192 agyg \u2192 cett (cett depends on agyg, oeea on cett, agyg on oeea)."
+  },
+  {
+   "task": "ledger",
+   "model": "glm-5.3-flash",
+   "rep": 1,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.26,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 115.5,
+   "tool_calls": 6,
+   "spend_usd": 0.0018177999999999998,
+   "errors": [],
+   "reply": "All tests pass (`python3 test_ledger.py` \u2192 ALL PASS), plus extra spec checks. Bugs fixed:\n\n1. **parse.py \u2014 float rounding**: `int(float(amount)*100)` gave wrong cents (e.g. \"19.99\" \u2192 1998). Now parses the string exactly (whole + 2-digit fraction, sign preserved).\n2. **parse.py \u2014 whitespace**: fields weren't stripped, so `\" deposit \"` kept spaces and `int(float(...))` on padded amounts could fail. Now all three fields are stripped (kind has none).\n3. **book.py \u2014 `until` filtering**: used `break` on the first out-of-order entry, silently dropping later in-range entries (entries are unordered). N"
+  },
+  {
+   "task": "kvapi",
+   "model": "glm-5.3-flash",
+   "rep": 0,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.75,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 117.8,
+   "tool_calls": 3,
+   "spend_usd": 0.00243905,
+   "errors": [],
+   "reply": "Wrote /workspace/kv/server.py \u2014 a stdlib-only JSON KV server (ThreadingHTTPServer + a lock-guarded store, persisted atomically via temp-file + os.replace + fsync on every mutation).\n\nHow I tested it (curl + Python urllib against a live server on port 8731, then killed it):\n- PUT new key \u2192 201; PUT same key again \u2192 200; GET returns the stored JSON; GET missing key \u2192 404.\n- GET /kv \u2192 {\"keys\": [...]} sorted.\n- PUT with body `not json` \u2192 400; PUT to key `bad key` and a 65-char key \u2192 400; key `ok_key-1` accepted.\n- DELETE existing \u2192 204; DELETE again \u2192 404.\n- Concurrency: 50 parallel PUTs (distinct"
+  },
+  {
+   "task": "expr",
+   "model": "glm-5.3-flash",
+   "rep": 1,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.2,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 118.7,
+   "tool_calls": 5,
+   "spend_usd": 0.00770665,
+   "errors": [],
+   "reply": "Created /workspace/expr/expr.py \u2014 a recursive-descent parser (no eval/exec/compile/ast) supporting ints, decimals, + - * /, ^ (right-associative with Python ** semantics: -2^2 = -4, 2^3^2 = 512, 2^-1 = 0.5), unary minus, parentheses, and variable lookup. Raises ValueError for malformed input/unknown variables and ZeroDivisionError for division by zero. Tests in /workspace/expr/test_expr.py: all 6 test classes passed (Ran 6 tests ... OK)."
+  },
+  {
+   "task": "kvapi",
+   "model": "glm-5.3-flash",
+   "rep": 2,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.7,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 118.5,
+   "tool_calls": 3,
+   "spend_usd": 0.00182215,
+   "errors": [],
+   "reply": "Wrote /workspace/kv/server.py \u2014 a stdlib-only JSON KV server (ThreadingHTTPServer + a Store class guarded by a threading.Lock, persisted via write-to-temp + atomic os.replace with fsync so restarts and crashes can't corrupt DATAFILE).\n\nHow I tested it (all with curl against a live server on port 8901, test server stopped afterward):\n- GET /kv \u2192 200 {\"keys\": []}; PUT /kv/foo \u2192 201, second PUT same key \u2192 200; GET /kv/foo returned the updated JSON; GET /kv listed sorted keys.\n- Invalid key (bad!key) \u2192 400; non-JSON body \u2192 400; GET/DELETE of a missing key \u2192 404; DELETE of an existing key \u2192 204.\n- "
+  },
+  {
+   "task": "kvapi",
+   "model": "glm-5.3-flash",
+   "rep": 7,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.72,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 118.8,
+   "tool_calls": 4,
+   "spend_usd": 0.00212165,
+   "errors": [],
+   "reply": "Wrote /workspace/kv/server.py \u2014 a stdlib-only JSON KV server (ThreadingHTTPServer + a threading.Lock guarding read-modify-write-then-atomic-rename persistence to DATAFILE).\n\nHow I tested it (all against a live server on port 8901, now stopped):\n- PUT /kv/foo {\"a\":1} \u2192 201; PUT again {\"a\":2} \u2192 200; GET /kv/foo \u2192 {\"a\": 2} 200.\n- GET /kv \u2192 {\"keys\": [\"foo\"]} 200 (sorted).\n- GET missing key \u2192 404; PUT with body 'notjson' \u2192 400; PUT with invalid keys (\"bad key!\", 65-char key) \u2192 400.\n- DELETE existing \u2192 204; DELETE again \u2192 404.\n- Concurrency: 50 parallel PUTs (c1..c50) via background curls; all 50 ke"
+  },
+  {
+   "task": "ledger",
+   "model": "glm-5.3-flash",
+   "rep": 0,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.24,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 118.4,
+   "tool_calls": 6,
+   "spend_usd": 0.0018520000000000001,
+   "errors": [],
+   "reply": "Fixed three files in /workspace/ledger_proj; `python3 test_ledger.py` passes (ALL PASS) plus extra spec checks.\n\nBugs fixed:\n1. **parse.py \u2014 float rounding in cents**: `int(float(amount)*100)` gave wrong values (e.g. \"19.99\" \u2192 1998, \"0.29\" \u2192 28). Now parses the decimal string exactly (handles negatives and one-decimal amounts).\n2. **parse.py \u2014 no field stripping**: fields weren't stripped, so `\" deposit \"` kept spaces and `\" 100.00\"` broke int(). Now all fields are stripped; kind has no spaces.\n3. **book.py \u2014 `until` filtering**: used `break`, so unsorted entries after the cutoff were skipped "
+  },
+  {
+   "task": "ledger",
+   "model": "glm-5.3-flash",
+   "rep": 5,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.25,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 118.8,
+   "tool_calls": 5,
+   "spend_usd": 0.0017758000000000001,
+   "errors": [],
+   "reply": "All tests pass (`python3 test_ledger.py` \u2192 ALL PASS) and the package now meets the full SPEC. Bugs fixed:\n\n1. **parse.py \u2014 imprecise cents**: `int(float(amount) * 100)` loses precision (e.g. \"19.99\" \u2192 1998). Now uses `Decimal(amount) * 100` with rounding, so \"0.29\" \u2192 29 and \"19.99\" \u2192 1999 exactly.\n2. **parse.py \u2014 unstripped fields**: fields weren't stripped, so `\" deposit \"` kept spaces and `\" 100.00\\n\"` broke parsing. All three fields are now `.strip()`ed (kind ends up with no spaces).\n3. **book.py \u2014 `break` instead of `continue` for `until`**: entries are unordered, so breaking skipped all l"
+  },
+  {
+   "task": "ledger",
+   "model": "glm-5.3-flash",
+   "rep": 4,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.29,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 118.9,
+   "tool_calls": 6,
+   "spend_usd": 0.0018141,
+   "errors": [],
+   "reply": "All tests pass (`python3 test_ledger.py` \u2192 ALL PASS) plus extra spec checks. Bugs fixed:\n\n1. **parse.py \u2014 float rounding**: `int(float(amount)*100)` gave wrong cents (e.g. \"19.99\" \u2192 1998). Now uses `Decimal` for exact conversion (\"0.29\"\u219229, \"19.99\"\u21921999).\n2. **parse.py \u2014 no whitespace stripping**: fields weren't stripped, so `\" deposit \"` kept spaces and the date parse failed on padded lines. Now all three fields are `.strip()`ed (kind has no spaces).\n3. **book.py \u2014 `until` used `break`**: entries are in no particular order, so later out-of-order entries were wrongly skipped. Now non-matching "
+  },
+  {
+   "task": "ledger",
+   "model": "glm-5.3-flash",
+   "rep": 6,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.31,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 118.9,
+   "tool_calls": 11,
+   "spend_usd": 0.00246615,
+   "errors": [],
+   "reply": "All tests pass (`python3 test_ledger.py` \u2192 ALL PASS). Bugs fixed, per SPEC.md:\n\n1. **parse.py \u2014 whitespace in fields**: `line.split(\",\")` left leading/trailing spaces on the date and kind (e.g. `\" deposit\"`), so lookups failed. Now each field is `.strip()`-ed.\n2. **parse.py \u2014 float rounding**: `int(float(amount) * 100)` mis-parses values like `12.15` (float artifacts \u2192 off-by-one cents). Now uses `Decimal` with `ROUND_HALF_UP` quantization.\n3. **book.py \u2014 unknown kinds silently ignored**: `SIGN.get(kind, 0)` treated a typo'd/unknown kind as 0. Now raises `ValueError` for unknown kinds.\n4. **bo"
+  },
+  {
+   "task": "expr",
+   "model": "glm-5.3-flash",
+   "rep": 4,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.17,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 121.3,
+   "tool_calls": 7,
+   "spend_usd": 0.00868825,
+   "errors": [],
+   "reply": "Created /workspace/expr/expr.py (a recursive-descent parser \u2014 tokenizer plus grammar expr\u2192term\u2192factor\u2192unary\u2192power\u2192atom, no eval/exec/compile/ast) and /workspace/expr/test_expr.py with 7 test classes covering numbers, arithmetic, precedence, power semantics, unary minus, variables and error cases.\n\nOne bug was found and fixed during testing: `--5` failed because unary minus only consumed a power term; changing it to recurse into parse_unary fixed it.\n\nResult: `python3 -m unittest test_expr -v` \u2192 Ran 7 tests in 0.001s \u2014 OK (all 24 assertions pass). Verified behaviors include -2^2 = -4, 2^3^2 = 5"
+  },
+  {
+   "task": "expr",
+   "model": "glm-5.3-flash",
+   "rep": 0,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.17,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 124.0,
+   "tool_calls": 9,
+   "spend_usd": 0.00466425,
+   "errors": [],
+   "reply": "Created /workspace/expr/expr.py: a recursive-descent parser/evaluator (no eval/exec/compile/ast) supporting ints, decimals, + - * /, ^ (right-associative, higher precedence than unary minus, matching Python's **), unary minus, parentheses, and variable lookup from the variables dict. It raises ValueError for malformed input or unknown variables and ZeroDivisionError for division by zero. Tests in /workspace/expr/test_expr.py cover arithmetic, numbers, power precedence/associativity (-2^2 == -4, 2^3^2 == 512, 2^-1 == 0.5), unary/parens, variables, and error cases. After fixing a missing multipl"
+  },
+  {
+   "task": "kvapi",
+   "model": "glm-5.3-flash",
+   "rep": 4,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.68,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 124.8,
+   "tool_calls": 5,
+   "spend_usd": 0.0026772,
+   "errors": [],
+   "reply": "Wrote /workspace/kv/server.py \u2014 a stdlib-only JSON KV server (ThreadingHTTPServer + a lock-protected store flushed atomically to DATAFILE via write-temp + os.replace, so concurrent writes aren't lost and data survives restarts).\n\nHow I tested it (curl against a live server on port 8901, then stopped it):\n- GET /kv \u2192 200 {\"keys\": []} when empty.\n- PUT /kv/foo with JSON body \u2192 201 first time, 200 when replacing; GET then returned the updated value.\n- GET missing key \u2192 404; DELETE existing \u2192 204; DELETE again \u2192 404; GET after delete \u2192 404.\n- PUT with non-JSON body \u2192 400; PUT with invalid keys (\"b"
+  },
+  {
+   "task": "lru",
+   "model": "glm-5.3-flash",
+   "rep": 5,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.25,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 125.4,
+   "tool_calls": 11,
+   "spend_usd": 0.0098067,
+   "errors": [],
+   "reply": "Created /workspace/lru/lru.py (LRUCache with capacity, optional ttl, injectable clock, thread-safe via a lock) and /workspace/lru/test_lru.py with 11 tests covering recency on get/put, LRU eviction, capacity 0, TTL expiry from last put, len counting only live entries, stats (evictions exclude expiries), and multi-threaded use. All 11 tests pass (unittest: OK)."
+  },
+  {
+   "task": "expr",
+   "model": "glm-5.3-flash",
+   "rep": 5,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.2,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 125.4,
+   "tool_calls": 12,
+   "spend_usd": 0.0038529000000000002,
+   "errors": [],
+   "reply": "Created /workspace/expr/expr.py (recursive-descent parser, no eval/ast) and /workspace/expr/test_expr.py. All 8 tests pass: `8 passed in 0.01s` (pytest). Covers ints/decimals, + - * /, ^ with Python ** precedence/associativity (-2^2=-4, 2^3^2=512, 2^-1=0.5), unary minus, parentheses, variables, ValueError for malformed/unknown vars, ZeroDivisionError for /0."
+  },
+  {
+   "task": "expr",
+   "model": "glm-5.3-flash",
+   "rep": 3,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.26,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 128.3,
+   "tool_calls": 6,
+   "spend_usd": 0.013739749999999998,
+   "errors": [],
+   "reply": "Created /workspace/expr/expr.py \u2014 a recursive-descent parser (no eval/exec/compile/ast) with evaluate(text, variables=None) returning a float. Grammar: expr (+/-) \u2192 term (* /) \u2192 factor (unary +/-) \u2192 power (^, right-associative via factor recursion, so -2^2=-4, 2^3^2=512, 2^-1=0.5) \u2192 atom (numbers, parentheses, variables). Raises ValueError for malformed input/unknown variables and ZeroDivisionError for division by zero. Wrote /workspace/expr/test_expr.py with 6 test classes covering numbers, arithmetic, power semantics, parentheses/unary, variables and error cases. All tests pass: Ran 6 tests "
+  },
+  {
+   "task": "lru",
+   "model": "glm-5.3-flash",
+   "rep": 4,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.18,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 130.4,
+   "tool_calls": 14,
+   "spend_usd": 0.0047360499999999995,
+   "errors": [],
+   "reply": "Created /workspace/lru/lru.py (LRUCache with OrderedDict-based LRU, optional TTL via injectable clock, thread-safe with a lock, capacity-0 stores nothing, stats() tracking hits/misses/evictions with only capacity evictions counted) and /workspace/lru/test_lru.py with 12 tests covering get/put, eviction order, replacement, TTL expiry and refresh, expiry-vs-eviction stats, capacity 0, live-only len/keys, thread safety (8 threads \u00d7 500 ops), and the default monotonic clock. One bug was found and fixed during testing (capacity 0 was still storing an entry); after the fix all tests pass: 12 passed "
+  },
+  {
+   "task": "expr",
+   "model": "glm-5.3-flash",
+   "rep": 6,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.2,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 171.9,
+   "tool_calls": 12,
+   "spend_usd": 0.01590745,
+   "errors": [],
+   "reply": "Created /workspace/expr/expr.py (recursive-descent parser, no eval/exec/compile/ast) and /workspace/expr/test_expr.py. All 6 tests pass: OK (6 tests). It supports ints/decimals, + - * /, ^ with Python ** semantics (-2^2 = -4, 2^3^2 = 512, 2^-1 = 0.5), unary minus, parentheses, and variable lookup; malformed input and unknown variables raise ValueError, division by zero raises ZeroDivisionError. One fix along the way: trailing-garbage check after parsing (e.g. '1+2)' now correctly rejected), and the test for unknown variables was corrected to use a genuinely undefined name."
+  },
+  {
+   "task": "ledger",
+   "model": "glm-5.3-flash",
+   "rep": 3,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.29,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 177.3,
+   "tool_calls": 26,
+   "spend_usd": 0.0078558,
+   "errors": [],
+   "reply": "Fixed the ledger package; `python3 test_ledger.py` now prints ALL PASS, and I verified the full SPEC.md behavior with additional checks (all passed).\n\nBugs fixed:\n\n1. **ledger/book.py \u2014 `balance` crashed on string dates** (`TypeError: '<' not supported between 'str' and 'datetime.date'`). It converted `until` from a string but never converted each entry's date `d`, so filtering failed whenever entries held ISO date strings. Added `if isinstance(d, str): d = date.fromisoformat(d)`.\n\n2. **ledger/parse.py \u2014 `parse_line` misparsed negative amounts**: it stripped the `-` with `lstrip(\"-\")` (fine he"
+  },
+  {
+   "task": "kvapi",
+   "model": "glm-5.3-flash",
+   "rep": 1,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.64,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 180.5,
+   "tool_calls": 6,
+   "spend_usd": 0.0031364500000000003,
+   "errors": [],
+   "reply": "Wrote /workspace/kv/server.py \u2014 a stdlib-only JSON KV server (ThreadingHTTPServer + a Store class guarded by a threading.Lock, writes persisted atomically via tmp-file + os.replace + fsync, so concurrent requests can't lose writes and data survives restarts).\n\nHow I tested it (curl against a live server on port 8765, then stopped it):\n- PUT /kv/foo with {\"a\":1} \u2192 201; PUT again with {\"a\":2} \u2192 200; GET /kv/foo \u2192 {\"a\": 2}\n- GET missing key \u2192 404\n- PUT with invalid key (bad!key) \u2192 400; PUT with non-JSON body \u2192 400\n- GET /kv \u2192 {\"keys\": [...]} sorted\n- DELETE existing \u2192 204; DELETE again \u2192 404\n- Co"
+  },
+  {
+   "task": "sched",
+   "model": "glm-5.3-flash",
+   "rep": 4,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": false,
+   "check": {
+    "ok": false,
+    "seconds": 0.15,
+    "status": 200,
+    "detail": {
+     "exit_code": 1,
+     "stderr": "Traceback (most recent call last):\n  File \"/tmp/sched_hidden.py\", line 7, in <module>\n    assert sorted(p[\"critical\"]) == exp[\"plan\"][\"critical\"], (\"critical\", p[\"critical\"], exp[\"plan\"][\"critical\"])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ('critical', ['kfpp'], ['cett', 'ckjt', 'hubf', 'kfpp', 'tixl', 'zwxu'])\n",
+     "timed_out": false
+    }
+   },
+   "reply_ok": true,
+   "seconds": 193.0,
+   "tool_calls": 36,
+   "spend_usd": 0.014678600000000002,
+   "errors": [],
+   "reply": "Done. /workspace/sched/plan.py solves both inputs; outputs verified with an independent greedy checker (order matches, earliest_start and finish recomputed and consistent).\n\n- Finish time: 34 (only critical task: kfpp)\n- Cycle in tasks_bad.json: agyg \u2192 oeea \u2192 cett \u2192 agyg, so plan_bad.json = {\"error\": \"cycle\", \"cycle\": [\"agyg\", \"cett\", \"oeea\"]}\n\nplan.json contains order (alphabetically-smallest-ready topological order), earliest_start, finish=34 and critical=[\"kfpp\"]."
+  }
+ ]
+}
