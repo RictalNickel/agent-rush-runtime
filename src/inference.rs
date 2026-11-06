@@ -378,74 +378,83 @@ impl InferenceGateway {
             anthropic_reservation(context.role, serde_json::to_vec(&context.messages)?.len());
         self.ledger
             .reserve_spend(&call_id, reservation, self.settings.inference_budget_usd)?;
-        let mut call = self
-            .client
-            .post(ANTHROPIC_ENDPOINT)
-            .header("x-api-key", &self.settings.anthropic_key)
-            .header("anthropic-version", "2023-06-01");
-        if compaction {
-            call = call.header("anthropic-beta", "compact-2026-01-12");
-        }
-        let response = call
-            .json(&request)
-            .send()
-            .await
-            .context("Anthropic request failed; reservation retained")?;
-        let status = response.status();
-        let bytes = Self::read_bounded(response, 4 * 1024 * 1024).await?;
-        if !status.is_success() {
-            let detail: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
-            // A structured API error is not billed; anything else keeps the reservation.
-            let unbilled = detail["type"] == "error";
-            if unbilled {
-                self.ledger.settle_spend(&call_id, 0.0)?;
+        // What the spend ledger holds for this call; an error past this point carries it
+        // so callers that account spend (sessions) never under-report a failed call.
+        let mut charged = reservation;
+        let outcome = async {
+            let mut call = self
+                .client
+                .post(ANTHROPIC_ENDPOINT)
+                .header("x-api-key", &self.settings.anthropic_key)
+                .header("anthropic-version", "2023-06-01");
+            if compaction {
+                call = call.header("anthropic-beta", "compact-2026-01-12");
             }
-            anyhow::bail!(
-                "Anthropic returned HTTP {} ({}); {}",
-                status.as_u16(),
-                crate::agent::clip(detail["error"]["message"].as_str().unwrap_or(""), 300),
+            let response = call
+                .json(&request)
+                .send()
+                .await
+                .context("Anthropic request failed; reservation retained")?;
+            let status = response.status();
+            let bytes = Self::read_bounded(response, 4 * 1024 * 1024).await?;
+            if !status.is_success() {
+                let detail: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
+                // A structured API error is not billed; anything else keeps the reservation.
+                let unbilled = detail["type"] == "error";
                 if unbilled {
-                    "not billed"
-                } else {
-                    "reservation retained"
+                    self.ledger.settle_spend(&call_id, 0.0)?;
+                    charged = 0.0;
                 }
+                anyhow::bail!(
+                    "Anthropic returned HTTP {} ({}); {}",
+                    status.as_u16(),
+                    crate::agent::clip(detail["error"]["message"].as_str().unwrap_or(""), 300),
+                    if unbilled {
+                        "not billed"
+                    } else {
+                        "reservation retained"
+                    }
+                );
+            }
+            // Settle from usage before decoding, so a refusal or malformed turn is still
+            // charged its actual cost instead of holding the worst-case reservation.
+            let body: Value = serde_json::from_slice(&bytes)?;
+            let spec = anthropic_role(context.role);
+            // A dated snapshot ID in the response is priced as the role's configured model.
+            let cost = anthropic_cost(body["model"].as_str().unwrap_or(""), &body["usage"])
+                .or_else(|| anthropic_cost(spec.model, &body["usage"]));
+            let accounted = cost.unwrap_or(reservation);
+            // Record what was actually billed even when it breaks the envelope, then stop.
+            self.ledger.settle_spend(&call_id, accounted)?;
+            charged = accounted;
+            ensure!(
+                accounted <= reservation,
+                "provider usage exceeds cost reservation; stop and reconcile billing"
             );
+            let completion = decode_anthropic(body)?;
+            let tokens = billed_tokens(&completion.usage);
+            let receipt = json!({
+                "call_id": call_id,
+                "provider": "Anthropic",
+                "origin": "https://api.anthropic.com/v1",
+                "role": context.role,
+                "model": completion.model,
+                "effort": effort.unwrap_or(spec.effort),
+                "cache_ttl": spec.cache_ttl.unwrap_or("default"),
+                "provider_request_id": completion.provider_id,
+                "input_tokens": tokens.input,
+                "output_tokens": tokens.output,
+                "cache_read_input_tokens": tokens.cache_read,
+                "cache_creation_input_tokens": tokens.cache_write,
+                "compacted": completion.compaction.is_some(),
+                "accounted_usd": accounted,
+                "price_source": if cost.is_some() { "anthropic list price" } else { "unpriced model; full reservation kept" },
+                "at": crate::domain::now(),
+            });
+            Ok((completion.text, completion.compaction, receipt))
         }
-        // Settle from usage before decoding, so a refusal or malformed turn is still
-        // charged its actual cost instead of holding the worst-case reservation.
-        let body: Value = serde_json::from_slice(&bytes)?;
-        let spec = anthropic_role(context.role);
-        // A dated snapshot ID in the response is priced as the role's configured model.
-        let cost = anthropic_cost(body["model"].as_str().unwrap_or(""), &body["usage"])
-            .or_else(|| anthropic_cost(spec.model, &body["usage"]));
-        let accounted = cost.unwrap_or(reservation);
-        // Record what was actually billed even when it breaks the envelope, then stop.
-        self.ledger.settle_spend(&call_id, accounted)?;
-        ensure!(
-            accounted <= reservation,
-            "provider usage exceeds cost reservation; stop and reconcile billing"
-        );
-        let completion = decode_anthropic(body)?;
-        let tokens = billed_tokens(&completion.usage);
-        let receipt = json!({
-            "call_id": call_id,
-            "provider": "Anthropic",
-            "origin": "https://api.anthropic.com/v1",
-            "role": context.role,
-            "model": completion.model,
-            "effort": effort.unwrap_or(spec.effort),
-            "cache_ttl": spec.cache_ttl.unwrap_or("default"),
-            "provider_request_id": completion.provider_id,
-            "input_tokens": tokens.input,
-            "output_tokens": tokens.output,
-            "cache_read_input_tokens": tokens.cache_read,
-            "cache_creation_input_tokens": tokens.cache_write,
-            "compacted": completion.compaction.is_some(),
-            "accounted_usd": accounted,
-            "price_source": if cost.is_some() { "anthropic list price" } else { "unpriced model; full reservation kept" },
-            "at": crate::domain::now(),
-        });
-        Ok((completion.text, completion.compaction, receipt))
+        .await;
+        outcome.map_err(|e| crate::session::ChargedError::wrap(e, charged))
     }
     async fn complete_vultr(
         &self,
@@ -480,32 +489,39 @@ impl InferenceGateway {
             reservation.max(0.000001),
             self.settings.inference_budget_usd,
         )?;
-        let response = self
-            .client
-            .post(ENDPOINT)
-            .bearer_auth(&self.settings.inference_key)
-            .json(&request)
-            .send()
-            .await
-            .context("Vultr inference request failed")?;
-        ensure!(
-            response.status().is_success(),
-            "Vultr inference returned HTTP {}; reservation retained",
-            response.status().as_u16()
-        );
-        let bytes = Self::read_bounded(response, 262144).await?;
-        let body: Value = serde_json::from_slice(&bytes)?;
-        // Settle from usage before decoding, as on the Claude path; missing usage keeps
-        // the conservative reservation.
-        let cost = vultr_cost(&body["usage"], input, output).unwrap_or(reservation);
-        self.ledger.settle_spend(&call_id, cost)?;
-        ensure!(
-            cost <= reservation,
-            "provider usage exceeds cost reservation; stop and reconcile billing"
-        );
-        let completion = decode_response(body)?;
-        let receipt = json!({"call_id":call_id,"provider":"Vultr Serverless Inference","origin":"https://api.vultrinference.com/v1","role":context.role,"effort":effort.unwrap_or(anthropic_role(context.role).effort),"model":completion.model,"provider_request_id":completion.provider_id,"input_tokens":completion.input_tokens,"output_tokens":completion.output_tokens,"accounted_usd":cost,"at":crate::domain::now()});
-        Ok((completion, receipt))
+        // What the spend ledger holds for this call; errors past this point carry it.
+        let mut charged = reservation.max(0.000001);
+        let outcome = async {
+            let response = self
+                .client
+                .post(ENDPOINT)
+                .bearer_auth(&self.settings.inference_key)
+                .json(&request)
+                .send()
+                .await
+                .context("Vultr inference request failed")?;
+            ensure!(
+                response.status().is_success(),
+                "Vultr inference returned HTTP {}; reservation retained",
+                response.status().as_u16()
+            );
+            let bytes = Self::read_bounded(response, 262144).await?;
+            let body: Value = serde_json::from_slice(&bytes)?;
+            // Settle from usage before decoding, as on the Claude path; missing usage keeps
+            // the conservative reservation.
+            let cost = vultr_cost(&body["usage"], input, output).unwrap_or(reservation);
+            self.ledger.settle_spend(&call_id, cost)?;
+            charged = cost;
+            ensure!(
+                cost <= reservation,
+                "provider usage exceeds cost reservation; stop and reconcile billing"
+            );
+            let completion = decode_response(body)?;
+            let receipt = json!({"call_id":call_id,"provider":"Vultr Serverless Inference","origin":"https://api.vultrinference.com/v1","role":context.role,"effort":effort.unwrap_or(anthropic_role(context.role).effort),"model":completion.model,"provider_request_id":completion.provider_id,"input_tokens":completion.input_tokens,"output_tokens":completion.output_tokens,"accounted_usd":cost,"at":crate::domain::now()});
+            Ok((completion, receipt))
+        }
+        .await;
+        outcome.map_err(|e| crate::session::ChargedError::wrap(e, charged))
     }
 }
 

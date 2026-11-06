@@ -26,6 +26,9 @@ pub const BROWSER_ACTIONS: &[&str] = &[
 ];
 /// Largest model turn accepted as a tool call.
 const MAX_CALL_BYTES: usize = 512 * 1024;
+/// Largest shell command run in a box, whether written by the model or expanded from a
+/// custom tool template.
+pub const MAX_COMMAND_BYTES: usize = 64 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -226,7 +229,7 @@ impl ToolCall {
                 cwd,
             } => {
                 ensure!(
-                    !command.trim().is_empty() && command.len() <= 64 * 1024,
+                    !command.trim().is_empty() && command.len() <= MAX_COMMAND_BYTES,
                     "command must be 1-65536 bytes"
                 );
                 ensure!(
@@ -252,9 +255,15 @@ impl ToolCall {
                 path(p)?;
                 ensure!(content.len() <= MAX_FILE_BYTES, "content exceeds 25 MiB");
             }
-            ToolCall::EditFile { path: p, old, .. } => {
+            ToolCall::EditFile {
+                path: p, old, new, ..
+            } => {
                 path(p)?;
                 ensure!(!old.is_empty(), "old must not be empty");
+                ensure!(
+                    old.len() <= MAX_FILE_BYTES && new.len() <= MAX_FILE_BYTES,
+                    "old and new must each be at most 25 MiB"
+                );
             }
             ToolCall::ListFiles { path: p } | ToolCall::Glob { path: p, .. } => {
                 if let Some(p) = p {
@@ -313,14 +322,34 @@ impl ToolCall {
     }
 }
 
-/// Models sometimes wrap the object in a fence or a sentence. Only the outermost `{...}`
-/// span is considered; strict decoding still applies to it.
+/// Models sometimes wrap the object in a fence or a sentence, or add a second object.
+/// Returns the first complete JSON object (tried at each `{`) that has a string `tool`
+/// field; strict decoding still applies to it. Without one, falls back to the outermost
+/// `{...}` span of the fence-stripped text so the decode error explains what is wrong.
 pub fn json_span(content: &str) -> &str {
-    let trimmed = content.trim();
+    let trimmed = strip_fence(content.trim());
+    for (start, _) in trimmed.match_indices('{') {
+        let rest = &trimmed[start..];
+        let mut stream = serde_json::Deserializer::from_str(rest).into_iter::<Value>();
+        if let Some(Ok(Value::Object(object))) = stream.next()
+            && object.get("tool").is_some_and(Value::is_string)
+        {
+            return &rest[..stream.byte_offset()];
+        }
+    }
     match (trimmed.find('{'), trimmed.rfind('}')) {
         (Some(start), Some(end)) if start < end => &trimmed[start..=end],
         _ => trimmed,
     }
+}
+
+/// The body of a ```json (or bare ```) fence that wraps the whole text.
+fn strip_fence(text: &str) -> &str {
+    let Some(body) = text.strip_prefix("```") else {
+        return text;
+    };
+    let body = body.strip_prefix("json").unwrap_or(body);
+    body.strip_suffix("```").unwrap_or(body).trim()
 }
 
 /// Decodes one model turn. Unknown tools and unknown fields are rejected; custom tools
@@ -389,11 +418,14 @@ pub fn shell_quote(value: &str) -> String {
     format!("'{}'", value.replace('\'', r"'\''"))
 }
 
-/// Expands `{{arg}}` placeholders with shell-quoted values.
+/// Expands `{{arg}}` placeholders with shell-quoted values. Expansion stops with an
+/// error as soon as the command would exceed `MAX_COMMAND_BYTES`.
 pub fn expand_template(template: &str, args: &Map<String, Value>) -> Result<String> {
-    let mut out = String::with_capacity(template.len());
+    let mut out = String::with_capacity(template.len().min(MAX_COMMAND_BYTES));
     let mut rest = template;
+    let too_long = || anyhow!("the expanded command exceeds {MAX_COMMAND_BYTES} bytes");
     while let Some(start) = rest.find("{{") {
+        ensure!(out.len() + start <= MAX_COMMAND_BYTES, too_long());
         out.push_str(&rest[..start]);
         let after = &rest[start + 2..];
         let end = after.find("}}").context("unclosed placeholder")?;
@@ -405,15 +437,19 @@ pub fn expand_template(template: &str, args: &Map<String, Value>) -> Result<Stri
             Some(other) => other.to_string(),
         };
         ensure!(!value.contains('\0'), "argument {name:?} contains NUL");
-        out.push_str(&shell_quote(&value));
+        let quoted = shell_quote(&value);
+        ensure!(out.len() + quoted.len() <= MAX_COMMAND_BYTES, too_long());
+        out.push_str(&quoted);
         rest = &after[end + 2..];
     }
+    ensure!(out.len() + rest.len() <= MAX_COMMAND_BYTES, too_long());
     out.push_str(rest);
     Ok(out)
 }
 
 /// Replaces an exact, unique match of `old` (or every match with `replace_all`).
-/// Returns the new text and the number of replacements.
+/// Returns the new text and the number of replacements. The result's size is computed
+/// before anything is allocated and may not exceed `MAX_FILE_BYTES`.
 pub fn apply_edit(text: &str, old: &str, new: &str, replace_all: bool) -> Result<(String, usize)> {
     ensure!(!old.is_empty(), "old must not be empty");
     let count = text.matches(old).count();
@@ -424,6 +460,14 @@ pub fn apply_edit(text: &str, old: &str, new: &str, replace_all: bool) -> Result
     ensure!(
         count == 1 || replace_all,
         "old text matches {count} places; include more surrounding context or set replace_all"
+    );
+    let size = count
+        .checked_mul(old.len())
+        .and_then(|removed| text.len().checked_sub(removed))
+        .and_then(|kept| kept.checked_add(count.checked_mul(new.len())?));
+    ensure!(
+        size.is_some_and(|size| size <= MAX_FILE_BYTES),
+        "the edited file would exceed 25 MiB"
     );
     Ok((text.replace(old, new), count))
 }
@@ -438,13 +482,17 @@ pub fn truncate_bytes(bytes: &[u8], max: usize) -> (String, bool) {
             return (text.into_owned(), false);
         }
     }
-    let budget = max - 80;
-    let head = budget * 3 / 5;
-    let tail = (budget - head).min(bytes.len().saturating_sub(head));
-    let omitted = bytes.len() - head - tail;
+    // A short input whose lossy text grew past `max` (invalid UTF-8 expands up to 3x)
+    // can be shorter than `head`; every subtraction saturates.
+    let budget = max.saturating_sub(80);
+    let head = (budget * 3 / 5).min(bytes.len());
+    let tail = budget
+        .saturating_sub(head)
+        .min(bytes.len().saturating_sub(head));
+    let omitted = bytes.len().saturating_sub(head + tail);
     let text = format!(
         "{}\n[... {omitted} bytes omitted ...]\n{}",
-        String::from_utf8_lossy(&bytes[..head.min(bytes.len())]),
+        String::from_utf8_lossy(&bytes[..head]),
         String::from_utf8_lossy(&bytes[bytes.len() - tail..])
     );
     (crate::agent::clip(&text, max).to_string(), true)
