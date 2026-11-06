@@ -241,3 +241,86 @@ fn reasoning_without_an_answer_is_a_clear_failure() {
     let error = decode_response(body).unwrap_err().to_string();
     assert!(error.contains("reasoning but no answer"), "{error}");
 }
+
+/// A Vultr stand-in that answers HTTP 429 (with `Retry-After: 0`) to the first `limited`
+/// requests and succeeds after that. Returns its URL and how many requests it received.
+async fn rate_limited_vultr(limited: usize) -> (String, Arc<Mutex<usize>>) {
+    use axum::{http::StatusCode, response::IntoResponse};
+    let count = Arc::new(Mutex::new(0usize));
+    let seen = count.clone();
+    let app = Router::new().route(
+        "/chat",
+        post(move |Json(body): Json<Value>| {
+            let seen = seen.clone();
+            async move {
+                let n = {
+                    let mut c = seen.lock().unwrap();
+                    *c += 1;
+                    *c
+                };
+                if n <= limited {
+                    return (
+                        StatusCode::TOO_MANY_REQUESTS,
+                        [("retry-after", "0")],
+                        "rate limited",
+                    )
+                        .into_response();
+                }
+                Json(json!({
+                    "id": "provider-call",
+                    "model": body["model"],
+                    "choices": [{"message": {"content": "{\"tool\":\"reply\",\"text\":\"ok\"}"}}],
+                    "usage": {"prompt_tokens": 10000, "completion_tokens": 2000},
+                }))
+                .into_response()
+            }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}/chat", listener.local_addr().unwrap());
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    (url, count)
+}
+
+fn hi_context(gateway: &InferenceGateway) -> AgentContext {
+    let mut context = AgentContext::with_role("t", "", Role::Solo, gateway.context_budget());
+    context.messages = vec![
+        json!({"role":"system","content":"system"}),
+        json!({"role":"user","content":"hi"}),
+    ];
+    context
+}
+
+#[tokio::test]
+async fn a_rate_limited_call_is_retried_and_charged_once() {
+    let (url, count) = rate_limited_vultr(2).await;
+    let (gateway, ledger) = glm_gateway(&url, 5.0);
+    let (_, _, receipt) = gateway
+        .complete_with_model(&hi_context(&gateway), None, Some("glm-5.3"))
+        .await
+        .unwrap();
+    assert_eq!(*count.lock().unwrap(), 3);
+    // 10000 prompt tokens at $0.75/M plus 2000 completion tokens at $3/M; the 429s cost nothing.
+    let expected = 0.0135;
+    assert!((receipt["accounted_usd"].as_f64().unwrap() - expected).abs() < 1e-9);
+    assert!((ledger.spend_total().unwrap() - expected).abs() < 1e-9);
+}
+
+#[tokio::test]
+async fn a_call_that_stays_rate_limited_fails_and_releases_its_reservation() {
+    let (url, count) = rate_limited_vultr(usize::MAX).await;
+    let (gateway, ledger) = glm_gateway(&url, 5.0);
+    let error = gateway
+        .complete_with_model(&hi_context(&gateway), None, Some("glm-5.3"))
+        .await
+        .unwrap_err();
+    assert!(error.to_string().contains("429"), "{error}");
+    assert!(*count.lock().unwrap() > 1, "the call was retried");
+    // The provider refused every attempt, so nothing was billed and nothing stays reserved.
+    assert_eq!(ledger.spend_total().unwrap(), 0.0);
+    let charged = error
+        .chain()
+        .find_map(|e| e.downcast_ref::<agent_rush::session::ChargedError>())
+        .map(|c| c.usd);
+    assert!(charged.unwrap_or(0.0) == 0.0, "{charged:?}");
+}

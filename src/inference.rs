@@ -532,14 +532,33 @@ impl InferenceGateway {
         // What the spend ledger holds for this call; errors past this point carry it.
         let mut charged = reservation.max(0.000001);
         let outcome = async {
-            let response = self
-                .client
-                .post(&self.vultr_endpoint)
-                .bearer_auth(&self.settings.inference_key)
-                .json(&request)
-                .send()
-                .await
-                .context("Vultr inference request failed")?;
+            // HTTP 429 means Vultr refused the call without running it: wait (its
+            // Retry-After, or a growing backoff) and send again. If it keeps refusing, the
+            // reservation is released, since nothing was billed.
+            let mut attempt = 0;
+            let response = loop {
+                let response = self
+                    .client
+                    .post(&self.vultr_endpoint)
+                    .bearer_auth(&self.settings.inference_key)
+                    .json(&request)
+                    .send()
+                    .await
+                    .context("Vultr inference request failed")?;
+                if response.status() != reqwest::StatusCode::TOO_MANY_REQUESTS {
+                    break response;
+                }
+                attempt += 1;
+                if attempt >= RATE_LIMIT_ATTEMPTS {
+                    self.ledger.settle_spend(&call_id, 0.0)?;
+                    charged = 0.0;
+                    anyhow::bail!(
+                        "Vultr inference is rate limiting this model (HTTP 429 on {attempt} \
+                         attempts); nothing was charged, try again shortly"
+                    );
+                }
+                tokio::time::sleep(rate_limit_delay(&response, attempt)).await;
+            };
             ensure!(
                 response.status().is_success(),
                 "Vultr inference returned HTTP {}; reservation retained",
@@ -564,6 +583,27 @@ impl InferenceGateway {
         }
         .await;
         outcome.map_err(|e| crate::session::ChargedError::wrap(e, charged))
+    }
+}
+
+/// Attempts a call makes while Vultr answers HTTP 429.
+const RATE_LIMIT_ATTEMPTS: u32 = 6;
+
+/// How long to wait after the `attempt`th 429: the provider's `Retry-After` seconds when
+/// given (at most 30), otherwise 2, 4, 8, 16 s, plus up to a second of jitter so parallel
+/// sessions do not retry in step.
+fn rate_limit_delay(response: &reqwest::Response, attempt: u32) -> std::time::Duration {
+    let jitter =
+        std::time::Duration::from_millis(u64::from(uuid::Uuid::new_v4().as_bytes()[0]) * 4);
+    let after = response
+        .headers()
+        .get(reqwest::header::RETRY_AFTER)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.trim().parse::<u64>().ok());
+    match after {
+        Some(0) => std::time::Duration::ZERO,
+        Some(seconds) => std::time::Duration::from_secs(seconds.min(30)) + jitter,
+        None => std::time::Duration::from_secs(1 << attempt.min(4)) + jitter,
     }
 }
 

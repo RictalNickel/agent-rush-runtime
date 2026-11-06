@@ -46,6 +46,8 @@ def create(title, message=None, model=None):
 
 
 def purge(sid):
+    if os.environ.get("AR_BENCH_KEEP") == "1":  # keep sessions to inspect their events
+        return
     call("DELETE", f"/v1/sessions/{sid}?purge=true")
 
 
