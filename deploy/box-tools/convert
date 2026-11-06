@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# convert: one front end over pandoc, LibreOffice (headless), ImageMagick, poppler and
+# ffmpeg, chosen by the input and output extensions.
+#
+#   convert <in> <out>
+#
+# Exits 2 with a reason when the pair is unsupported, 1 when the converter fails.
+# This shadows ImageMagick's own `convert`: image pairs are passed to it, and so is any
+# ImageMagick-style call (options, or more than two arguments).
+set -euo pipefail
+
+if [ $# -ne 2 ] || [[ "$1" == -* ]] || [[ "$2" == -* ]]; then
+  exec /usr/bin/convert "$@"
+fi
+die() { echo "convert: $2" >&2; exit "$1"; }
+in="$1"
+out="$2"
+[ -f "$in" ] || die 2 "input $in does not exist"
+ext() { local e="${1##*.}"; [ "$e" != "$1" ] || e=""; echo "${e,,}"; }
+from="$(ext "$in")"
+to="$(ext "$out")"
+{ [ -n "$from" ] && [ -n "$to" ]; } || die 2 "both files need an extension"
+mkdir -p "$(dirname "$out")"
+
+in_set() { local x="$1"; shift; for y in "$@"; do [ "$x" = "$y" ] && return 0; done; return 1; }
+PANDOC_IN=(md markdown html htm txt rst org tex epub docx odt rtf ipynb csv)
+PANDOC_OUT=(md markdown html htm txt rst org tex epub docx odt rtf ipynb pptx)
+OFFICE_IN=(doc docx odt rtf txt html htm xls xlsx ods csv ppt pptx odp)
+OFFICE_OUT=(pdf doc docx odt rtf txt html xls xlsx ods csv ppt pptx odp)
+IMAGE=(png jpg jpeg gif bmp tif tiff webp ico svg)
+MEDIA=(wav mp3 ogg oga flac m4a aac opus mp4 webm mkv mov avi)
+
+tmp="$(mktemp -d /tmp/convert.XXXXXX)"
+trap 'rm -rf "$tmp"' EXIT
+
+pandoc_format() {
+  case "$1" in
+    md|markdown) echo markdown ;; htm) echo html ;; txt) echo plain ;; tex) echo latex ;;
+    ipynb) echo ipynb ;; *) echo "$1" ;;
+  esac
+}
+run_pandoc() {
+  local reader writer
+  reader="$(pandoc_format "$from")"
+  [ "$reader" = plain ] && reader=markdown
+  writer="$(pandoc_format "$2")"
+  pandoc --standalone -f "$reader" -t "$writer" -o "$3" "$1" || die 1 "pandoc failed"
+}
+run_office() {
+  # A private profile per run: LibreOffice refuses to share one between processes.
+  soffice -env:UserInstallation="file://$tmp/profile" --headless --norestore \
+    --convert-to "$2" --outdir "$tmp/office" "$1" >"$tmp/office.log" 2>&1 || true
+  local produced
+  produced="$(find "$tmp/office" -maxdepth 1 -type f 2>/dev/null | head -n1)"
+  [ -n "$produced" ] || die 1 "LibreOffice could not convert $from to $2: $(tail -n3 "$tmp/office.log")"
+  mv -f "$produced" "$3"
+}
+
+if [ "$from" = "$to" ]; then
+  cp -f -- "$in" "$out"
+elif [ "$from" = pdf ]; then
+  case "$to" in
+    txt) pdftotext -layout "$in" "$out" || die 1 "pdftotext failed" ;;
+    png|jpg|jpeg)
+      flag=-png; [ "$to" = png ] || flag=-jpeg
+      pdftoppm -r 150 -singlefile "$flag" "$in" "$tmp/page" || die 1 "pdftoppm failed"
+      mv -f "$tmp"/page.* "$out" ;;
+    *) die 2 "PDF converts to txt, png or jpg only (first page for images)" ;;
+  esac
+elif [ "$to" = pdf ]; then
+  if in_set "$from" "${OFFICE_IN[@]}"; then
+    run_office "$in" pdf "$out"
+  elif in_set "$from" "${PANDOC_IN[@]}"; then
+    run_pandoc "$in" docx "$tmp/intermediate.docx"
+    run_office "$tmp/intermediate.docx" pdf "$out"
+  else
+    die 2 "no converter makes PDF from .$from"
+  fi
+elif in_set "$from" "${PANDOC_IN[@]}" && in_set "$to" "${PANDOC_OUT[@]}"; then
+  run_pandoc "$in" "$to" "$out"
+elif in_set "$from" "${OFFICE_IN[@]}" && in_set "$to" "${OFFICE_OUT[@]}"; then
+  run_office "$in" "$to" "$out"
+elif in_set "$from" "${IMAGE[@]}" && in_set "$to" "${IMAGE[@]}"; then
+  /usr/bin/convert "$in" "$out" || die 1 "ImageMagick failed"
+elif in_set "$from" "${MEDIA[@]}" && { in_set "$to" "${MEDIA[@]}" || [ "$to" = gif ]; }; then
+  ffmpeg -nostdin -y -hide_banner -loglevel error -i "$in" "$out" || die 1 "ffmpeg failed"
+else
+  die 2 "no converter for .$from to .$to (documents: pandoc/LibreOffice, images: ImageMagick, audio and video: ffmpeg)"
+fi
+[ -s "$out" ] || die 1 "converter produced no output"
+echo "$out ($(stat -c %s "$out") bytes)"

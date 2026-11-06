@@ -1,0 +1,380 @@
+#!/opt/box/venv/bin/python3
+"""browse: drive one persistent headless Chromium inside the box, JSON in, JSON out.
+
+    browse '{"action":"goto","url":"https://example.com"}'
+    browse goto https://example.com      (short form: action, then its main argument)
+
+Chromium starts on first use with a CDP endpoint on 127.0.0.1:9222 and keeps its state in
+/tmp/browser, so pages, cookies and tabs survive between calls. It runs with --no-sandbox:
+the gVisor box is the sandbox. Every call prints exactly one JSON object.
+"""
+import glob
+import json
+import os
+import signal
+import subprocess
+import sys
+import time
+import urllib.request
+
+STATE = "/tmp/browser"
+PORT = 9222
+CDP = f"http://127.0.0.1:{PORT}"
+MAX_TEXT = 40_000
+SHOTS = "/workspace/.screenshots"
+WATCHDOG_SECONDS = 90
+ACTIONS = ("goto", "snapshot", "click", "type", "press", "select", "scroll",
+           "screenshot", "eval", "back", "tabs", "console", "close")
+
+
+class Fail(Exception):
+    pass
+
+
+def chrome_binary():
+    found = sorted(glob.glob("/ms-playwright/chromium-*/chrome-linux*/chrome"))
+    if not found:
+        raise Fail("Chromium is not installed in this image")
+    return found[-1]
+
+
+def cdp_up():
+    try:
+        with urllib.request.urlopen(CDP + "/json/version", timeout=1) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def ensure_browser():
+    if cdp_up():
+        return
+    os.makedirs(STATE, exist_ok=True)
+    log = open(os.path.join(STATE, "chrome.log"), "ab")
+    # A new session keeps Chromium alive after this command (and its exec timeout) ends.
+    proc = subprocess.Popen(
+        [chrome_binary(), "--headless=new", f"--remote-debugging-port={PORT}",
+         "--remote-debugging-address=127.0.0.1", f"--user-data-dir={STATE}/profile",
+         "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--no-first-run",
+         "--no-default-browser-check", "--disable-background-networking", "--disable-sync",
+         # A page restored from the back-forward cache can leave a CDP client waiting.
+         "--disable-features=BackForwardCache",
+         "--mute-audio", "--window-size=1280,900", "about:blank"],
+        stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+    with open(os.path.join(STATE, "chrome.pid"), "w") as f:
+        f.write(str(proc.pid))
+    for _ in range(150):
+        if cdp_up():
+            return
+        if proc.poll() is not None:
+            raise Fail("Chromium exited at start; see /tmp/browser/chrome.log")
+        time.sleep(0.2)
+    raise Fail("Chromium did not start within 30 s")
+
+
+def load_state():
+    try:
+        with open(os.path.join(STATE, "state.json")) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_state(state):
+    os.makedirs(STATE, exist_ok=True)
+    with open(os.path.join(STATE, "state.json"), "w") as f:
+        json.dump(state, f)
+
+
+SNAPSHOT_JS = r"""
+(max) => {
+  const INTERACTIVE = 'a[href],button,input,textarea,select,summary,[role=button],[role=link],' +
+    '[role=checkbox],[role=radio],[role=tab],[role=menuitem],[role=option],[role=switch],' +
+    '[role=combobox],[role=textbox],[contenteditable=""],[contenteditable=true]';
+  const SKIP = new Set(['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','HEAD','META','LINK','svg']);
+  const GROUPS = {NAV:'navigation',MAIN:'main',HEADER:'banner',FOOTER:'contentinfo',ASIDE:'complementary',
+    FORM:'form',DIALOG:'dialog',UL:'list',OL:'list',TABLE:'table',ARTICLE:'article'};
+  document.querySelectorAll('[data-ar-ref]').forEach(e => e.removeAttribute('data-ar-ref'));
+  const clean = t => (t || '').replace(/\s+/g, ' ').trim();
+  const visible = el => {
+    const s = getComputedStyle(el);
+    if (s.display === 'none' || s.visibility === 'hidden') return false;
+    return el.getClientRects().length > 0 || el.tagName === 'OPTION';
+  };
+  const role = el => {
+    const r = el.getAttribute('role');
+    if (r) return r;
+    const t = el.tagName;
+    if (t === 'A') return 'link';
+    if (t === 'BUTTON' || t === 'SUMMARY') return 'button';
+    if (t === 'SELECT') return 'combobox';
+    if (t === 'TEXTAREA') return 'textbox';
+    if (t === 'INPUT') {
+      const ty = (el.type || 'text').toLowerCase();
+      if (['submit','button','reset','image'].includes(ty)) return 'button';
+      if (ty === 'checkbox' || ty === 'radio') return ty;
+      return 'textbox';
+    }
+    return el.isContentEditable ? 'textbox' : t.toLowerCase();
+  };
+  const field = el => ['INPUT','TEXTAREA','SELECT'].includes(el.tagName);
+  const name = el => clean(el.getAttribute('aria-label') || (field(el) ? '' : el.innerText) ||
+    (el.labels && el.labels[0] && el.labels[0].innerText) || el.getAttribute('placeholder') ||
+    el.getAttribute('title') || el.getAttribute('alt') || el.getAttribute('name') ||
+    (el.type === 'submit' ? el.value : '') || '').slice(0, 120);
+  const lines = []; let size = 0; let n = 0; let full = false;
+  const emit = (depth, text) => {
+    if (full) return;
+    const line = '  '.repeat(Math.min(depth, 12)) + text;
+    size += line.length + 1;
+    if (size > max) { full = true; lines.push('[snapshot truncated]'); return; }
+    lines.push(line);
+  };
+  const walk = (node, depth) => {
+    for (const el of node.children) {
+      if (full) return;
+      if (SKIP.has(el.tagName) || !visible(el)) continue;
+      if (el.matches(INTERACTIVE)) {
+        n += 1; el.setAttribute('data-ar-ref', String(n));
+        let line = `${role(el)} "${name(el)}"`;
+        if (el.tagName === 'A') line += ` -> ${el.getAttribute('href').slice(0, 200)}`;
+        if (['INPUT','TEXTAREA'].includes(el.tagName) && !['submit','button'].includes(el.type)) {
+          if (el.type === 'checkbox' || el.type === 'radio') line += el.checked ? ' (checked)' : '';
+          else if (el.value) line += ` value="${clean(el.value).slice(0, 120)}"`;
+        }
+        if (el.tagName === 'SELECT') {
+          line += ` value="${clean(el.value)}" options=[` +
+            Array.from(el.options).slice(0, 30).map(o => JSON.stringify(clean(o.text))).join(', ') + ']';
+        }
+        if (el.disabled) line += ' (disabled)';
+        emit(depth, line + ` [ref=${n}]`);
+        continue;
+      }
+      const tag = el.tagName;
+      if (/^H[1-6]$/.test(tag)) { emit(depth, `heading ${tag[1]} "${clean(el.innerText).slice(0, 200)}"`); continue; }
+      if (tag === 'IMG') { const alt = clean(el.getAttribute('alt')); if (alt) emit(depth, `img "${alt.slice(0, 120)}"`); continue; }
+      if (tag === 'IFRAME') { emit(depth, `iframe ${el.getAttribute('src') || ''}`.trim()); continue; }
+      const group = GROUPS[tag];
+      if (group) {
+        emit(depth, group + ':');
+        walk(el, depth + 1);
+        continue;
+      }
+      if (!el.querySelector(INTERACTIVE + ',h1,h2,h3,h4,h5,h6,img[alt],iframe,ul,ol,table,form')) {
+        const text = clean(el.innerText);
+        if (text) emit(depth, (tag === 'LI' ? '- ' : '') + text.slice(0, 1000));
+        continue;
+      }
+      walk(el, depth);
+    }
+  };
+  if (document.body) walk(document.body, 0);
+  return {text: lines.join('\n'), refs: n};
+}
+"""
+
+CONSOLE_HOOK_JS = r"""
+() => {
+  if (window.__arConsole) return;
+  window.__arConsole = [];
+  const push = (level, text) => {
+    window.__arConsole.push({level, text: String(text).slice(0, 2000)});
+    if (window.__arConsole.length > 200) window.__arConsole.shift();
+  };
+  for (const level of ['log', 'info', 'warn', 'error', 'debug']) {
+    const original = console[level];
+    console[level] = (...args) => {
+      try {
+        push(level, args.map(a => { try { return typeof a === 'string' ? a : JSON.stringify(a); }
+          catch (e) { return String(a); } }).join(' '));
+      } catch (e) {}
+      return original.apply(console, args);
+    };
+  }
+  window.addEventListener('error', e => push('pageerror', e.message));
+}
+"""
+
+
+def parse_args(argv):
+    if not argv:
+        raise Fail("usage: browse '<json>' or browse <action> [argument]; actions: " + ", ".join(ACTIONS))
+    if argv[0].lstrip().startswith("{"):
+        try:
+            args = json.loads(argv[0])
+        except json.JSONDecodeError as e:
+            raise Fail(f"invalid JSON: {e}")
+        if not isinstance(args, dict):
+            raise Fail("the JSON argument must be an object")
+        return args
+    action, rest = argv[0], argv[1:]
+    main = {"goto": "url", "click": "ref", "press": "key", "eval": "js", "screenshot": "path",
+            "scroll": "dy", "select": "ref", "type": "ref"}.get(action)
+    args = {"action": action}
+    if rest and main:
+        args[main] = rest[0]
+        if action in ("type", "select") and len(rest) > 1:
+            args["text" if action == "type" else "value"] = " ".join(rest[1:])
+    return args
+
+
+def current_page(context, state):
+    pages = context.pages
+    if not pages:
+        page = context.new_page()
+        state["tab"] = 0
+        return page
+    index = state.get("tab", len(pages) - 1)
+    if not isinstance(index, int) or not 0 <= index < len(pages):
+        index = len(pages) - 1
+    state["tab"] = index
+    return pages[index]
+
+
+def target(page, args):
+    if args.get("ref") not in (None, ""):
+        try:
+            ref = int(args["ref"])
+        except (TypeError, ValueError):
+            raise Fail("ref must be a number from the last snapshot")
+        locator = page.locator(f'[data-ar-ref="{ref}"]')
+        if locator.count() == 0:
+            raise Fail(f"ref {ref} is not on the page; take a new snapshot")
+        return locator.first
+    if args.get("selector"):
+        return page.locator(str(args["selector"])).first
+    raise Fail("this action needs ref (from snapshot) or selector")
+
+
+def settle(page):
+    try:
+        page.wait_for_load_state("domcontentloaded", timeout=10_000)
+    except Exception:
+        pass
+    time.sleep(0.3)
+
+
+def run(args):
+    action = args.get("action")
+    if action not in ACTIONS:
+        raise Fail(f"unknown action {action!r}; actions: " + ", ".join(ACTIONS))
+    if action == "close":
+        try:
+            with open(os.path.join(STATE, "chrome.pid")) as f:
+                os.killpg(int(f.read().strip()), signal.SIGTERM)
+        except Exception:
+            pass
+        return {"closed": True}
+    ensure_browser()
+    from playwright.sync_api import sync_playwright
+
+    state = load_state()
+    with sync_playwright() as p:
+        browser = p.chromium.connect_over_cdp(CDP, timeout=30_000)
+        context = browser.contexts[0] if browser.contexts else browser.new_context()
+        if action == "tabs":
+            if args.get("new"):
+                page = context.new_page()
+                page.goto(str(args["new"]), wait_until="domcontentloaded", timeout=30_000)
+                state["tab"] = len(context.pages) - 1
+            elif "select" in args:
+                state["tab"] = int(args["select"])
+            current_page(context, state)
+            save_state(state)
+            return {"tabs": [{"index": i, "url": pg.url, "title": pg.title(), "current": i == state["tab"]}
+                             for i, pg in enumerate(context.pages)]}
+        page = current_page(context, state)
+        logged = []
+        page.on("console", lambda m: logged.append({"level": m.type, "text": m.text[:2000]}))
+        result = {}
+        if action == "goto":
+            url = str(args.get("url") or "")
+            if not url:
+                raise Fail("goto needs url")
+            if "://" not in url and not url.startswith(("about:", "data:")):
+                url = "https://" + url
+            response = page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            try:
+                page.wait_for_load_state("load", timeout=5_000)
+            except Exception:
+                pass
+            result["status"] = response.status if response else None
+        elif action == "snapshot":
+            snap = page.evaluate(SNAPSHOT_JS, MAX_TEXT)
+            result.update(text=snap["text"], refs=snap["refs"])
+        elif action == "click":
+            target(page, args).click(timeout=10_000)
+            settle(page)
+        elif action == "type":
+            element = target(page, args)
+            element.fill(str(args.get("text", "")), timeout=10_000)
+            if args.get("submit"):
+                element.press("Enter")
+                settle(page)
+        elif action == "press":
+            page.keyboard.press(str(args.get("key") or "Enter"))
+            settle(page)
+        elif action == "select":
+            if args.get("value") is None:
+                raise Fail("select needs value")
+            result["selected"] = target(page, args).select_option(str(args["value"]), timeout=10_000)
+        elif action == "scroll":
+            page.mouse.wheel(0, int(args.get("dy", 600)))
+            time.sleep(0.3)
+        elif action == "screenshot":
+            path = str(args.get("path") or f"{SHOTS}/shot-{int(time.time() * 1000)}.png")
+            os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+            page.screenshot(path=path, full_page=bool(args.get("full_page")), timeout=30_000)
+            result["path"] = os.path.abspath(path)
+        elif action == "eval":
+            value = page.evaluate(str(args.get("js") or "undefined"))
+            text = json.dumps(value, default=str)
+            result["result"] = value if len(text) <= MAX_TEXT else text[:MAX_TEXT] + "[truncated]"
+        elif action == "back":
+            # A page restored from the back-forward cache fires no load events.
+            page.go_back(wait_until="commit", timeout=30_000)
+            settle(page)
+        elif action == "console":
+            messages = []
+            try:
+                messages = page.evaluate("() => window.__arConsole || []")
+                if args.get("clear"):
+                    page.evaluate("() => { if (window.__arConsole) window.__arConsole.length = 0; }")
+            except Exception:
+                pass
+            result["messages"] = messages
+        try:
+            page.evaluate(CONSOLE_HOOK_JS)
+        except Exception:
+            pass
+        if logged:
+            result.setdefault("console", logged[-50:])
+        save_state(state)
+        return {"url": page.url, "title": page.title(), **result}
+
+
+def give_up(signum, frame):
+    # Some page states (and `evaluate`) carry no Playwright timeout; never hang the caller.
+    print(json.dumps({"ok": False, "error": f"browse gave up after {WATCHDOG_SECONDS} s; "
+                      "try snapshot, or close and start again"}))
+    sys.stdout.flush()
+    os._exit(1)
+
+
+def main():
+    signal.signal(signal.SIGALRM, give_up)
+    signal.alarm(WATCHDOG_SECONDS)
+    try:
+        out = {"ok": True, **run(parse_args(sys.argv[1:]))}
+        code = 0
+    except Fail as e:
+        out, code = {"ok": False, "error": str(e)}, 1
+    except Exception as e:  # Playwright errors carry long call logs; keep the first lines.
+        message = "\n".join(str(e).splitlines()[:6])
+        out, code = {"ok": False, "error": f"{type(e).__name__}: {message}"}, 1
+    print(json.dumps(out, ensure_ascii=False))
+    sys.exit(code)
+
+
+if __name__ == "__main__":
+    main()

@@ -156,6 +156,19 @@ pub(crate) fn workspace_error(e: anyhow::Error) -> ApiError {
         return session_status(se);
     }
     let message = format!("{e:#}");
+    if let Some(be) = e
+        .chain()
+        .find_map(|c| c.downcast_ref::<crate::boxes::BoxError>())
+    {
+        let status = match be {
+            crate::boxes::BoxError::NoSuchPath(_) => StatusCode::NOT_FOUND,
+            crate::boxes::BoxError::Invalid(_) => StatusCode::BAD_REQUEST,
+            crate::boxes::BoxError::TooLarge(_) => StatusCode::PAYLOAD_TOO_LARGE,
+            crate::boxes::BoxError::Capacity => StatusCode::SERVICE_UNAVAILABLE,
+            _ => StatusCode::BAD_GATEWAY,
+        };
+        return ApiError(status, format!("Workspace: {message}"));
+    }
     let lower = message.to_ascii_lowercase();
     if lower.contains("no such file") || lower.contains("not found") {
         return ApiError(StatusCode::NOT_FOUND, format!("Workspace: {message}"));

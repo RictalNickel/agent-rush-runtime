@@ -1,12 +1,16 @@
 //! Real, fixed containment/resource probes. A green unit suite never substitutes for this report.
 use crate::{
+    boxes::BoxManager,
     domain::{Limits, now},
     resources::ResourcePolicy,
+    sandbox_api::{BoxSpec, ExecRequest},
     worker::DockerRunner,
 };
-use anyhow::{Result, ensure};
+use anyhow::{Context, Result, ensure};
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
     sync::{
         Arc,
@@ -265,4 +269,261 @@ pub async fn run(runner: &DockerRunner, cancel: Arc<AtomicBool>) -> Value {
         checks.push(json!({"name":name,"passed":passed,"receipt":receipt}));
     }
     json!({"schema":"agent-rush.qualification.v1","qualified":checks.iter().all(|v|v["passed"]==true),"health":health,"started_at":started,"finished_at":now(),"checks":checks,"measurement_note":"CPU probe requests 0.25 vCPU; requires at least two actual samples, positive load and no sample above 50% of one core. A bounded enforcement probe, not a peak-memory/CPU performance guarantee."})
+}
+
+pub const BOX_CHECKS: [&str; 8] = [
+    "metadata_blocked",
+    "private_blocked",
+    "worker_listener_blocked",
+    "smtp_blocked",
+    "public_https_allowed",
+    "no_credentials",
+    "non_root_readonly",
+    "volume_destroyed",
+];
+pub const BOX_REPORT_SCHEMA: &str = "agent-rush.box-qualification.v1";
+/// A box report admits boxes for two hours, like the job report.
+pub const BOX_REPORT_TTL_SECONDS: i64 = 7200;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BoxCheck {
+    pub name: String,
+    pub passed: bool,
+    #[serde(default)]
+    pub detail: Value,
+}
+/// Evidence that this host's session boxes are contained. `BoxManager::create` refuses
+/// to start a box unless a report for this host and image is fresh and fully passing.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BoxReport {
+    pub schema: String,
+    pub qualified: bool,
+    pub host: String,
+    pub image: String,
+    pub network: String,
+    pub created_at: i64,
+    pub expires_at: i64,
+    pub checks: Vec<BoxCheck>,
+    #[serde(default)]
+    pub notes: Vec<String>,
+}
+impl BoxReport {
+    pub fn load(path: &std::path::Path) -> Result<Self> {
+        let metadata = std::fs::symlink_metadata(path)
+            .with_context(|| format!("box qualification report {} missing", path.display()))?;
+        ensure!(
+            metadata.file_type().is_file() && metadata.len() <= 1024 * 1024,
+            "invalid box qualification file"
+        );
+        Ok(serde_json::from_slice(&std::fs::read(path)?)?)
+    }
+    /// Fails unless the report is for this host and image, current at `at` (unix seconds),
+    /// and every one of the eight checks is present exactly once and passed.
+    pub fn assess(&self, host: &str, image: &str, at: i64) -> Result<()> {
+        ensure!(
+            self.schema == BOX_REPORT_SCHEMA && self.qualified,
+            "box qualification report is not passing"
+        );
+        ensure!(self.host == host, "box qualification is for another host");
+        ensure!(
+            self.image == image,
+            "box qualification is for another workspace image"
+        );
+        ensure!(
+            self.created_at <= at + 60
+                && self.expires_at > at
+                && self.expires_at - self.created_at <= BOX_REPORT_TTL_SECONDS,
+            "box qualification expired or its timestamps are invalid"
+        );
+        ensure!(
+            self.checks.len() == BOX_CHECKS.len(),
+            "box qualification checks incomplete"
+        );
+        for name in BOX_CHECKS {
+            let mut named = self.checks.iter().filter(|c| c.name == name);
+            ensure!(
+                named.next().is_some_and(|c| c.passed) && named.next().is_none(),
+                "box qualification check {name} absent, duplicated or failed"
+            );
+        }
+        Ok(())
+    }
+}
+/// This host's identity in box reports: a digest of its machine id.
+pub fn box_host_id() -> Result<String> {
+    let id = std::fs::read_to_string("/etc/machine-id").context("machine id unavailable")?;
+    Ok(hex::encode(Sha256::digest(id.trim().as_bytes())))
+}
+
+/// What `qualify-box` probes beyond its fixed list.
+pub struct BoxProbes {
+    /// Private endpoints (`ip:port`) the host itself can reach; a box must not.
+    pub private: Vec<String>,
+    /// Ports the worker listens on; each is probed on every host address.
+    pub listener_ports: Vec<u16>,
+    /// The worker's bearer token, compared by digest with every box environment value.
+    pub worker_token: Option<String>,
+}
+
+fn host_addresses() -> Result<Vec<String>> {
+    let out = std::process::Command::new("ip")
+        .args(["-4", "-o", "addr", "show", "scope", "global"])
+        .output()
+        .context("listing host addresses")?;
+    ensure!(out.status.success(), "listing host addresses failed");
+    Ok(String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter_map(|l| {
+            l.split_whitespace()
+                .nth(3)?
+                .split('/')
+                .next()
+                .map(String::from)
+        })
+        .collect())
+}
+async fn host_reaches(target: &str) -> bool {
+    matches!(
+        tokio::time::timeout(
+            Duration::from_secs(3),
+            tokio::net::TcpStream::connect(target)
+        )
+        .await,
+        Ok(Ok(_))
+    )
+}
+
+/// Start a box, run the fixed probes in it, destroy it, and check its volume is gone.
+pub async fn run_box(manager: &BoxManager, probes: &BoxProbes) -> Result<BoxReport> {
+    let created_at = Utc::now().timestamp();
+    let host = box_host_id()?;
+    for target in &probes.private {
+        ensure!(
+            target.parse::<std::net::SocketAddrV4>().is_ok(),
+            "private probe {target} must be ip:port"
+        );
+    }
+    let gateway = manager.network_gateway().await?;
+    let mut addresses = host_addresses()?;
+    addresses.push(gateway.clone());
+    addresses.sort();
+    addresses.dedup();
+    let listeners: Vec<String> = addresses
+        .iter()
+        .flat_map(|a| {
+            probes
+                .listener_ports
+                .iter()
+                .map(move |p| format!("{a}:{p}"))
+        })
+        .collect();
+    let mut notes = vec![
+        "Box traffic to the host's own addresses is delivered locally and governed by the host firewall, not by DOCKER-USER; worker_listener_blocked observes that firewall.".to_string(),
+    ];
+    let mut private_controls = Vec::new();
+    for target in &probes.private {
+        let reachable = host_reaches(target).await;
+        private_controls.push(json!({"target":target,"reachable_from_host":reachable}));
+        if !reachable {
+            notes.push(format!(
+                "{target} is not reachable from the host either, so it is a weak control"
+            ));
+        }
+    }
+    // Whether the host itself can submit mail shows the box's refusal is the filter's doing.
+    let mut smtp_controls = Vec::new();
+    for target in ["smtp.gmail.com:587", "smtp.gmail.com:465"] {
+        smtp_controls
+            .push(json!({"target":target,"reachable_from_host":host_reaches(target).await}));
+    }
+    let spec = BoxSpec {
+        session_id: format!("qualify-{}", uuid::Uuid::new_v4().simple()),
+        owner: "qualification".into(),
+        memory_mb: 1024,
+        cpu_millis: 1000,
+    };
+    let box_id = manager.create_for_qualification(&spec).await?;
+    let probe = manager
+        .exec_box(
+            &box_id,
+            &ExecRequest {
+                command: format!(
+                    "bash -s -- --gateway {gateway} --private '{}' --listeners '{}'",
+                    probes.private.join(","),
+                    listeners.join(",")
+                ),
+                cwd: None,
+                timeout_seconds: Some(300),
+                stdin: Some(include_str!("../qualification/box_checks.sh").into()),
+            },
+        )
+        .await;
+    let (container_removed, volume_removed) =
+        manager.destroy_box(&box_id).await.unwrap_or((false, false));
+    let probe = probe?;
+    let token_digest = probes
+        .worker_token
+        .as_deref()
+        .filter(|t| !t.is_empty())
+        .map(|t| hex::encode(Sha256::digest(t.as_bytes())));
+    let mut checks: Vec<BoxCheck> = Vec::new();
+    for line in probe.stdout.lines() {
+        let Ok(mut check) = serde_json::from_str::<BoxCheck>(line) else {
+            continue;
+        };
+        if !BOX_CHECKS.contains(&check.name.as_str())
+            || check.name == "volume_destroyed"
+            || checks.iter().any(|c| c.name == check.name)
+        {
+            continue;
+        }
+        if check.name == "private_blocked" {
+            check.detail["host_controls"] = json!(private_controls);
+        }
+        if check.name == "smtp_blocked" {
+            check.detail["host_controls"] = json!(smtp_controls);
+        }
+        if check.name == "no_credentials" {
+            // Compare digests here so neither the token nor its digest enters the box.
+            let hashes = check.detail["env_value_sha256"].take();
+            let leaked = token_digest.as_ref().is_some_and(|digest| {
+                hashes
+                    .as_array()
+                    .is_some_and(|a| a.iter().any(|h| h == digest.as_str()))
+            });
+            if let Some(detail) = check.detail.as_object_mut() {
+                detail.remove("env_value_sha256");
+            }
+            check.detail["worker_token_compared"] = json!(token_digest.is_some());
+            check.detail["worker_token_in_env"] = json!(leaked);
+            check.passed = check.passed && !leaked;
+        }
+        checks.push(check);
+    }
+    for name in BOX_CHECKS {
+        if name != "volume_destroyed" && !checks.iter().any(|c| c.name == name) {
+            checks.push(BoxCheck {
+                name: name.into(),
+                passed: false,
+                detail: json!({"error":"probe did not report","exit_code":probe.exit_code,"stderr":probe.stderr}),
+            });
+        }
+    }
+    checks.push(BoxCheck {
+        name: "volume_destroyed".into(),
+        passed: container_removed && volume_removed,
+        detail: json!({"box_id":box_id,"container_removed":container_removed,"volume_removed":volume_removed}),
+    });
+    checks.sort_by_key(|c| BOX_CHECKS.iter().position(|n| *n == c.name));
+    Ok(BoxReport {
+        schema: BOX_REPORT_SCHEMA.into(),
+        qualified: checks.len() == BOX_CHECKS.len() && checks.iter().all(|c| c.passed),
+        host,
+        image: manager.image().into(),
+        network: manager.network().into(),
+        created_at,
+        expires_at: created_at + BOX_REPORT_TTL_SECONDS,
+        checks,
+        notes,
+    })
 }

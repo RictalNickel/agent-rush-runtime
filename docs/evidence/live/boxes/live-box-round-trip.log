@@ -1,0 +1,105 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.22s
+     Running tests/boxes.rs (/root/target-A/debug/deps/boxes-80892d7c0cfe587c)
+
+running 1 test
+## worker
+in-process node router at http://127.0.0.1:38673
+
+2026-11-06T01:35:45.388987Z  INFO agent_rush::boxes: box created box_id=aa5ec7002ca54a96b45bb37e9db18955 session=live-smoke
+## create
+box_id=aa5ec7002ca54a96b45bb37e9db18955 in 248.683414ms
+
+## exec identity
+ExecResult {
+    exit_code: 0,
+    stdout: "uid=1000(agent) gid=1000(agent) groups=1000(agent)\n/workspace\n/home/agent\ntouch: cannot touch '/etc/x': Permission denied\nCapEff:\t0000000000000000\nNoNewPrivs:\t1\n",
+    stderr: "",
+    timed_out: false,
+    truncated: false,
+}
+
+## write src/hello.py
+WriteResult { bytes: 28, sha256: "4083e1e49d1ecca68edc7fe6b3c08f3a8d516dadb2ecbbdd5389359960855890" }
+
+## list src
+[DirEntry { name: "hello.py", is_dir: false, size: 28 }]
+
+## read ../../etc/passwd
+refused: path "../../etc/passwd" leaves the filesystem root
+
+## read /etc/passwd
+refused: path "/etc/passwd" resolves to /etc/passwd, outside /workspace and /tmp
+
+## read /workspace/../root
+refused: path "/workspace/../root" resolves to /root, outside /workspace and /tmp
+
+## read symlink root-link/etc/passwd
+refused: path resolves to /etc/passwd, outside /workspace and /tmp
+
+## read symlink pw
+refused: path resolves to /etc/passwd, outside /workspace and /tmp
+
+## read symlink d/up/hostname
+refused: path resolves to /etc/hostname, outside /workspace and /tmp
+
+## read symlink root-link
+refused: path resolves to /, outside /workspace and /tmp
+
+## write through symlink to /
+refused: path resolves to /etc/evil, outside /workspace and /tmp
+
+## 10 MB of stdout
+stdout 262144 bytes, truncated=true, stderr="done\n"
+
+2026-11-06T01:35:49.444973Z  INFO agent_rush::boxes: box scaled up box_id=aa5ec7002ca54a96b45bb37e9db18955 memory_mb=1024 cpu_millis=2000
+## cat of a PNG
+exit 0 stdout 146060 bytes (lossy), truncated=false
+
+## read shot.png
+80709 bytes, PNG signature intact
+
+## sleep 30 with a 2 s timeout
+ExecResult { exit_code: 124, stdout: "", stderr: "", timed_out: true, truncated: false } in 2.176467589s
+
+## background server
+ExecResult { exit_code: 0, stdout: "200", stderr: "127.0.0.1 - - [06/Nov/2026 01:35:58] \"GET / HTTP/1.1\" 200 -\n", timed_out: false, truncated: false } in 1.243539299s
+
+## metadata from the box
+exit=7
+curl: (7) Failed to connect to 169.254.169.254 port 80 after 0 ms: Couldn't connect to server
+
+
+2026-11-06T01:36:02.506497Z  INFO agent_rush::boxes: box scaled up box_id=aa5ec7002ca54a96b45bb37e9db18955 memory_mb=2048 cpu_millis=2000
+2026-11-06T01:36:09.579527Z  INFO agent_rush::boxes: box scaled up box_id=aa5ec7002ca54a96b45bb37e9db18955 memory_mb=4096 cpu_millis=2000
+## live scaling: hold 1200 MiB in a box started at 1024 MiB
+ExecResult { exit_code: 0, stdout: "held 1200 MiB\n", stderr: "", timed_out: false, truncated: false }
+
+## list
+[BoxInfo { box_id: "aa5ec7002ca54a96b45bb37e9db18955", session_id: "live-smoke", owner: "smoke", created_at: 1793928945, last_used_at: 1793928970 }]
+
+2026-11-06T01:36:10.695266Z  INFO agent_rush::boxes: box destroyed box_id=aa5ec7002ca54a96b45bb37e9db18955 container_removed=true volume_removed=true
+## destroy
+container and volume removed
+
+## exec after destroy
+box not found
+
+2026-11-06T01:36:11.048850Z  INFO agent_rush::boxes: box created box_id=2f446e2cc2114fea857dc3be4fa651f5 session=live-smoke
+2026-11-06T01:36:11.265914Z  WARN agent_rush::boxes: box lost; removing its remains box_id=2f446e2cc2114fea857dc3be4fa651f5
+2026-11-06T01:36:11.369222Z  INFO agent_rush::boxes: box destroyed box_id=2f446e2cc2114fea857dc3be4fa651f5 container_removed=true volume_removed=true
+## list after the container was removed behind the manager's back
+[]
+
+## exec on the lost box
+box not found; its volume is gone
+
+2026-11-06T01:36:11.670879Z  INFO agent_rush::boxes: box created box_id=73f9c7e5967c43f2809e9738a047b509 session=live-smoke
+2026-11-06T01:36:12.034698Z  WARN agent_rush::boxes: box was stopped; restarting it box_id=73f9c7e5967c43f2809e9738a047b509
+## exec on a killed box
+ExecResult { exit_code: 0, stdout: "still here", stderr: "", timed_out: false, truncated: false }
+
+2026-11-06T01:36:12.777073Z  INFO agent_rush::boxes: box destroyed box_id=73f9c7e5967c43f2809e9738a047b509 container_removed=true volume_removed=true
+test live_box_round_trip ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 27.77s
+

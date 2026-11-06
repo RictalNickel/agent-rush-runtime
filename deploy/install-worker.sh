@@ -25,6 +25,16 @@ install -m 0600 /root/deploy-in/tls/worker.key /etc/agent-rush/tls/
 
 install -m 0644 /root/agent-rush/deploy/worker.service /etc/systemd/system/agent-rush-worker.service
 
+# Session boxes: the filtered network, then the workspace image, pinned by the digest of
+# this build (recorded in deploy/images.lock.json when it was qualified).
+install -m 0755 /root/agent-rush/deploy/box-network.sh /opt/agent-rush/box-network.sh
+/opt/agent-rush/box-network.sh --guard-host-input
+docker build -f /root/agent-rush/deploy/workspace.Dockerfile -t agent-rush-workspace:local /root/agent-rush/deploy
+WORKSPACE_IMAGE="agent-rush-workspace@$(docker image inspect agent-rush-workspace:local --format '{{.Id}}')"
+sed -i '/^AR_BOX_IMAGE=/d' /etc/agent-rush/worker.env
+echo "AR_BOX_IMAGE=$WORKSPACE_IMAGE" >> /etc/agent-rush/worker.env
+grep -q '^AR_BOX_QUALIFICATION_REPORT=' /etc/agent-rush/worker.env || echo "AR_BOX_QUALIFICATION_REPORT=/var/lib/agent-rush/box-qualification.json" >> /etc/agent-rush/worker.env
+
 # Requalify on a timer: the worker refuses work once its report is two hours old.
 # A new report is installed only when every check passes; the running worker adopts it
 # within a minute, so in-flight sandbox runs are never interrupted by a restart.
@@ -44,6 +54,41 @@ else
 fi
 SH
 chmod 0755 /opt/agent-rush/requalify.sh
+# Boxes have their own eight-check report on the same cadence; the worker reads it on
+# every box creation, so a new report takes effect at once.
+cat > /opt/agent-rush/requalify-box.sh <<SH
+#!/usr/bin/env bash
+set -euo pipefail
+exec 9>/run/agent-rush-requalify-box.lock
+flock -n 9 || { echo "box requalification already running" >&2; exit 0; }
+set -a; . /etc/agent-rush/worker.env; set +a
+out=/var/lib/agent-rush/box-qualification.next.json
+rm -f "\$out"
+if runuser -u agent-rush -- /opt/agent-rush/agent-rush qualify-box --output "\$out" --private-probe "$CONTROL_IP:22"; then
+  mv -f "\$out" /var/lib/agent-rush/box-qualification.json
+else
+  echo "box qualification failed; boxes stay refused once the current report expires" >&2
+  exit 1
+fi
+SH
+chmod 0755 /opt/agent-rush/requalify-box.sh
+cat > /etc/systemd/system/agent-rush-requalify-box.service <<'UNIT'
+[Unit]
+Description=Agent Rush session box containment requalification
+After=docker.service
+[Service]
+Type=oneshot
+ExecStart=/opt/agent-rush/requalify-box.sh
+UNIT
+cat > /etc/systemd/system/agent-rush-requalify-box.timer <<'UNIT'
+[Unit]
+Description=Requalify Agent Rush session boxes every 45 minutes (reports last two hours)
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=45min
+[Install]
+WantedBy=timers.target
+UNIT
 cat > /etc/systemd/system/agent-rush-requalify.service <<'UNIT'
 [Unit]
 Description=Agent Rush worker containment requalification
@@ -71,10 +116,11 @@ nginx -t
 # Only the control VM may reach the mTLS ingress, and only over the private network.
 ufw allow from "$CONTROL_IP" to "$VPC_IP" port 8443 proto tcp
 systemctl daemon-reload
-systemctl enable agent-rush-requalify.timer
-# One synchronous qualification before first start; the timer then keeps it fresh.
+systemctl enable agent-rush-requalify.timer agent-rush-requalify-box.timer
+# One synchronous qualification of each kind before first start; the timers keep them fresh.
 systemctl start agent-rush-requalify.service
-systemctl start agent-rush-requalify.timer
+systemctl start agent-rush-requalify-box.service
+systemctl start agent-rush-requalify.timer agent-rush-requalify-box.timer
 systemctl enable agent-rush-worker
 systemctl restart agent-rush-worker
 systemctl reload-or-restart nginx

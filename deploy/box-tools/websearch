@@ -1,0 +1,104 @@
+#!/usr/bin/python3
+"""websearch: search the web through DuckDuckGo's HTML pages, with no key.
+
+    websearch '<query>' [n]      prints [{"title", "url", "snippet"}] as JSON (n defaults to 8)
+
+If the search provider answers with a bot challenge, this reports it and exits 3; it never
+tries to solve or get around the challenge.
+"""
+import html
+import json
+import sys
+import urllib.parse
+import urllib.request
+from html.parser import HTMLParser
+
+UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
+ENDPOINTS = ("https://lite.duckduckgo.com/lite/", "https://html.duckduckgo.com/html/")
+
+
+def unwrap(href):
+    """DuckDuckGo links point at its redirector; return the destination."""
+    href = html.unescape(href)
+    if href.startswith("//"):
+        href = "https:" + href
+    parsed = urllib.parse.urlparse(href)
+    if parsed.netloc.endswith("duckduckgo.com") and parsed.path.startswith("/l/"):
+        target = urllib.parse.parse_qs(parsed.query).get("uddg")
+        if target:
+            return target[0]
+    return href
+
+
+class Results(HTMLParser):
+    """Collects result links and snippets from both the lite and the html layouts."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.results = []
+        self.mode = None
+        self.end = None
+        self.buffer = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        classes = (attrs.get("class") or "").split()
+        if tag == "a" and ("result-link" in classes or "result__a" in classes):
+            self.results.append({"title": "", "url": unwrap(attrs.get("href", "")), "snippet": ""})
+            self.mode, self.buffer = "title", []
+        elif self.results and ("result-snippet" in classes or "result__snippet" in classes):
+            self.mode, self.buffer = "snippet", []
+            self.end = tag
+
+    def handle_endtag(self, tag):
+        if self.mode == "title" and tag == "a":
+            self.results[-1]["title"] = " ".join("".join(self.buffer).split())
+            self.mode = None
+        elif self.mode == "snippet" and tag == self.end:
+            self.results[-1]["snippet"] = " ".join("".join(self.buffer).split())
+            self.mode = None
+
+    def handle_data(self, data):
+        if self.mode:
+            self.buffer.append(data)
+
+
+def search(query, n):
+    challenged = False
+    for endpoint in ENDPOINTS:
+        request = urllib.request.Request(
+            endpoint, data=urllib.parse.urlencode({"q": query}).encode(),
+            headers={"User-Agent": UA, "Content-Type": "application/x-www-form-urlencoded"})
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                body = response.read(2_000_000).decode("utf-8", "replace")
+        except Exception as e:
+            print(f"websearch: {endpoint} failed: {e}", file=sys.stderr)
+            continue
+        parser = Results()
+        parser.feed(body)
+        found = [r for r in parser.results if r["url"].startswith(("http://", "https://"))]
+        if found:
+            return found[:n]
+        challenged = challenged or "anomaly" in body
+    if challenged:
+        print("websearch: the search provider answered with a bot challenge; try again later "
+              "or use fetch on a known site", file=sys.stderr)
+        sys.exit(3)
+    return []
+
+
+def main():
+    if len(sys.argv) < 2 or not sys.argv[1].strip():
+        print("usage: websearch '<query>' [n]", file=sys.stderr)
+        sys.exit(2)
+    try:
+        n = max(1, min(int(sys.argv[2]), 30)) if len(sys.argv) > 2 else 8
+    except ValueError:
+        print("websearch: n must be a number", file=sys.stderr)
+        sys.exit(2)
+    print(json.dumps(search(sys.argv[1], n), ensure_ascii=False, indent=1))
+
+
+if __name__ == "__main__":
+    main()

@@ -115,3 +115,84 @@ fn scaling_qualifies_only_live_growth_that_stops_at_the_ceiling() {
     r["cleanup_state"] = json!("failed");
     assert!(!assess("scaling", &r).unwrap());
 }
+
+fn box_report(at: i64) -> agent_rush::qualification::BoxReport {
+    use agent_rush::qualification::{BOX_CHECKS, BOX_REPORT_SCHEMA, BoxCheck, BoxReport};
+    BoxReport {
+        schema: BOX_REPORT_SCHEMA.into(),
+        qualified: true,
+        host: "host-A".into(),
+        image: "workspace@sha256:aaaa".into(),
+        network: "ar-box".into(),
+        created_at: at,
+        expires_at: at + 7200,
+        checks: BOX_CHECKS
+            .iter()
+            .map(|name| BoxCheck {
+                name: (*name).into(),
+                passed: true,
+                detail: json!({}),
+            })
+            .collect(),
+        notes: Vec::new(),
+    }
+}
+
+#[test]
+fn boxes_require_a_fresh_complete_passing_report_for_this_host_and_image() {
+    let at = chrono::Utc::now().timestamp();
+    let (host, image) = ("host-A", "workspace@sha256:aaaa");
+    assert!(box_report(at).assess(host, image, at).is_ok());
+    assert!(box_report(at).assess(host, image, at + 7199).is_ok());
+
+    let mut failing = box_report(at);
+    failing.checks[0].passed = false;
+    assert!(failing.assess(host, image, at).is_err());
+    // A failed check cannot be outvoted by a passing duplicate of the same name.
+    failing.checks.push(failing.checks[1].clone());
+    failing.checks[8].name = "metadata_blocked".into();
+    failing.checks[8].passed = true;
+    failing.checks.remove(1);
+    assert!(failing.assess(host, image, at).is_err());
+
+    let stale = box_report(at - 7300);
+    assert!(stale.assess(host, image, at).is_err());
+    let mut forged_expiry = box_report(at);
+    forged_expiry.expires_at = at + 86400;
+    assert!(forged_expiry.assess(host, image, at).is_err());
+    let future = box_report(at + 3600);
+    assert!(future.assess(host, image, at).is_err());
+
+    assert!(
+        box_report(at)
+            .assess(host, "workspace@sha256:bbbb", at)
+            .is_err()
+    );
+    assert!(box_report(at).assess("host-B", image, at).is_err());
+
+    let mut unqualified = box_report(at);
+    unqualified.qualified = false;
+    assert!(unqualified.assess(host, image, at).is_err());
+    let mut missing = box_report(at);
+    missing.checks.retain(|c| c.name != "volume_destroyed");
+    assert!(missing.assess(host, image, at).is_err());
+    let mut renamed = box_report(at);
+    renamed.schema = "agent-rush.qualification.v1".into();
+    assert!(renamed.assess(host, image, at).is_err());
+}
+
+#[test]
+fn box_report_file_must_be_a_regular_file() {
+    use agent_rush::qualification::BoxReport;
+    let dir = tempfile::tempdir().unwrap();
+    assert!(BoxReport::load(&dir.path().join("absent.json")).is_err());
+    let real = dir.path().join("report.json");
+    std::fs::write(&real, serde_json::to_vec(&box_report(0)).unwrap()).unwrap();
+    assert!(BoxReport::load(&real).is_ok());
+    #[cfg(unix)]
+    {
+        let link = dir.path().join("link.json");
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        assert!(BoxReport::load(&link).is_err());
+    }
+}

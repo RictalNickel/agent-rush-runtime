@@ -1,0 +1,25 @@
+$ deploy/box-network.sh   (second run: idempotent)
+network ar-box present
+egress rules present (16)
+
+$ iptables -S DOCKER-USER
+-N DOCKER-USER
+-A DOCKER-USER -s 172.30.0.0/24 -d 0.0.0.0/8 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 10.0.0.0/8 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 100.64.0.0/10 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 127.0.0.0/8 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 169.254.0.0/16 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 172.16.0.0/12 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 192.168.0.0/16 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 224.0.0.0/4 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 240.0.0.0/4 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d WORKER-PUBLIC-IP-REDACTED/32 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 10.42.0.4/32 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 172.17.0.1/32 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -d 172.30.0.1/32 -m comment --comment ar-box-egress -j REJECT --reject-with icmp-admin-prohibited
+-A DOCKER-USER -s 172.30.0.0/24 -p tcp -m multiport --dports 25,465,587 -m comment --comment ar-box-egress -j REJECT --reject-with tcp-reset
+-A DOCKER-USER -s 172.30.0.0/24 -m conntrack --ctstate NEW -m hashlimit --hashlimit-above 50/sec --hashlimit-burst 100 --hashlimit-mode srcip --hashlimit-name ar-box -m comment --comment ar-box-egress -j DROP
+-A DOCKER-USER -s 172.30.0.0/24 -m comment --comment ar-box-egress -j RETURN
+
+$ docker network inspect ar-box (subnet, options)
+[{"Subnet":"172.30.0.0/24","IPRange":"","Gateway":"172.30.0.1"}] {"com.docker.network.bridge.enable_icc":"false","com.docker.network.bridge.name":"ar-box0"} ipv6=false

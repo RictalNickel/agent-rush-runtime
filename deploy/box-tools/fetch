@@ -1,0 +1,173 @@
+#!/usr/bin/python3
+"""fetch: download a URL and print it as readable text.
+
+    fetch <url> [--max N] [--raw]
+
+HTML is reduced to its main content (the <article> or <main> element when there is one)
+as markdown-ish text: headings, paragraphs, list items and links. JSON and plain text are
+printed as they are, PDFs through pdftotext. Output is capped at N characters (default
+20000); the raw download is capped at 10 MB.
+"""
+import json
+import re
+import subprocess
+import sys
+import tempfile
+import urllib.error
+import urllib.parse
+import urllib.request
+from html.parser import HTMLParser
+
+UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
+MAX_DOWNLOAD = 10 * 1024 * 1024
+SKIP = {"script", "style", "noscript", "template", "svg", "head", "iframe", "canvas", "form",
+        "nav", "footer", "aside", "button", "select"}
+BLOCK = {"p", "div", "section", "article", "main", "header", "br", "tr", "table", "ul", "ol",
+         "pre", "blockquote", "figure", "figcaption", "dl", "dt", "dd", "hr"}
+
+
+class Readable(HTMLParser):
+    """Turns HTML into text, keeping whichever of <article>/<main>/<body> is most specific."""
+
+    def __init__(self, base):
+        super().__init__(convert_charrefs=True)
+        self.base = base
+        self.title = ""
+        self.in_title = False
+        self.skip = 0
+        self.parts = {"article": [], "main": [], "body": []}
+        self.open = {"article": 0, "main": 0, "body": 0}
+        self.href = None
+        self.pre = 0
+
+    def emit(self, text):
+        for key, depth in self.open.items():
+            if depth:
+                self.parts[key].append(text)
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "title":
+            self.in_title = True
+        if tag in self.open:
+            self.open[tag] += 1
+        if tag in SKIP and tag != "head":
+            self.skip += 1
+        if self.skip:
+            return
+        if tag == "pre":
+            self.pre += 1
+            self.emit("\n```\n")
+        elif re.fullmatch(r"h[1-6]", tag):
+            self.emit("\n\n" + "#" * int(tag[1]) + " ")
+        elif tag == "li":
+            self.emit("\n- ")
+        elif tag in ("td", "th"):
+            self.emit(" | ")
+        elif tag in BLOCK:
+            self.emit("\n\n" if tag in ("p", "div", "section") else "\n")
+        elif tag == "a" and attrs.get("href") and not attrs["href"].startswith(("#", "javascript:")):
+            self.href = urllib.parse.urljoin(self.base, attrs["href"])
+            self.emit("[")
+        elif tag == "img" and attrs.get("alt"):
+            self.emit(f"[image: {attrs['alt']}]")
+
+    def handle_endtag(self, tag):
+        if tag == "title":
+            self.in_title = False
+        if tag in SKIP and tag != "head":
+            self.skip = max(0, self.skip - 1)
+        elif not self.skip:
+            if tag == "a" and self.href:
+                self.emit(f"]({self.href})")
+                self.href = None
+            elif tag == "pre":
+                self.pre = max(0, self.pre - 1)
+                self.emit("\n```\n")
+            elif re.fullmatch(r"h[1-6]", tag) or tag in BLOCK:
+                self.emit("\n")
+        if tag in self.open:
+            self.open[tag] = max(0, self.open[tag] - 1)
+
+    def handle_data(self, data):
+        if self.in_title:
+            self.title += data
+        if self.skip:
+            return
+        self.emit(data if self.pre else re.sub(r"\s+", " ", data))
+
+    def text(self):
+        for key in ("article", "main", "body"):
+            text = "".join(self.parts[key])
+            if len(text.strip()) > 200 or key == "body":
+                break
+        text = re.sub(r"\[\]\([^)]*\)", "", text)
+        text = re.sub(r"[ \t]+\n", "\n", text)
+        return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+def main():
+    args = sys.argv[1:]
+    limit, raw, url = 20_000, False, None
+    while args:
+        arg = args.pop(0)
+        if arg == "--max" and args:
+            limit = max(100, int(args.pop(0)))
+        elif arg == "--raw":
+            raw = True
+        elif url is None:
+            url = arg
+    if not url:
+        print("usage: fetch <url> [--max N] [--raw]", file=sys.stderr)
+        sys.exit(2)
+    if "://" not in url:
+        url = "https://" + url
+    request = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = response.read(MAX_DOWNLOAD + 1)
+            final_url = response.geturl()
+            kind = response.headers.get_content_type()
+            charset = response.headers.get_content_charset() or "utf-8"
+    except urllib.error.HTTPError as e:
+        print(f"fetch: HTTP {e.code} from {url}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"fetch: {url}: {e}", file=sys.stderr)
+        sys.exit(1)
+    note = "\n[download truncated at 10 MB]" if len(body) > MAX_DOWNLOAD else ""
+    body = body[:MAX_DOWNLOAD]
+    if kind == "application/pdf" or body[:5] == b"%PDF-":
+        with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
+            f.write(body)
+            f.flush()
+            done = subprocess.run(["pdftotext", "-layout", f.name, "-"], capture_output=True)
+        text = done.stdout.decode("utf-8", "replace")
+        header = f"{final_url}\n\n"
+    elif "html" in kind and not raw:
+        parser = Readable(final_url)
+        parser.feed(body.decode(charset, "replace"))
+        title = " ".join(parser.title.split())
+        header = (f"# {title}\n" if title else "") + f"{final_url}\n\n"
+        text = parser.text()
+    elif kind.endswith("json"):
+        decoded = body.decode(charset, "replace")
+        try:
+            text = json.dumps(json.loads(decoded), indent=1, ensure_ascii=False)
+        except ValueError:
+            text = decoded
+        header = ""
+    elif kind.startswith("text/") or raw or kind.endswith(("xml", "javascript")):
+        text, header = body.decode(charset, "replace"), ""
+    else:
+        print(f"fetch: {final_url} is {kind} ({len(body)} bytes); download it with curl -o instead",
+              file=sys.stderr)
+        sys.exit(1)
+    out = header + text + note
+    if len(out) > limit:
+        out = out[:limit] + f"\n[truncated at {limit} characters; use --max to see more]"
+    print(out)
+
+
+if __name__ == "__main__":
+    main()

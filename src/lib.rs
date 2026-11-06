@@ -6,6 +6,7 @@ pub mod api_keys;
 pub mod api_v1;
 pub mod auth;
 pub mod box_client;
+pub mod boxes;
 pub mod config;
 pub mod deploy;
 pub mod domain;

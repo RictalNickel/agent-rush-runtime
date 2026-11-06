@@ -1,0 +1,61 @@
+$ browse goto http://localhost:8080/
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test", "status": 200, "console": [{"level": "error", "text": "Failed to load resource: the server responded with a status of 404 (File not found)"}]}
+[exit 0]
+
+$ browse snapshot
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test", "text": "heading 1 \"Todos\"\nform:\n  textbox \"New todo\" [ref=1]\n  combobox \"\" value=\"low\" options=[\"Low\", \"High\"] [ref=2]\n  button \"Add\" [ref=3]\nlist:\nlink \"About\" -> about.html [ref=4]", "refs": 4}
+[exit 0]
+
+$ browse '{"action":"type","ref":1,"text":"write the report"}'
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test"}
+[exit 0]
+
+$ browse '{"action":"select","ref":2,"value":"high"}'
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test", "selected": ["high"]}
+[exit 0]
+
+$ browse '{"action":"click","ref":3}'
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test", "console": [{"level": "log", "text": "added write the report (high)"}]}
+[exit 0]
+
+$ browse '{"action":"type","selector":"#t","text":"ship it","submit":true}'
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test", "console": [{"level": "log", "text": "added ship it (high)"}]}
+[exit 0]
+
+$ browse '{"action":"eval","js":"Array.from(document.querySelectorAll(\"li\")).map(l => l.textContent)"}'
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test", "result": ["write the report (high)", "ship it (high)"]}
+[exit 0]
+
+$ browse console
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test", "messages": [{"level": "log", "text": "added write the report (high)"}, {"level": "log", "text": "added ship it (high)"}]}
+[exit 0]
+
+$ browse '{"action":"click","selector":"text=About"}'
+{"ok": true, "url": "http://localhost:8080/about.html", "title": "About"}
+[exit 0]
+
+$ browse back
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test"}
+[exit 0]
+
+$ browse '{"action":"press","key":"End"}'
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test"}
+[exit 0]
+
+$ browse '{"action":"scroll","dy":400}'
+{"ok": true, "url": "http://localhost:8080/", "title": "Todo test"}
+[exit 0]
+
+$ browse '{"action":"click","ref":99}'
+{"ok": false, "error": "ref 99 is not on the page; take a new snapshot"}
+[exit 1]
+
+$ browse '{"action":"fly"}'
+{"ok": false, "error": "unknown action 'fly'; actions: goto, snapshot, click, type, press, select, scroll, screenshot, eval, back, tabs, console, close"}
+[exit 1]
+
+$ browse close
+{"ok": true, "closed": true}
+[exit 0]
+
+# cleaned up: 0 containers

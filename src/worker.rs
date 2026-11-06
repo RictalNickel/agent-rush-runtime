@@ -211,7 +211,7 @@ pub fn next_cpu_millis(limit: u32, used_usec: u64, window_usec: u64, ceiling: u3
     let used_millis = used_usec.saturating_mul(1000) / window_usec;
     (used_millis.saturating_mul(100) >= limit as u64 * 85).then_some(ceiling)
 }
-fn cgroup_value(dir: &std::path::Path, file: &str, key: Option<&str>) -> Option<u64> {
+pub(crate) fn cgroup_value(dir: &std::path::Path, file: &str, key: Option<&str>) -> Option<u64> {
     let text = std::fs::read_to_string(dir.join(file)).ok()?;
     match key {
         None => text.trim().parse().ok(),
@@ -222,7 +222,7 @@ fn cgroup_value(dir: &std::path::Path, file: &str, key: Option<&str>) -> Option<
     }
 }
 /// The sandbox's cgroup v2 directory under either Docker cgroup driver.
-fn cgroup_dir(container_id: &str) -> Option<std::path::PathBuf> {
+pub(crate) fn cgroup_dir(container_id: &str) -> Option<std::path::PathBuf> {
     if container_id.len() != 64 || !container_id.bytes().all(|b| b.is_ascii_hexdigit()) {
         return None;
     }
@@ -248,7 +248,7 @@ impl DockerRunner {
             docker_config: Arc::new(tempfile::tempdir()?),
         })
     }
-    fn command(&self) -> Command {
+    pub(crate) fn command(&self) -> Command {
         // An empty client config prevents Docker from silently injecting host proxy/secret defaults into tasks.
         let mut cmd = Command::new("/usr/local/bin/docker");
         if !std::path::Path::new("/usr/local/bin/docker").exists() {
