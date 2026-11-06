@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# convert: one front end over pandoc, LibreOffice (headless), ImageMagick, poppler and
-# ffmpeg, chosen by the input and output extensions.
+# convert: one front end over pandoc, LibreOffice (headless), ImageMagick, librsvg, poppler
+# and ffmpeg, chosen by the input and output extensions.
 #
 #   convert <in> <out>
 #
@@ -58,6 +58,14 @@ run_office() {
 
 if [ "$from" = "$to" ]; then
   cp -f -- "$in" "$out"
+elif [ "$from" = svg ] && { in_set "$to" "${IMAGE[@]}" || [ "$to" = pdf ]; }; then
+  # librsvg renders SVG; ImageMagick takes its PNG on to any other image format.
+  case "$to" in
+    png|pdf) rsvg-convert -f "$to" -o "$out" "$in" || die 1 "rsvg-convert failed" ;;
+    *)
+      rsvg-convert -f png -o "$tmp/svg.png" "$in" || die 1 "rsvg-convert failed"
+      /usr/bin/convert "$tmp/svg.png" "$out" || die 1 "ImageMagick failed" ;;
+  esac
 elif [ "$from" = pdf ]; then
   case "$to" in
     txt) pdftotext -layout "$in" "$out" || die 1 "pdftotext failed" ;;

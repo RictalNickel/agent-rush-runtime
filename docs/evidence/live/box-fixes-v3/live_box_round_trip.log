@@ -1,0 +1,130 @@
+   Compiling agent-rush v0.1.0 (/root/build-V3)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.66s
+     Running tests/boxes.rs (/root/target-V3/debug/deps/boxes-80892d7c0cfe587c)
+
+running 1 test
+## worker
+in-process node router at http://127.0.0.1:45321
+
+2026-11-06T03:36:47.015812Z  INFO agent_rush::boxes: box created box_id=3b5dcf1512ce4021b616f0d52dd39c71 session=live-smoke disk_mb=1024
+## create
+box_id=3b5dcf1512ce4021b616f0d52dd39c71 in 859.680032ms
+
+## exec identity
+ExecResult {
+    exit_code: 0,
+    stdout: "uid=1000(agent) gid=1000(agent) groups=1000(agent)\n/workspace\n/home/agent\ntouch: cannot touch '/etc/x': Permission denied\nCapEff:\t0000000000000000\nNoNewPrivs:\t1\n",
+    stderr: "",
+    timed_out: false,
+    truncated: false,
+}
+
+## write src/hello.py
+WriteResult { bytes: 28, sha256: "4083e1e49d1ecca68edc7fe6b3c08f3a8d516dadb2ecbbdd5389359960855890" }
+
+## list src
+[DirEntry { name: "hello.py", is_dir: false, size: 28 }]
+
+## read ../../etc/passwd
+refused: path "../../etc/passwd" leaves the filesystem root
+
+## read /etc/passwd
+refused: path "/etc/passwd" resolves to /etc/passwd, outside /workspace and /tmp
+
+## read /workspace/../root
+refused: path "/workspace/../root" resolves to /root, outside /workspace and /tmp
+
+## read symlink root-link/etc/passwd
+refused: path resolves to /etc/passwd, outside /workspace and /tmp
+
+## read symlink pw
+refused: path resolves to /etc/passwd, outside /workspace and /tmp
+
+## read symlink d/up/hostname
+refused: path resolves to /etc/hostname, outside /workspace and /tmp
+
+## read symlink root-link
+refused: path resolves to /, outside /workspace and /tmp
+
+## write through symlink to /
+refused: path resolves to /etc/evil, outside /workspace and /tmp
+
+2026-11-06T03:36:49.092032Z  INFO agent_rush::boxes: box scaled up box_id=3b5dcf1512ce4021b616f0d52dd39c71 memory_mb=1024 cpu_millis=2000
+## 10 MB of stdout
+stdout 262144 bytes, truncated=true, stderr="done\n"
+
+## cat of a PNG
+exit 0 stdout 146060 bytes (lossy), truncated=false
+
+## read shot.png
+80709 bytes, PNG signature intact
+
+## sleep 30 with a 2 s timeout
+ExecResult { exit_code: 124, stdout: "", stderr: "", timed_out: true, truncated: false } in 2.174080595s
+
+## background server
+ExecResult { exit_code: 0, stdout: "200", stderr: "127.0.0.1 - - [06/Nov/2026 03:36:59] \"GET / HTTP/1.1\" 200 -\n", timed_out: false, truncated: false } in 1.251965597s
+
+## pkill -f restart of the server
+ExecResult { exit_code: 0, stdout: "200", stderr: "", timed_out: false, truncated: false }
+
+2026-11-06T03:37:02.120554Z  INFO agent_rush::boxes: the command killed the shell running it box_id=3b5dcf1512ce4021b616f0d52dd39c71 exit_code=143
+## a command that kills its shell with SIGTERM
+ExecResult { exit_code: 143, stdout: "partial\n", stderr: "oops\n[the shell was terminated by signal 15 (SIGTERM)]", timed_out: false, truncated: false }
+
+2026-11-06T03:37:02.433947Z  INFO agent_rush::boxes: the command killed the shell running it box_id=3b5dcf1512ce4021b616f0d52dd39c71 exit_code=137
+## a command that kills its shell with SIGKILL
+ExecResult { exit_code: 137, stdout: "partial\n", stderr: "oops\n[the shell was terminated by signal 9 (SIGKILL)]", timed_out: false, truncated: false }
+
+## tmpfs mounts and the read-only root
+ExecResult { exit_code: 0, stdout: "none /tmp tmpfs rw,nosuid,size=1048576k,mode=1777 0 0\nnone /home/agent tmpfs rw,nosuid,size=1048576k,mode=0755,uid=1000,gid=1000 0 0\nexec-ok\n3\n", stderr: "", timed_out: false, truncated: false }
+
+## numpy, pandas and matplotlib chart
+ExecResult { exit_code: 0, stdout: "1.26.4 2.1.4\nchart.png: PNG image data, 640 x 480, 8-bit/color RGBA, non-interlaced\n", stderr: "", timed_out: false, truncated: false }
+
+## pip install --user of compiled packages
+ExecResult { exit_code: 0, stdout: "/workspace/.local/lib/python3.12/site-packages/ujson.cpython-312-x86_64-linux-gnu.so\n/home/agent/.local/lib/python3.12/site-packages/numpy/__init__.py 3.0\n", stderr: "ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.\nscipy 1.11.4 requires numpy<1.28.0,>=1.21.6, but you have numpy 2.5.4 which is incompatible.\n", timed_out: false, truncated: false }
+
+## convert of an SVG
+ExecResult { exit_code: 0, stdout: "a.png (1171 bytes)\nc.pdf (5725 bytes)\na.png: PNG image data, 120 x 80, 8-bit/color RGB, non-interlaced\nb.jpg: JPEG image data, JFIF standard 1.01, aspect ratio, density 0x0, segment length 16, baseline, precision 8, 120x80, components 3\nc.pdf: PDF document, version 1.7\n", stderr: "", timed_out: false, truncated: false }
+
+## metadata from the box
+exit=7
+curl: (7) Failed to connect to 169.254.169.254 port 80 after 0 ms: Couldn't connect to server
+
+
+2026-11-06T03:37:21.184167Z  INFO agent_rush::boxes: box scaled up box_id=3b5dcf1512ce4021b616f0d52dd39c71 memory_mb=2048 cpu_millis=2000
+2026-11-06T03:37:28.243522Z  INFO agent_rush::boxes: box scaled up box_id=3b5dcf1512ce4021b616f0d52dd39c71 memory_mb=4096 cpu_millis=2000
+## live scaling: hold 1200 MiB in a box started at 1024 MiB
+ExecResult { exit_code: 0, stdout: "held 1200 MiB\n", stderr: "", timed_out: false, truncated: false }
+
+## list
+[BoxInfo { box_id: "3b5dcf1512ce4021b616f0d52dd39c71", session_id: "live-smoke", owner: "smoke", created_at: 1793936206, last_used_at: 1793936248 }]
+
+2026-11-06T03:37:29.442080Z  INFO agent_rush::boxes: box destroyed box_id=3b5dcf1512ce4021b616f0d52dd39c71 container_removed=true workspace_removed=true
+## destroy
+container and volume removed
+
+## exec after destroy
+box not found
+
+2026-11-06T03:37:29.986835Z  INFO agent_rush::boxes: box created box_id=3de066d1c64244fda49c591355b708f5 session=live-smoke disk_mb=1024
+2026-11-06T03:37:30.394544Z  WARN agent_rush::boxes: box container lost; parked, workspace kept box_id=3de066d1c64244fda49c591355b708f5
+## list after the container was removed behind the manager's back
+[BoxInfo { box_id: "3de066d1c64244fda49c591355b708f5", session_id: "live-smoke", owner: "smoke", created_at: 1793936249, last_used_at: 1793936250 }]
+
+2026-11-06T03:37:30.956200Z  INFO agent_rush::boxes: box restarted on its workspace box_id=3de066d1c64244fda49c591355b708f5
+## exec on the lost box
+ExecResult { exit_code: 0, stdout: "workspace kept", stderr: "", timed_out: false, truncated: false }
+
+2026-11-06T03:37:31.491622Z  INFO agent_rush::boxes: box destroyed box_id=3de066d1c64244fda49c591355b708f5 container_removed=true workspace_removed=true
+2026-11-06T03:37:32.017066Z  INFO agent_rush::boxes: box created box_id=c522d7a825d945099cc67b3bdbd353d5 session=live-smoke disk_mb=1024
+2026-11-06T03:37:32.502021Z  WARN agent_rush::boxes: box was stopped; restarted it box_id=c522d7a825d945099cc67b3bdbd353d5
+## exec on a killed box
+ExecResult { exit_code: 0, stdout: "still here", stderr: "", timed_out: false, truncated: false }
+
+2026-11-06T03:37:33.005551Z  INFO agent_rush::boxes: box destroyed box_id=c522d7a825d945099cc67b3bdbd353d5 container_removed=true workspace_removed=true
+test live_box_round_trip ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 46.95s
+

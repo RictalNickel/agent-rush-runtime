@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
 # Session workspace box: one per agent session, run under gVisor (runsc) on network ar-box
-# with a read-only root, tmpfs /tmp and /home/agent, and a named volume at /workspace.
+# with a read-only root, tmpfs /tmp and /home/agent (both executable, never setuid), and a
+# named volume at /workspace.
 # Build: docker build -f deploy/workspace.Dockerfile -t agent-rush-workspace:local deploy
 # The image holds tools only; no credential, key or token is ever baked in or mounted.
 
@@ -15,7 +16,8 @@ RUN apt-get update \
       git curl wget jq ripgrep fd-find ca-certificates build-essential pkg-config \
       python3-pip python3-venv python3-dev \
       pandoc libreoffice-writer-nogui libreoffice-calc-nogui libreoffice-impress-nogui \
-      imagemagick ffmpeg poppler-utils qpdf fonts-dejavu-core \
+      imagemagick librsvg2-bin ffmpeg poppler-utils qpdf fonts-dejavu-core \
+      python3-numpy python3-pandas python3-matplotlib python3-pil \
  && ln -s /usr/bin/fdfind /usr/local/bin/fd \
  && rm -rf /var/lib/apt/lists/*
 
@@ -41,14 +43,21 @@ COPY box-tools/browse box-tools/websearch box-tools/fetch box-tools/convert /opt
 COPY box-tools/README.md /opt/box/README.md
 RUN chmod 0755 /opt/box/bin/*
 
+# Packages a command installs for itself (`pip install --user`, or plain `pip install`,
+# which falls back to a user install; `npm install -g`) go to /workspace, the box's own
+# disk: they survive parking, when /home/agent and /tmp (tmpfs) are lost. HOME stays a
+# tmpfs for caches and dotfiles. Cargo's registry is a large cache, so CARGO_HOME stays there.
 ENV HOME=/home/agent \
     USER=agent \
     CARGO_HOME=/home/agent/.cargo \
-    NPM_CONFIG_PREFIX=/home/agent/.npm-global \
+    PYTHONUSERBASE=/workspace/.local \
+    NPM_CONFIG_PREFIX=/workspace/.npm-global \
     PIP_BREAK_SYSTEM_PACKAGES=1 \
+    PIP_NO_CACHE_DIR=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    MPLBACKEND=Agg \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
-    PATH=/opt/box/bin:/home/agent/.local/bin:/home/agent/.npm-global/bin:/home/agent/.cargo/bin:/opt/rust/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    PATH=/opt/box/bin:/workspace/.local/bin:/workspace/.npm-global/bin:/home/agent/.local/bin:/home/agent/.cargo/bin:/opt/rust/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # Commands run as `bash -lc`, and Ubuntu's /etc/profile resets PATH for login shells.
 RUN echo "export PATH=$PATH" > /etc/profile.d/00-box-path.sh
 USER 1000:1000

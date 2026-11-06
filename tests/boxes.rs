@@ -1,5 +1,8 @@
 use agent_rush::{
-    boxes::{BoxConfig, BoxError, docker_create_args, error_status, resolve_path, truncate_utf8},
+    boxes::{
+        BoxConfig, BoxError, docker_create_args, error_status, exec_invocation, killed_shell_exit,
+        resolve_path, truncate_utf8,
+    },
     node::{NodeState, node_router},
     sandbox_api::BoxSpec,
     worker::{DockerRunner, IMAGE},
@@ -83,13 +86,15 @@ fn box_container_is_locked_down() {
         "--memory-swap=1024m",
         "--cpus=1.000",
         "-v arbox-0123456789abcdef0123456789abcdef:/workspace",
-        "--tmpfs=/tmp:",
-        "--tmpfs=/home/agent:",
+        // Executable (compiled packages under $HOME load), but never setuid or devices.
+        "--tmpfs=/tmp:rw,exec,nosuid,nodev,size=1024m,",
+        "--tmpfs=/home/agent:rw,exec,nosuid,nodev,size=1024m,",
         "--log-driver=none",
     ] {
         assert!(joined.contains(required), "missing {required}");
     }
     for forbidden in [
+        "noexec",
         "--privileged",
         "docker.sock",
         "--env-file",
@@ -104,6 +109,103 @@ fn box_container_is_locked_down() {
         &args[args.len() - 3..],
         ["img@sha256:abc", "sleep", "infinity"]
     );
+}
+
+#[test]
+fn a_shell_killed_by_a_signal_is_an_exit_code_not_an_error() {
+    // `docker exec` exits 128+N when the wrapper shell died of signal N.
+    assert_eq!(
+        killed_shell_exit(Some(143)),
+        Some((
+            143,
+            "[the shell was terminated by signal 15 (SIGTERM)]".into()
+        ))
+    );
+    assert_eq!(
+        killed_shell_exit(Some(137)),
+        Some((
+            137,
+            "[the shell was terminated by signal 9 (SIGKILL)]".into()
+        ))
+    );
+    assert_eq!(
+        killed_shell_exit(Some(129)),
+        Some((
+            129,
+            "[the shell was terminated by signal 1 (SIGHUP)]".into()
+        ))
+    );
+    assert_eq!(
+        killed_shell_exit(Some(162)),
+        Some((162, "[the shell was terminated by signal 34]".into()))
+    );
+    // Docker's own failures (125 daemon, 126 cannot run, 127 not found), a clean exit, no
+    // status at all, and anything past the signal range are real exec failures.
+    for code in [
+        None,
+        Some(0),
+        Some(1),
+        Some(125),
+        Some(126),
+        Some(127),
+        Some(128),
+    ] {
+        assert_eq!(killed_shell_exit(code), None, "{code:?}");
+    }
+    for code in [Some(193), Some(255), Some(-1)] {
+        assert_eq!(killed_shell_exit(code), None, "{code:?}");
+    }
+}
+
+/// The exec wrapper, run on this host instead of in a box: the command reaches it on stdin,
+/// ahead of the caller's stdin, and never shows in a process's arguments, so `pkill -f`
+/// on text from the command cannot kill the shells running it.
+#[test]
+fn exec_wrapper_keeps_the_command_out_of_process_arguments() {
+    use std::io::Write;
+    let run_wrapper = |command: &str, stdin: Option<&str>| {
+        let run = uuid::Uuid::new_v4().simple().to_string();
+        let (args, input) = exec_invocation(command, stdin, 30, &run);
+        let mut child = std::process::Command::new(&args[0])
+            .args(&args[1..])
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .unwrap();
+        child.stdin.take().unwrap().write_all(&input).unwrap();
+        let out = child.wait_with_output().unwrap();
+        assert!(
+            !std::path::Path::new(&format!("/tmp/.arexec.{run}")).exists(),
+            "the wrapper cleans up after itself"
+        );
+        (out.status.code(), String::from_utf8(out.stdout).unwrap())
+    };
+    // `$0`, arguments and error lines read as under `bash -lc`.
+    let (code, out) = run_wrapper("echo $0 $#; no-such-command-xyz; exit 3", None);
+    assert_eq!(code, Some(0));
+    assert!(out.starts_with("AREXEC 3 0 7 "), "{out}");
+    assert!(
+        out.contains("bash 0\nbash: line 1: no-such-command-xyz"),
+        "{out}"
+    );
+    // The caller's stdin follows the command.
+    let (_, out) = run_wrapper("wc -c; echo done", Some("12345"));
+    assert_eq!(out, "AREXEC 0 0 7 0\n5\ndone\n");
+    // A pattern taken from the command matches nothing: before, it killed the wrapper.
+    if std::process::Command::new("pkill")
+        .arg("--version")
+        .output()
+        .is_ok()
+    {
+        let marker = format!("ar-marker-{}", uuid::Uuid::new_v4().simple());
+        let (code, out) = run_wrapper(
+            &format!("echo before; pkill -f '{marker}'; echo after=$?"),
+            None,
+        );
+        assert_eq!(code, Some(0), "{out}");
+        assert_eq!(out, "AREXEC 0 0 15 0\nbefore\nafter=1\n");
+    }
 }
 
 #[test]
@@ -655,6 +757,104 @@ async fn live_box_round_trip() {
         .await
         .unwrap();
     assert_eq!(r.stdout, "200", "the server keeps running between calls");
+
+    // Restarting a server with `pkill -f` on its own command line: the pattern used to match
+    // the shells running the command too, and the call failed with HTTP 500.
+    let r = client
+        .exec(&id, &exec("pkill -f 'python3 -m http.server 8000'; sleep 1; (nohup python3 -m http.server 8000 >/dev/null 2>&1 &); sleep 1; curl -s -o /dev/null -w '%{http_code}' localhost:8000"))
+        .await
+        .unwrap();
+    log("pkill -f restart of the server", format!("{r:?}"));
+    assert_eq!((r.exit_code, r.stdout.as_str()), (0, "200"));
+    // A command that does kill its own shell gets 128+signal and the output it made.
+    for (signal, code) in [("TERM", 143), ("KILL", 137)] {
+        let r = client
+            .exec(
+                &id,
+                &exec(&format!(
+                    "echo partial; echo oops >&2; pkill -{signal} -f arexec; sleep 5; echo never"
+                )),
+            )
+            .await
+            .unwrap();
+        log(
+            &format!("a command that kills its shell with SIG{signal}"),
+            format!("{r:?}"),
+        );
+        assert_eq!(r.exit_code, code);
+        assert_eq!(r.stdout, "partial\n");
+        assert!(
+            r.stderr
+                .starts_with("oops\n[the shell was terminated by signal")
+        );
+    }
+    let r = client
+        .exec(&id, &exec("ls -d /tmp/.arexec.* | wc -l"))
+        .await
+        .unwrap();
+    assert_eq!(
+        r.stdout.trim(),
+        "1",
+        "only this call's own directory is left in /tmp"
+    );
+
+    // /tmp and $HOME allow executables (but not setuid or devices); the root stays read-only.
+    let r = client
+        .exec(&id, &exec("grep -E ' /(tmp|home/agent) ' /proc/mounts; cp /bin/true /tmp/t && /tmp/t && cp /bin/true ~/t && ~/t && echo exec-ok; touch /usr/x /etc/x /opt/x 2>&1 | wc -l"))
+        .await
+        .unwrap();
+    log("tmpfs mounts and the read-only root", format!("{r:?}"));
+    assert!(r.stdout.contains("exec-ok\n3\n"), "{}", r.stdout);
+    // gVisor's /proc/mounts lists nosuid but not nodev; `nodev` is in the run arguments
+    // (box_container_is_locked_down), and the box has no CAP_MKNOD to make a device anyway.
+    let mounts: Vec<&str> = r.stdout.lines().filter(|l| l.contains("tmpfs")).collect();
+    assert_eq!(mounts.len(), 2, "{mounts:?}");
+    for line in mounts {
+        assert!(
+            line.contains("nosuid") && !line.contains("noexec"),
+            "{line}"
+        );
+    }
+    // The data stack is preinstalled, a compiled package installs per user (onto
+    // /workspace, and into $HOME when asked), and SVG converts.
+    let r = client
+        .exec(&id, &exec("python3 -c \"import numpy as np, pandas as pd, matplotlib.pyplot as plt\ndf = pd.DataFrame({'region': ['North', 'East', 'South'], 'revenue': np.array([2100750, 1938000, 1828320])})\ndf.plot.bar(x='region', y='revenue')\nplt.savefig('chart.png')\nprint(np.__version__, pd.__version__)\" && file chart.png"))
+        .await
+        .unwrap();
+    log("numpy, pandas and matplotlib chart", format!("{r:?}"));
+    assert!(
+        r.exit_code == 0 && r.stdout.contains("PNG image data"),
+        "{r:?}"
+    );
+    let r = client
+        .exec(&id, &ExecRequest {
+            command: "pip install --user --ignore-installed -q ujson && python3 -c 'import ujson; print(ujson.__file__)' && PYTHONUSERBASE=$HOME/.local pip install --user --ignore-installed -q numpy && PYTHONUSERBASE=$HOME/.local python3 -c 'import numpy; print(numpy.__file__, numpy.ones(3).sum())'".into(),
+            timeout_seconds: Some(300),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    log("pip install --user of compiled packages", format!("{r:?}"));
+    assert_eq!(r.exit_code, 0, "{r:?}");
+    assert!(
+        r.stdout.contains("/workspace/.local/lib/") && r.stdout.contains("/home/agent/.local/lib/")
+    );
+    client
+        .write_file(&id, "a.svg", b"<svg xmlns='http://www.w3.org/2000/svg' width='120' height='80'><rect width='120' height='80' fill='#2a6'/><text x='10' y='45' font-size='20'>chart</text></svg>")
+        .await
+        .unwrap();
+    let r = client
+        .exec(&id, &exec("convert a.svg a.png && /usr/bin/convert a.svg b.jpg && convert a.svg c.pdf && file a.png b.jpg c.pdf"))
+        .await
+        .unwrap();
+    log("convert of an SVG", format!("{r:?}"));
+    assert!(
+        r.exit_code == 0
+            && r.stdout.contains("120 x 80")
+            && r.stdout.contains("JPEG")
+            && r.stdout.contains("PDF"),
+        "{r:?}"
+    );
 
     let r = client
         .exec(
