@@ -28,6 +28,9 @@ impl Ledger {
             CREATE TABLE IF NOT EXISTS agent_contexts(agent_id TEXT PRIMARY KEY, job_id TEXT NOT NULL REFERENCES jobs(id), owner TEXT NOT NULL, data TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS scheduler_meta(id INTEGER PRIMARY KEY CHECK(id=1), last_owner TEXT NOT NULL);
             INSERT OR IGNORE INTO scheduler_meta VALUES(1,'');")?;
+        crate::session_store::migrate(&db)?;
+        crate::skills::migrate(&db)?;
+        crate::agent_config::migrate(&db)?;
         Ok(Self {
             db: Mutex::new(db),
             capacity_mb,

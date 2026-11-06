@@ -1,5 +1,6 @@
 // Agent Rush: native Rust control plane, agent engine and sandbox worker.
 pub mod agent;
+pub mod agent_config;
 pub mod api;
 pub mod auth;
 pub mod config;
@@ -14,4 +15,6 @@ pub mod qualification;
 pub mod resources;
 pub mod sandbox_api;
 pub mod service;
+pub mod session_store;
+pub mod skills;
 pub mod worker;
