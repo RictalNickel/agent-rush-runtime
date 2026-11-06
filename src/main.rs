@@ -1,5 +1,6 @@
 use agent_rush::{
     api::{AppState, router},
+    boxes::{BoxConfig, BoxManager},
     config::Settings,
     deploy::VultrClient,
     deploy::lifecycle::{
@@ -37,12 +38,28 @@ enum Commands {
     Worker {
         #[arg(long, default_value = "127.0.0.1:8090")]
         bind: String,
+        #[command(flatten)]
+        boxes: BoxArgs,
     },
     Doctor,
     /// Run fixed real containment/resource probes. Refuses hosts without required enforcement.
     Qualify {
         #[arg(long)]
         output: PathBuf,
+    },
+    /// Start a session box, prove its eight containment checks, destroy it, and write the
+    /// report that `POST /v1/boxes` requires. Refuses to write a failing report as passing.
+    QualifyBox {
+        #[command(flatten)]
+        boxes: BoxArgs,
+        #[arg(long)]
+        output: PathBuf,
+        /// A private endpoint (ip:port) the host can reach and a box must not; repeatable.
+        #[arg(long)]
+        private_probe: Vec<String>,
+        /// Worker listener ports, probed on every host address.
+        #[arg(long, default_values_t = [8090u16, 8443])]
+        listener_port: Vec<u16>,
     },
     Sandbox {
         source: PathBuf,
@@ -125,6 +142,39 @@ enum Commands {
     },
 }
 
+/// Session boxes. A worker without `--box-image` serves one-shot runs only.
+#[derive(clap::Args)]
+struct BoxArgs {
+    /// Digest-pinned workspace image (deploy/workspace.Dockerfile).
+    #[arg(long, env = "AR_BOX_IMAGE")]
+    box_image: Option<String>,
+    #[arg(long, env = "AR_BOX_NETWORK", default_value = agent_rush::boxes::DEFAULT_NETWORK)]
+    box_network: String,
+    /// Box qualification report written by `qualify-box`.
+    #[arg(
+        long,
+        env = "AR_BOX_QUALIFICATION_REPORT",
+        default_value = "/var/lib/agent-rush/box-qualification.json"
+    )]
+    box_report: PathBuf,
+    #[arg(long, env = "AR_BOX_IDLE_SECONDS", default_value_t = agent_rush::boxes::DEFAULT_IDLE_SECONDS)]
+    box_idle_seconds: u64,
+    #[arg(long, env = "AR_BOX_CEILING_MB", default_value_t = agent_rush::boxes::DEFAULT_CEILING_MB)]
+    box_ceiling_mb: u32,
+}
+impl BoxArgs {
+    fn config(&self, settings: &Settings) -> Option<BoxConfig> {
+        Some(BoxConfig {
+            image: self.box_image.clone().filter(|v| !v.is_empty())?,
+            network: self.box_network.clone(),
+            report: self.box_report.clone(),
+            state_dir: settings.data_dir.join("boxes"),
+            idle_seconds: self.box_idle_seconds,
+            ceiling_mb: self.box_ceiling_mb,
+        })
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
@@ -140,6 +190,7 @@ async fn main() -> Result<()> {
         &command,
         Commands::Serve
             | Commands::Worker { .. }
+            | Commands::QualifyBox { .. }
             | Commands::Doctor
             | Commands::Sandbox { .. }
             | Commands::Cleanup
@@ -167,7 +218,7 @@ async fn main() -> Result<()> {
                 .await?;
             scheduler.await??;
         }
-        Commands::Worker { bind } => {
+        Commands::Worker { bind, boxes } => {
             let image = if settings.sandbox_image.is_empty() {
                 IMAGE
             } else {
@@ -183,10 +234,18 @@ async fn main() -> Result<()> {
                 settings.capacity_mb,
             )?
             .with_qualification_expiry(expires_at);
+            let node = match boxes.config(&settings) {
+                Some(config) => node.with_boxes(config)?,
+                None => node,
+            };
             // Bind before recovery so two workers cannot race to destroy each other's tasks.
             let listener = tokio::net::TcpListener::bind(&bind).await?;
             node.recover().await?;
             node.runner.health().await?;
+            if let Some(boxes) = node.boxes() {
+                tracing::info!(recovered=%boxes.recover().await?, "session boxes enabled");
+                boxes.start_reaper();
+            }
             // A requalification timer replaces the report; adopt it in place every minute.
             let refresh_node = node.clone();
             tokio::spawn(async move {
@@ -277,6 +336,51 @@ async fn main() -> Result<()> {
                 &settings.sandbox_image
             })?;
             println!("{}", serde_json::json!({"removed":runner.recover().await?}));
+        }
+        Commands::QualifyBox {
+            boxes,
+            output,
+            private_probe,
+            listener_port,
+        } => {
+            use std::io::Write;
+            let config = boxes
+                .config(&settings)
+                .context("set --box-image or AR_BOX_IMAGE to the pinned workspace image")?;
+            let mut options = std::fs::OpenOptions::new();
+            options.create_new(true).write(true);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                options.mode(0o600);
+            }
+            let mut file = options
+                .open(&output)
+                .context("Box qualification output must be a new private file")?;
+            let capacity = agent_rush::resources::ResourcePolicy::detect(settings.capacity_mb)?
+                .usable_memory_mb;
+            let image = if settings.sandbox_image.is_empty() {
+                IMAGE
+            } else {
+                &settings.sandbox_image
+            };
+            let manager = BoxManager::new(DockerRunner::new(image)?, config, capacity)?;
+            let probes = agent_rush::qualification::BoxProbes {
+                private: private_probe,
+                listener_ports: listener_port,
+                worker_token: Some(settings.worker_token.clone()),
+            };
+            let report = agent_rush::qualification::run_box(&manager, &probes).await?;
+            file.write_all(&serde_json::to_vec_pretty(&report)?)?;
+            file.sync_all()?;
+            println!(
+                "{}",
+                serde_json::json!({"qualified":report.qualified,"output":output,"checks":report.checks.iter().map(|c|serde_json::json!({"name":c.name,"passed":c.passed})).collect::<Vec<_>>()})
+            );
+            ensure!(
+                report.qualified,
+                "Box qualification failed; see report. Boxes stay refused on this worker"
+            );
         }
         Commands::Qualify { output } => {
             use std::io::Write;

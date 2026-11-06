@@ -1,5 +1,6 @@
 use crate::{
     auth,
+    boxes::{BoxConfig, BoxManager, LEASE_PREFIX},
     domain::{Limits, now},
     resources::{MAX_CONCURRENT, ResourcePolicy},
     worker::{DockerRunner, SandboxSpec},
@@ -7,8 +8,10 @@ use crate::{
 use anyhow::{Result, ensure};
 use axum::{
     Json, Router,
-    extract::{DefaultBodyLimit, Path, State},
-    http::{HeaderMap, StatusCode},
+    body::Bytes,
+    extract::{DefaultBodyLimit, Path, Query, Request, State},
+    http::{HeaderMap, StatusCode, header},
+    middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::{get, post},
 };
@@ -35,13 +38,26 @@ pub struct NodeState {
     draining: Arc<AtomicBool>,
     io_lock: Arc<Mutex<()>>,
     health_cache: Arc<tokio::sync::Mutex<Option<(std::time::Instant, Value)>>>,
+    boxes: Option<BoxManager>,
 }
 /// Runtime health (a `docker info` call) is reused for this long; reservations stay live.
 const HEALTH_TTL: std::time::Duration = std::time::Duration::from_secs(5);
+/// One memory reservation: a one-shot run (keyed by run id) or a box (`box:<id>`).
 #[derive(Clone)]
-struct ActiveLease {
-    memory_mb: u32,
+pub(crate) struct ActiveLease {
+    pub(crate) memory_mb: u32,
     cancel: Arc<AtomicBool>,
+}
+impl ActiveLease {
+    pub(crate) fn new(memory_mb: u32) -> Self {
+        Self {
+            memory_mb,
+            cancel: Arc::new(AtomicBool::new(false)),
+        }
+    }
+}
+fn is_run(key: &str) -> bool {
+    !key.starts_with(LEASE_PREFIX)
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -81,7 +97,21 @@ impl NodeState {
             draining: Arc::new(AtomicBool::new(false)),
             io_lock: Arc::new(Mutex::new(())),
             health_cache: Arc::new(tokio::sync::Mutex::new(None)),
+            boxes: None,
         })
+    }
+    /// Enable session boxes. They share this worker's memory reservations with runs.
+    pub fn with_boxes(mut self, config: BoxConfig) -> Result<Self> {
+        self.boxes = Some(BoxManager::with_leases(
+            self.runner.clone(),
+            config,
+            self.active.clone(),
+            self.capacity_mb,
+        )?);
+        Ok(self)
+    }
+    pub fn boxes(&self) -> Option<&BoxManager> {
+        self.boxes.as_ref()
     }
     fn auth(&self, headers: &HeaderMap) -> Result<(), NodeError> {
         let value = headers
@@ -196,13 +226,14 @@ impl NodeState {
         for lease in self.active.lock().unwrap().values() {
             lease.cancel.store(true, Ordering::SeqCst);
         }
+        // Boxes outlive the worker process; the next one adopts them (`BoxManager::recover`).
         for _ in 0..100 {
-            if self.active.lock().unwrap().is_empty() {
+            if !self.active.lock().unwrap().keys().any(|k| is_run(k)) {
                 break;
             }
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         }
-        for id in self.active.lock().unwrap().keys() {
+        for id in self.active.lock().unwrap().keys().filter(|k| is_run(k)) {
             let mut record = self.read(id)?;
             record.state = "finished".into();
             record.receipt = Some(
@@ -228,11 +259,22 @@ fn err(e: impl std::fmt::Display) -> NodeError {
     NodeError(StatusCode::BAD_REQUEST, "Worker request rejected".into())
 }
 pub fn node_router(state: NodeState) -> Router {
+    // Box routes check the bearer before any body is read, since file bodies are large.
+    let boxes = Router::new()
+        .route("/v1/boxes", post(box_create).get(box_list))
+        .route("/v1/boxes/{id}", axum::routing::delete(box_destroy))
+        .route("/v1/boxes/{id}/exec", post(box_exec))
+        .route("/v1/boxes/{id}/files", get(box_read).put(box_write))
+        .layer(DefaultBodyLimit::max(
+            crate::sandbox_api::MAX_FILE_BYTES + 64 * 1024,
+        ))
+        .route_layer(middleware::from_fn_with_state(state.clone(), box_auth));
     Router::new()
         .route("/v1/health", get(health))
         .route("/v1/runs", post(submit))
         .route("/v1/runs/{id}", get(run).delete(cancel))
         .layer(DefaultBodyLimit::max(65536))
+        .merge(boxes)
         .with_state(state)
 }
 async fn health(State(s): State<NodeState>, headers: HeaderMap) -> Result<Json<Value>, NodeError> {
@@ -250,6 +292,10 @@ async fn health(State(s): State<NodeState>, headers: HeaderMap) -> Result<Json<V
         )
     })?;
     health["resource_policy"] = json!(s.resources);
+    health["boxes"] = match &s.boxes {
+        Some(boxes) => json!({"enabled":true,"image":boxes.image(),"count":boxes.count()}),
+        None => json!({"enabled":false}),
+    };
     health["reserved_memory_mb"] = json!(
         s.active
             .lock()
@@ -291,7 +337,7 @@ async fn submit(
             return Ok((StatusCode::ACCEPTED, Json(json!(existing))));
         }
         let used: u32 = active.values().map(|v| v.memory_mb).sum();
-        if active.len() >= MAX_CONCURRENT
+        if active.keys().filter(|k| is_run(k)).count() >= MAX_CONCURRENT
             // Runs grow live up to their ceiling, so admission reserves the ceiling.
             || used.saturating_add(input.limits.memory_ceiling()) > s.capacity_mb
         {
@@ -402,4 +448,119 @@ async fn cancel(
     Ok(Json(
         json!({"cancel_requested":true,"cleanup_state":if cleaned{"verified"}else{"failed"}}),
     ))
+}
+
+async fn box_auth(
+    State(s): State<NodeState>,
+    request: Request,
+    next: Next,
+) -> Result<Response, NodeError> {
+    s.auth(request.headers())?;
+    Ok(next.run(request).await)
+}
+fn box_manager(s: &NodeState) -> Result<&BoxManager, NodeError> {
+    s.boxes.as_ref().ok_or_else(|| {
+        NodeError(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Session boxes are not enabled on this worker".into(),
+        )
+    })
+}
+fn box_error(e: anyhow::Error) -> Response {
+    let (status, code, message) = crate::boxes::error_status(&e);
+    (
+        StatusCode::from_u16(status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+        Json(json!({"error":message,"code":code})),
+    )
+        .into_response()
+}
+async fn box_create(
+    State(s): State<NodeState>,
+    Json(spec): Json<crate::sandbox_api::BoxSpec>,
+) -> Result<Response, NodeError> {
+    let boxes = box_manager(&s)?;
+    if s.draining.load(Ordering::SeqCst) {
+        return Err(NodeError(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Worker is draining".into(),
+        ));
+    }
+    Ok(match boxes.create(&spec).await {
+        Ok(box_id) => (StatusCode::CREATED, Json(json!({"box_id":box_id}))).into_response(),
+        Err(e) => box_error(e),
+    })
+}
+async fn box_list(State(s): State<NodeState>) -> Result<Response, NodeError> {
+    let boxes = box_manager(&s)?;
+    Ok(match boxes.reconcile().await {
+        Ok(()) => Json(json!(boxes.list_boxes())).into_response(),
+        Err(e) => box_error(e),
+    })
+}
+async fn box_destroy(
+    State(s): State<NodeState>,
+    Path(id): Path<String>,
+) -> Result<Response, NodeError> {
+    Ok(match box_manager(&s)?.destroy_box(&id).await {
+        Ok((removed, volume_removed)) => {
+            Json(json!({"removed":removed,"volume_removed":volume_removed})).into_response()
+        }
+        Err(e) => box_error(e),
+    })
+}
+async fn box_exec(
+    State(s): State<NodeState>,
+    Path(id): Path<String>,
+    Json(request): Json<crate::sandbox_api::ExecRequest>,
+) -> Result<Response, NodeError> {
+    Ok(match box_manager(&s)?.exec_box(&id, &request).await {
+        Ok(result) => Json(result).into_response(),
+        Err(e) => box_error(e),
+    })
+}
+#[derive(Deserialize)]
+struct FileQuery {
+    path: String,
+}
+/// A file comes back as raw bytes, a directory as a JSON listing; `x-box-entry` says which.
+async fn box_read(
+    State(s): State<NodeState>,
+    Path(id): Path<String>,
+    Query(query): Query<FileQuery>,
+) -> Result<Response, NodeError> {
+    use crate::sandbox_api::FileRead;
+    Ok(
+        match box_manager(&s)?.read_box_file(&id, &query.path).await {
+            Ok(FileRead::File(bytes)) => (
+                [
+                    (header::CONTENT_TYPE, "application/octet-stream"),
+                    (header::HeaderName::from_static("x-box-entry"), "file"),
+                ],
+                bytes,
+            )
+                .into_response(),
+            Ok(FileRead::Dir(entries)) => (
+                [(header::HeaderName::from_static("x-box-entry"), "dir")],
+                Json(entries),
+            )
+                .into_response(),
+            Err(e) => box_error(e),
+        },
+    )
+}
+async fn box_write(
+    State(s): State<NodeState>,
+    Path(id): Path<String>,
+    Query(query): Query<FileQuery>,
+    body: Bytes,
+) -> Result<Response, NodeError> {
+    Ok(
+        match box_manager(&s)?
+            .write_box_file(&id, &query.path, &body)
+            .await
+        {
+            Ok(result) => Json(result).into_response(),
+            Err(e) => box_error(e),
+        },
+    )
 }
