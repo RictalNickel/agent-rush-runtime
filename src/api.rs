@@ -159,6 +159,7 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(32768))
         // Added after the 32 KiB default so their own per-route body limits apply.
         .merge(crate::api_v1::routes())
+        .merge(crate::mcp_server::routes())
         .layer(middleware::from_fn(security_headers))
         .with_state(state)
 }
