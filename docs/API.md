@@ -37,12 +37,12 @@ Errors are JSON: `{"error": "Session not found"}`.
 
 | Status | Meaning |
 | --- | --- |
-| 400 | The request is invalid (the message says why) |
+| 400 | The request is invalid (the message says why), including a model that is not on the operator's list |
 | 401 | No API key, or the key is unknown or revoked |
 | 403 | Cookie login without the CSRF header, or an API key on a route that needs the operator login (creating or revoking keys, managing webhooks) |
 | 404 | Not found, or not yours |
 | 409 | The session is closed |
-| 413 | The body is too large |
+| 413 | The body is too large, or the workspace packs to more than 25 MiB (archive, fork) |
 | 422 | The JSON does not match the expected shape |
 | 429 | A per-owner cap is reached: open sessions, live streams or long requests (see Limits) |
 | 502 | The workspace (worker) or the voice service failed |
@@ -54,13 +54,17 @@ All times are Unix milliseconds.
 
 | Method and path | Body | Returns |
 | --- | --- | --- |
-| `GET /v1/status` | | provider, worker reachability, whether sessions and voice are available, MCP server names, limits |
+| `GET /v1/status` | | provider, worker reachability, whether sessions and voice are available, MCP server names, `models` (as `GET /v1/models`), limits |
+| `GET /v1/models` | | `{provider, default, per_session, models: [{id, input_usd_per_million, output_usd_per_million, default}]}` |
+| `GET /v1/usage` | | `{total, by_model, sessions}`: your spend, tokens and model calls (see [Models and usage](#models-and-usage)) |
 | `POST /v1/keys` (operator login) | `{name?}` | 201 `{id, name, prefix, created_at, key}` (the key is shown once) |
 | `GET /v1/keys` | | `{keys: [{id, name, prefix, created_at, last_used_at, revoked}]}` |
 | `DELETE /v1/keys/{id}` (operator login) | | `{revoked: true}` |
-| `POST /v1/sessions` | `{title?, message?}` | 201 `{session, sent}`; a `message` starts the first turn |
+| `POST /v1/sessions` | `{title?, message?, model?}` | 201 `{session, sent}`; a `message` starts the first turn; `model` is an ID from `GET /v1/models` (the default otherwise) |
 | `GET /v1/sessions` | | `{sessions: [...]}`, newest first |
-| `GET /v1/sessions/{id}` | | the session: `{id, title, status, box_id, created_at, updated_at, spend_usd, last_seq}` |
+| `GET /v1/sessions/{id}` | | the session: `{id, title, status, model, forked_from, box_id, created_at, updated_at, spend_usd, input_tokens, output_tokens, model_calls, last_seq}` |
+| `POST /v1/sessions/{id}/fork` | `{title?, model?, message?}` | 201 `{session, sent}`: a new session with a copy of this one's files and conversation (see [Forks](#forks)) |
+| `GET /v1/sessions/{id}/archive` | | the whole `/workspace` as a `.tar.gz` attachment, up to 25 MiB (413 beyond) |
 | `DELETE /v1/sessions/{id}` | | `{closed: true}`; stops any turn and deletes the workspace. The closed session and its events stay listed |
 | `DELETE /v1/sessions/{id}?purge=true` | | `{closed: true, deleted: true}`; closes it as above, then removes the session, its events and queued messages for good. Its live streams end after the `closed` status; later calls get 404 |
 | `POST /v1/sessions/purge-closed` | | `{deleted: n}`; removes all of the caller's closed sessions and their events for good |
@@ -116,7 +120,7 @@ Every step is an event with a `seq` that counts up from 1 within the session:
 | `status` | `{status, reason?}` |
 | `tool_call` | `{call}`, the tool and its arguments |
 | `tool_result` | `{tool, ok, output, truncated}` |
-| `assistant` | `{text, attachments}`, the agent's reply |
+| `assistant` | `{text, attachments, model}`, the agent's reply and the model that wrote it |
 | `config_change` | the agent edited its own config |
 | `error` | `{message}` |
 
@@ -148,6 +152,38 @@ curl -s -H "authorization: Bearer $AR_KEY" "$HOST/v1/sessions/$SID/files?path=ap
 curl -s -H "authorization: Bearer $AR_KEY" -o report.pdf "$HOST/v1/sessions/$SID/files?path=report.pdf"
 curl -s -H "authorization: Bearer $AR_KEY" -H 'content-type: application/json' \
   -d '{"command":"cd app && python -m pytest -q","timeout_seconds":300}' $HOST/v1/sessions/$SID/exec
+```
+
+### Models and usage
+
+The operator lists the models a session may run on, with their verified prices (`AR_INFERENCE_MODELS`, see [CONFIGURATION.md](CONFIGURATION.md)). `GET /v1/models` shows them and the default. Models come only from that list, never from model output.
+
+- `POST /v1/sessions` with `model` runs every model call of the session on that model. Without it, the session uses the default. An unknown model is 400 and creates nothing.
+- Each call is priced at its model's tariff. That price counts against the turn cap ($0.50), the session cap ($5) and the operator budget, and the worst-case reservation before a call uses it too.
+- With `AR_INFERENCE_PROVIDER=anthropic` the model is chosen per agent role, so `model` is refused with 400.
+- `GET /v1/usage` adds up what your sessions recorded: `total` and `by_model` (`{model, sessions, spend_usd, input_tokens, output_tokens, model_calls}`, most spent first) over every session that is not deleted, and `sessions` with the same figures for your 200 most recently active sessions. Tokens are counted from this release on; older sessions show only their spend.
+
+```sh
+curl -s -H "authorization: Bearer $AR_KEY" $HOST/v1/models | jq .
+curl -s -H "authorization: Bearer $AR_KEY" -H 'content-type: application/json' \
+  -d '{"message":"Write a CSV parser with tests","model":"glm-5.3"}' $HOST/v1/sessions
+curl -s -H "authorization: Bearer $AR_KEY" $HOST/v1/usage | jq .by_model
+```
+
+### Forks
+
+`POST /v1/sessions/{id}/fork` starts a new session where another one is, for example to run the same task on another model.
+
+- Its workspace starts as a copy of the source's files. They are packed in the source's box and unpacked in the new one, so the same 25 MiB limit as the archive applies (413).
+- Its event log starts with the source's requests and replies, each marked `forked_from`. Tool calls and results are not copied, so the new model sees the conversation, not the old tool output.
+- It runs on `model`, or on the source's model. It belongs to the same owner and counts against the open-session cap (429).
+- `title` defaults to the source's title with ` (fork)`. A `message` starts its first turn.
+- A closed source is 409. If any step fails, the new session is removed again.
+
+```sh
+curl -s -H "authorization: Bearer $AR_KEY" -H 'content-type: application/json' \
+  -d '{"model":"glm-5.3","message":"Do the same task again"}' $HOST/v1/sessions/$SID/fork
+curl -s -H "authorization: Bearer $AR_KEY" -o workspace.tar.gz $HOST/v1/sessions/$SID/archive
 ```
 
 ### Agent config
@@ -204,7 +240,7 @@ curl -s -H "authorization: Bearer $AR_KEY" -H 'content-type: application/json' -
 | Limit | Default |
 | --- | --- |
 | Message size | 64 KiB |
-| File upload or download | 25 MiB |
+| File upload or download, workspace archive | 25 MiB |
 | Exec timeout | 120 s by default, 600 s at most |
 | Exec output kept | 256 KiB per stream |
 | Turn wall time | 30 min |
@@ -213,6 +249,6 @@ curl -s -H "authorization: Bearer $AR_KEY" -H 'content-type: application/json' -
 | Webhooks per owner | 10 |
 | Open (not closed) sessions per owner | 20; one more is 429 `too many open sessions; close one` |
 | Live event streams (SSE) per owner | 8; one more is 429 until a stream ends |
-| Long requests in flight per owner (exec, file reads and writes; MCP `wait_for_reply`, `run_command`, `read_file`, `write_file`, `list_files`) | 8; one more is 429 |
+| Long requests in flight per owner (exec, file reads and writes, archive, fork; MCP `wait_for_reply`, `run_command`, `read_file`, `write_file`, `list_files`, `fork_session`) | 8; one more is 429 |
 | Workspace exec and file calls in flight | 4 per session and 16 in all; more wait their turn |
 | MCP batch | 16 messages |

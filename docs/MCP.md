@@ -33,7 +33,7 @@ Other clients that take a remote HTTP server work the same way: give them the UR
 
 | Tool | Arguments | What it does |
 | --- | --- | --- |
-| `start_session` | `title?`, `message?` | Creates a session with its own workspace. A `message` starts the agent working. |
+| `start_session` | `title?`, `message?`, `model?` | Creates a session with its own workspace. A `message` starts the agent working. `model` is an ID from `list_models`; the default otherwise. |
 | `send_message` | `session_id`, `text` | Sends a message. If the agent is busy, it gets the message before its next step (an interjection). |
 | `wait_for_reply` | `session_id`, `timeout_seconds?` (default 120, max 300), `after_seq?` | Waits until the turn ends, then returns the status, the agent's reply and a short summary of what it did. |
 | `get_events` | `session_id`, `after?`, `limit?` | Reads the full event log. |
@@ -43,7 +43,10 @@ Other clients that take a remote HTTP server work the same way: give them the UR
 | `list_files` | `session_id`, `path?` | Lists a directory. |
 | `cancel` | `session_id` | Stops the current turn after its current step. |
 | `close_session` | `session_id`, `delete?` | Closes the session and deletes its workspace. With `delete: true` it also removes the session and its event history for good (like `DELETE /v1/sessions/{id}?purge=true`). |
-| `list_sessions` | | Lists your sessions. |
+| `list_sessions` | | Lists your sessions, with their models. |
+| `list_models` | | Lists the models a session can run on, their prices in USD per million tokens and the default. |
+| `fork_session` | `session_id`, `title?`, `model?`, `message?` | Creates a session that starts with a copy of this one's workspace files and its earlier requests and replies (not its tool steps), on `model` or the source's model. Use it to run the same task on another model. |
+| `get_usage` | | Your spend, tokens and model calls in total, per model and per session, like `GET /v1/usage`. |
 | `manage_skills` | `action` (`list`, `get`, `save`, `delete`), `name?`, `description?`, `body?`, `markdown?` | Manages the skills the agent can load. |
 
 `read_file` and `write_file` move files up to 8 MiB. Use the REST files endpoint for files up to 25 MiB.
@@ -59,8 +62,9 @@ A typical exchange:
 
 - **Tool failures** come back as a normal result with `isError: true` and a text message. Examples are a session that is not found, a closed session, or a workspace error. A session that belongs to another key's owner is reported as "Session not found", exactly like one that does not exist.
 - **Per-owner caps** are tool failures too:
-  - `start_session` with 20 sessions open (not closed): `too many open sessions; close one`.
-  - `wait_for_reply`, `run_command`, `read_file`, `write_file` and `list_files` with 8 such calls already running (the REST exec and file calls count too): `too many requests in flight; wait for one to finish`.
+  - `start_session` or `fork_session` with 20 sessions open (not closed): `too many open sessions; close one`.
+  - `start_session` or `fork_session` with a model that is not on the operator's list: `unknown model ...`, with the allowed IDs.
+  - `wait_for_reply`, `run_command`, `read_file`, `write_file`, `list_files` and `fork_session` with 8 such calls already running (the REST exec, file, archive and fork calls count too): `too many requests in flight; wait for one to finish`.
 - **Protocol errors** use JSON-RPC codes:
 
 | Code | Meaning |

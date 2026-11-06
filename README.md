@@ -109,6 +109,8 @@ The REST API is documented in full in [docs/API.md](docs/API.md). A typical inte
 
 6. **Get notified.** Each turn end is POSTed to your webhooks, signed with HMAC-SHA256 in `X-Agent-Signature`. Register one with `POST /v1/webhooks` using the operator login, as in step 1. The URL must be a public `https` address. See [API.md](docs/API.md#webhooks).
 
+7. **Compare models.** When the operator lists more than one model, pick one per session (`"model":"glm-5.3"` on create), fork a finished session onto another model with `POST /v1/sessions/$SID/fork`, download a whole workspace with `GET /v1/sessions/$SID/archive`, and compare spend and tokens per model with `GET /v1/usage`. See [API.md](docs/API.md#models-and-usage).
+
 Each owner has caps on open sessions (20), live event streams (8) and long requests such as exec and file calls (8). Over a cap the API returns 429 and says which one was reached. The limits are listed in [API.md](docs/API.md#limits).
 
 ## Use it from an MCP client
@@ -119,7 +121,7 @@ Vultr-Placeholder-Test123 is also an MCP server at `/mcp` (streamable HTTP, same
 claude mcp add --transport http agent https://<host>/mcp --header "Authorization: Bearer ar_..."
 ```
 
-The tools are `start_session`, `send_message`, `wait_for_reply`, `get_events`, `run_command`, `read_file`, `write_file`, `list_files`, `cancel`, `close_session`, `list_sessions` and `manage_skills`. Cursor and other clients that take a remote HTTP server work the same way. See [docs/MCP.md](docs/MCP.md).
+The tools are `start_session`, `send_message`, `wait_for_reply`, `get_events`, `run_command`, `read_file`, `write_file`, `list_files`, `cancel`, `close_session`, `list_sessions`, `list_models`, `fork_session`, `get_usage` and `manage_skills`. Cursor and other clients that take a remote HTTP server work the same way. See [docs/MCP.md](docs/MCP.md).
 
 ## What agents can do
 
@@ -168,6 +170,7 @@ Settings are environment variables. The most important are below. The full list,
 | `AR_INFERENCE_PROVIDER` | `vultr` | `vultr` for Vultr Serverless Inference, or `anthropic` for development. |
 | `VULTR_INFERENCE_API_KEY` | none | Vultr inference key, read by the control VM only. |
 | `AR_INFERENCE_MODEL` | none | Vultr catalog model ID. The public instance uses `glm-5.3-flash`. |
+| `AR_INFERENCE_MODELS` | none | Optional models a session may choose, with prices: `glm-5.3-flash:0.10:0.35,glm-5.3:0.75:3.00`. |
 | `AR_INFERENCE_BUDGET_USD` | `5` | Total model spend the ledger allows. Range 0 to 25. |
 | `AR_WORKER_URL`, `AR_WORKER_TOKEN` | none | Private worker link. The token is at least 32 characters. |
 | `AR_BOX_IMAGE` | none | Workspace image reference the worker runs boxes from. |
