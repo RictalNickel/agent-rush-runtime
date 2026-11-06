@@ -4,56 +4,59 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-<title>Agent Rush</title>
-<link href="agent-rush-deck_assets/reveal.css" rel="stylesheet"/>
-<link href="agent-rush-deck_assets/black.css" rel="stylesheet"/>
+<title>Vultr-Placeholder-Test123</title>
+<link href="vultr-placeholder-test123-deck_assets/reveal.css" rel="stylesheet"/>
+<link href="vultr-placeholder-test123-deck_assets/black.css" rel="stylesheet"/>
 <!-- Theme used for syntax highlighting of code -->
 <!-- <link rel="stylesheet" href="lib/css/zenburn.css"> -->
-<link href="agent-rush-deck_assets/zenburn.css" rel="stylesheet"/>
+<link href="vultr-placeholder-test123-deck_assets/zenburn.css" rel="stylesheet"/>
 <!-- <link rel="stylesheet" href="index.css"> -->
 </head>
 <body>
 <div class="reveal">
 <div class="slides">
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/ac6f17c955968b17.mp4" data-background-video-muted="">
-<aside class="notes" data-markdown="">Agent Rush: agents that do real work, with the damage contained.</aside>
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/b56470d972df1ab5.mp4" data-background-video-muted="">
+<aside class="notes" data-markdown="">Vultr-Placeholder-Test123: agents that do real work, with the damage contained.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/62037c9c661ee186.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/42c9174d90eed412.mp4">
 <aside class="notes" data-markdown="">Agents that do real work need to run code and browse. On your own servers that is a huge blast radius: one prompt injection away from all of it.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/0df3bc55b402ab92.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/b7638f66a3242ca0.mp4">
 <aside class="notes" data-markdown="">Each session gets one gVisor container on a private worker VM. No credentials ever enter it, and an egress filter keeps it on the public internet.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/8c73424130f0131c.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/cdb21e8442fab0a7.mp4">
 <aside class="notes" data-markdown="">Your app talks to the control VM, which runs the sessions and calls Vultr inference. It never runs a command the model chose. The worker VM is private, reached over mTLS, and runs the boxes behind the egress filter.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/fcc1fe06024fb0d6.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/eab60d6945d80a2e.mp4">
 <aside class="notes" data-markdown="">These are the agent's built-in tools. Shell, browser, files, research and conversion run in the box. Skills, its own config and MCP run in trusted code on the control VM.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/e306c26242f7e358.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/f6859013e4a39ed3.mp4">
 <aside class="notes" data-markdown="">On the public instance the agent built a kanban board with a Python backend, ran it, and used it in its own browser: add three cards, move one to Done, reload. Then dark mode in turn two, and deleting a card in turn three. 92 tool calls, $0.0244.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/ee7c7af89eedb16c.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/4e23568618334394.mp4">
+<aside class="notes" data-markdown="">Five ordinary office requests, one turn each: totals from a CSV, a bar chart, a memo as Word and PDF, renaming messy files, and shrinking the chart to a JPG. Every turn took under ten seconds. 7 tool calls, $0.0034. The memo's revenue figures are right, but the model invented the units and the softest month: it wrote them without computing.</aside>
+</section>
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/385a5c3586ae9525.mp4">
 <aside class="notes" data-markdown="">One request: research HTTP 418, build a lookup app, test it in the browser, write a PDF report. Mid-turn I sent an interjection asking for a footer. First turn 35 seconds, 17 tool calls over two turns, model cost $0.0054.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/c01c47bc6410b203.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/bd649cec30848fbb.mp4">
 <aside class="notes" data-markdown="">A probe session asked the agent to reach metadata, the worker, the host's SSH and mail ports. Every attempt failed at the network. A 4300 MiB write stopped at the workspace quota. On the deployed binary, 9 of 9 box checks and 10 of 10 job checks pass.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/7ab6260d16861755.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/d41c2a3ae416ede0.mp4">
 <aside class="notes" data-markdown="">Create a session with one POST and stream its events. Or add it to Claude Code, Cursor or any MCP client as a remote server. Turn ends are POSTed to your webhooks, signed.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/0b58a8a3e33cce5d.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/069a97ba9dfd20b5.mp4">
 <aside class="notes" data-markdown="">Every agent model call goes to Vultr Serverless Inference, GLM 5.3 Flash. Both VMs are Vultr instances in Chicago, about 8 cents an hour together. These are the real model costs of the demos.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="agent-rush-deck_assets/64acae0b742b2035.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/14e38a2cbd9d26f7.mp4">
 <aside class="notes" data-markdown="">It is live now. Open the URL and give it a task.</aside>
 </section>
 </div>
 </div>
-<script src="agent-rush-deck_assets/reveal.js"></script>
-<script src="agent-rush-deck_assets/notes.js"></script>
+<script src="vultr-placeholder-test123-deck_assets/reveal.js"></script>
+<script src="vultr-placeholder-test123-deck_assets/notes.js"></script>
 <!-- To include plugins, see: https://revealjs.com/plugins/ -->
-<script src="agent-rush-deck_assets/markdown.js"></script>
+<script src="vultr-placeholder-test123-deck_assets/markdown.js"></script>
 <!-- <script src="index.js"></script> -->
 <script>
       Reveal.initialize({

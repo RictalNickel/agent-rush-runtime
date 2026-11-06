@@ -3,3 +3,5 @@
 media/
 slides/
 __pycache__/
+# Exports that are not committed
+out/*.pptx

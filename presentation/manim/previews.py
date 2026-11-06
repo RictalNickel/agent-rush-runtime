@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-scene = sys.argv[1] if len(sys.argv) > 1 else "AgentRushDeck"
+scene = sys.argv[1] if len(sys.argv) > 1 else "PitchDeck"
 slides = json.loads((HERE / "slides" / f"{scene}.json").read_text())["slides"]
 out = HERE / "out" / "previews"
 out.mkdir(parents=True, exist_ok=True)

@@ -1,18 +1,18 @@
 # Pitch deck (Manim Slides)
 
-An 11-slide deck for the 3 to 4 minute Vultr hackathon pitch (Blast Radius Zero track). Every animation is rendered with [Manim](https://www.manim.community/). [Manim Slides](https://manim-slides.eertmans.be/) splits it into real slides that you advance with the arrow keys. Each slide's motion lasts about 2 to 5 seconds and then holds, so you set the pace.
+A 12-slide deck for the 3 to 4 minute Vultr hackathon pitch (Blast Radius Zero track). Every animation is rendered with [Manim](https://www.manim.community/). [Manim Slides](https://manim-slides.eertmans.be/) splits it into real slides that you advance with the arrow keys. Each slide's motion lasts about 2 to 5 seconds and then holds, so you set the pace.
 
 ## Files
 
 | Path | What it is |
 | --- | --- |
-| `deck.py` | The deck: shared style and helpers at the top, then one method per slide (`s01_title` … `s11_close`) |
+| `deck.py` | The deck: shared style and helpers at the top, then one method per slide (`s01_title` … `s11_close`, plus `s06b_demo_everyday` after the kanban demo) |
 | `render.sh` | Renders at 1920x1080, then exports the HTML deck, the PDF and the previews |
 | `previews.py` | Saves the last frame of each slide to `out/previews/slide-NN.png` and prints each slide's length |
 | `requirements.txt` | Pinned Python packages (Python 3.12) |
 | `fonts/` | Archivo variable TTF from google/fonts, under the SIL OFL (`fonts/OFL.txt`) |
-| `out/agent-rush-deck.html` | The deck, with its videos and an offline copy of reveal.js in `out/agent-rush-deck_assets/` |
-| `out/agent-rush-deck.pdf` | One page per slide, showing each slide's finished state |
+| `out/vultr-placeholder-test123-deck.html` | The deck, with its videos and an offline copy of reveal.js in `out/vultr-placeholder-test123-deck_assets/` |
+| `out/vultr-placeholder-test123-deck.pdf` | One page per slide, showing each slide's finished state |
 
 The product name is the `PRODUCT` constant at the top of `deck.py`. The HTML title comes from it too.
 
@@ -31,7 +31,7 @@ On the first run it creates `.venv` with `uv` (Python 3.12) and installs `requir
 
 ## Present
 
-Open `out/agent-rush-deck.html` in Chrome or Firefox. It works offline. Keep `out/agent-rush-deck_assets/` next to it. Some browsers block video on `file://` pages. If that happens, serve the folder: `python3 -m http.server -d out 8000`, then open http://localhost:8000/agent-rush-deck.html.
+Open `out/vultr-placeholder-test123-deck.html` in Chrome or Firefox. It works offline. Keep `out/vultr-placeholder-test123-deck_assets/` next to it. Some browsers block video on `file://` pages. If that happens, serve the folder: `python3 -m http.server -d out 8000`, then open http://localhost:8000/vultr-placeholder-test123-deck.html.
 
 | Key | Action |
 | --- | --- |
@@ -45,12 +45,12 @@ Open `out/agent-rush-deck.html` in Chrome or Firefox. It works offline. Keep `ou
 
 Clickers that send Page Up and Page Down work too. The URL hash follows the slide (`#/3`), so reloading the page keeps your place.
 
-You can also present with the native player: `.venv/bin/manim-slides present AgentRushDeck`, run after rendering. Right or Space goes forward, Left goes back, R replays the slide, F toggles full screen and Q quits.
+You can also present with the native player: `.venv/bin/manim-slides present PitchDeck`, run after rendering. Right or Space goes forward, Left goes back, R replays the slide, F toggles full screen and Q quits.
 
 ## Export
 
-- PDF: `render.sh` writes `out/agent-rush-deck.pdf`. Or run `.venv/bin/manim-slides convert AgentRushDeck out/agent-rush-deck.pdf`.
-- PowerPoint, with each slide's video embedded: `.venv/bin/manim-slides convert AgentRushDeck out/agent-rush-deck.pptx`. This file is not committed.
+- PDF: `render.sh` writes `out/vultr-placeholder-test123-deck.pdf`. Or run `.venv/bin/manim-slides convert PitchDeck out/vultr-placeholder-test123-deck.pdf`.
+- PowerPoint, with each slide's video embedded: `.venv/bin/manim-slides convert PitchDeck out/vultr-placeholder-test123-deck.pptx`. This file is not committed.
 - One self-contained HTML file: add `--one-file` to the HTML convert line in `render.sh`. The file is larger.
 
 ## Style

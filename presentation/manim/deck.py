@@ -1,7 +1,7 @@
-"""Agent Rush pitch deck, built with Manim Slides.
+"""Vultr-Placeholder-Test123 pitch deck, built with Manim Slides.
 
-Render:   ./render.sh            (or: manim-slides render -qh deck.py AgentRushDeck)
-Present:  open out/agent-rush-deck.html, or: manim-slides present AgentRushDeck
+Render:   ./render.sh            (or: manim-slides render -qh deck.py PitchDeck)
+Present:  open out/vultr-placeholder-test123-deck.html, or: manim-slides present PitchDeck
 
 Every number on these slides comes from the repository's docs and live evidence
 (README.md, docs/DESIGN.md, docs/evidence/live/*/README.md). Do not add numbers
@@ -57,7 +57,7 @@ from PIL import Image, ImageDraw
 # Constants
 # --------------------------------------------------------------------------
 
-PRODUCT = "Agent Rush"  # the product name may change: edit it here only
+PRODUCT = "Vultr-Placeholder-Test123"  # the product name may change: edit it here only
 LIVE_URL = "https://144-202-59-108.sslip.io"
 
 HERE = Path(__file__).resolve().parent
@@ -321,8 +321,8 @@ def title_in(title: Mobject, run_time: float = 0.75):
 # --------------------------------------------------------------------------
 
 
-class AgentRushDeck(Slide):
-    """Eleven slides; each method is one slide, and each slide is one step."""
+class PitchDeck(Slide):
+    """Twelve slides; each method is one slide, and each slide is one step."""
 
     def construct(self) -> None:
         self.slides_in_order = [
@@ -332,6 +332,7 @@ class AgentRushDeck(Slide):
             self.s04_architecture,
             self.s05_tools,
             self.s06_demo_kanban,
+            self.s06b_demo_everyday,
             self.s07_demo_research,
             self.s08_containment,
             self.s09_integrate,
@@ -419,8 +420,9 @@ class AgentRushDeck(Slide):
     # ---- 1. Title ---------------------------------------------------------
 
     def s01_title(self) -> None:
-        self.next_slide(notes="Agent Rush: agents that do real work, with the damage contained.")
+        self.next_slide(notes=f"{PRODUCT}: agents that do real work, with the damage contained.")
         name = display(PRODUCT, 150, width=70)
+        fit(name, 2.75 - 0.45 - X_LEFT)  # stop short of the mark on the right
         place(name, left=X_LEFT, top=1.85)
         bar = Rectangle(width=2.2, height=0.12, fill_color=AMBER, fill_opacity=1, stroke_width=0)
         place(bar, left=X_LEFT + 0.05, top=name.get_bottom()[1] - 0.35)
@@ -429,6 +431,9 @@ class AgentRushDeck(Slide):
         place(sub, left=X_LEFT, top=bar.get_bottom()[1] - 0.45)
         meta = txt("Vultr hackathon, Blast Radius Zero track", 22, MUTED)
         place(meta, left=X_LEFT, top=sub.get_bottom()[1] - 0.5)
+        # A long name is scaled down, so centre the block on the mark instead of pinning its top.
+        block = VGroup(name, bar, sub, meta)
+        block.shift(UP * (0.35 - block.get_center()[1]))
 
         # A box with an agent prompt inside: the whole idea in one mark.
         box, inner, glyph = prompt_mark(3.3)
@@ -701,7 +706,56 @@ class AgentRushDeck(Slide):
         self.play(pop_in(Group(chat, chat_cap)), rise_in(*turns, lag=0.2, run_time=1.0))
         self.play(pop_in(*shots, lag=0.3, run_time=1.6), rise_in(total))
 
-    # ---- 7. Demo: research to PDF -----------------------------------------
+    # ---- 7. Demo: everyday tasks ------------------------------------------
+
+    def s06b_demo_everyday(self) -> None:
+        self.enter("Live demo, session c8fcac86", "Data, a chart, a memo, tidy files",
+                   notes="Five ordinary office requests, one turn each: totals from a CSV, a bar chart, a memo as "
+                         "Word and PDF, renaming messy files, and shrinking the chart to a JPG. Every turn took under "
+                         "ten seconds. 7 tool calls, $0.0034. The memo's revenue figures are right, but the model "
+                         "invented the units and the softest month: it wrote them without computing.")
+        ev = "docs/evidence/live/demo-everyday-tasks-v2/outputs/"
+        cw = 4.5
+        chart = image(ev + "revenue.png", "everyday-chart", cw)
+        place(chart, right=X_RIGHT, top=1.95)
+        chart_cap = txt("revenue.png, drawn by the agent with matplotlib", 18, MUTED)
+        fit(chart_cap, cw)
+        chart_cap.next_to(chart, DOWN, buff=0.14).align_to(chart, LEFT)
+        strip = image("docs/evidence/ui/demo-everyday-tasks.png", "everyday-chat", cw, crop=(452, 128, 1000, 236))
+        place(strip, left=chart.get_left()[0], top=chart_cap.get_bottom()[1] - 0.28)
+        strip_cap = txt("Turn 5 in the web chat, both sizes reported", 18, MUTED)
+        fit(strip_cap, cw)
+        strip_cap.next_to(strip, DOWN, buff=0.14).align_to(strip, LEFT)
+
+        col_w = chart.get_left()[0] - 0.5 - X_LEFT
+        turns = [("3.9 s", "Totals per region from sales.csv", "36 rows; North 2,125,200, best month 2025-12"),
+                 ("4.5 s", "Bar chart, revenue.png", "First try; the bars match the CSV totals"),
+                 ("9.3 s", "Memo as .docx plus a PDF copy", "Fell back to LibreOffice when pdflatex was missing"),
+                 ("2.0 s", "Rename 5 messy file names", "To lowercase-with-dashes"),
+                 ("1.7 s", "PNG to an 800 px JPG", "40,020 B down to 34,193 B")]
+        rows = VGroup()
+        for secs, head, sub in turns:
+            t = display(secs, 36, width=80)
+            body = pair(head, sub, 23, 17, gap=0.05, head_mob=txt(head, 23))
+            row = VGroup(t, body)
+            place(body, left=t.get_left()[0] + 1.25, top=t.get_top()[1] + 0.02)
+            rows.add(row)
+        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.26)
+        fit(rows, col_w)
+        place(rows, left=X_LEFT, top=1.95)
+
+        total = txt("5 turns, 7 tool calls, $0.0034 model cost", 21)
+        fit(total, col_w)
+        place(total, left=X_LEFT, top=rows.get_bottom()[1] - 0.38)
+        caveat = txt("The memo's revenue figures are right; its units and softest\n"
+                     "month were invented by the model, never computed.", 17, MUTED, line_spacing=0.9)
+        fit(caveat, col_w)
+        place(caveat, left=X_LEFT, top=total.get_bottom()[1] - 0.2)
+
+        self.play(rise_in(*rows, lag=0.18, run_time=1.4), pop_in(Group(chart, chart_cap), run_time=0.8))
+        self.play(pop_in(Group(strip, strip_cap)), rise_in(total, caveat, lag=0.3))
+
+    # ---- 8. Demo: research to PDF -----------------------------------------
 
     def s07_demo_research(self) -> None:
         self.enter("Live demo, session 1c047b6c", "Research, build, test, report",
@@ -746,7 +800,7 @@ class AgentRushDeck(Slide):
         self.play(pop_in(Group(chat, chat_cap), Group(app, app_cap), lag=0.35, run_time=1.1))
         self.play(rise_in(*stats, lag=0.2))
 
-    # ---- 8. Containment proof ---------------------------------------------
+    # ---- 9. Containment proof ---------------------------------------------
 
     def s08_containment(self) -> None:
         self.enter("Containment, tested live", "We tried to break out",
@@ -855,7 +909,7 @@ class AgentRushDeck(Slide):
             run_time=1.5,
         )
 
-    # ---- 9. Integrate -------------------------------------------------------
+    # ---- 10. Integrate -------------------------------------------------------
 
     def s09_integrate(self) -> None:
         self.enter("Integrate it", "One HTTP call to start an agent",
@@ -907,7 +961,7 @@ class AgentRushDeck(Slide):
         self.play(FadeIn(p2[0], p2[1], shift=UP * RISE, rate_func=EASE), run_time=0.45)
         self.play(AddTextLetterByLetter(p2[2], time_per_char=0.012, run_time=0.9))
 
-    # ---- 10. Vultr ----------------------------------------------------------
+    # ---- 11. Vultr ----------------------------------------------------------
 
     def s10_vultr(self) -> None:
         self.enter("Built on Vultr", "Every agent call runs on Vultr",
@@ -946,12 +1000,13 @@ class AgentRushDeck(Slide):
         self.play(rise_in(*rows, lag=0.3, run_time=1.0))
         self.play(FadeIn(cap, shift=UP * 0.1), pop_in(*cards, lag=0.2, run_time=1.2))
 
-    # ---- 11. Close ----------------------------------------------------------
+    # ---- 12. Close ----------------------------------------------------------
 
     def s11_close(self) -> None:
         self.enter(None, None, chrome=False,
                    notes="It is live now. Open the URL and give it a task.")
         name = display(PRODUCT, 120, width=70)
+        fit(name, 3.1 - 0.45 - X_LEFT)  # stop short of the mark on the right
         line = txt("Agents with a shell and a browser.", 34)
         line2 = txt("A blast radius of one box.", 34, MUTED)
         lines = stack(line, line2, buff=0.14)
@@ -964,6 +1019,8 @@ class AgentRushDeck(Slide):
         place(bar, left=X_LEFT + 0.05, top=name.get_bottom()[1] - 0.2)
         lines.shift(DOWN * 0.15)
         url_group.shift(DOWN * 0.15)
+        block = VGroup(name, bar, lines, url_group)
+        block.shift(UP * (0.0 - block.get_center()[1]))
 
         box, inner, glyph = prompt_mark(3.0)
         VGroup(box, inner, glyph).move_to([4.6, 0.0, 0])

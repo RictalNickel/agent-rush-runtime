@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-SCENE=AgentRushDeck
+SCENE=PitchDeck
 QUALITY="${QUALITY:-h}"
 TITLE="$(sed -n 's/^PRODUCT = "\([^"]*\)".*/\1/p' deck.py)"
 
@@ -25,11 +25,11 @@ fi
 .venv/bin/manim-slides render deck.py "$SCENE" --quality "$QUALITY"
 
 mkdir -p out
-rm -rf out/agent-rush-deck_assets out/previews  # drop videos of earlier renders
+rm -rf out/vultr-placeholder-test123-deck_assets out/previews  # drop videos of earlier renders
 # --offline copies reveal.js next to the deck, so it presents without a network.
-.venv/bin/manim-slides convert "$SCENE" out/agent-rush-deck.html --offline \
+.venv/bin/manim-slides convert "$SCENE" out/vultr-placeholder-test123-deck.html --offline \
   -ctitle="$TITLE" -cbackground_color='#12161b' -chash=true -ccontrols=false
-.venv/bin/manim-slides convert "$SCENE" out/agent-rush-deck.pdf
+.venv/bin/manim-slides convert "$SCENE" out/vultr-placeholder-test123-deck.pdf
 .venv/bin/python previews.py "$SCENE"
 
-du -sh out/agent-rush-deck.html out/agent-rush-deck_assets out/agent-rush-deck.pdf
+du -sh out/vultr-placeholder-test123-deck.html out/vultr-placeholder-test123-deck_assets out/vultr-placeholder-test123-deck.pdf
