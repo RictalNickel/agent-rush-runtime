@@ -118,6 +118,48 @@ assert clamp(5, 0, 3) == 3 and clamp(-1, 0, 3) == 0 and clamp(2, 0, 3) == 2
 print("ALL PASS")
 '''
 
+def _orders_csv():
+    import random
+    r = random.Random(11)
+    names = ["ana", "bo", "cy", "dee", "eli", "fay", "gus", "hal"]
+    rows = ["order_id,customer,date,amount"]
+    for i in range(1, 401):
+        rows.append(f"{i},{r.choice(names)},2026-{r.randint(1, 12):02d}-{r.randint(1, 28):02d},{r.randint(500, 25000) / 100:.2f}")
+    return "\n".join(rows) + "\n"
+
+
+ORDERS = _orders_csv()
+JS_BUGGY = """// Utilities for a shopping cart.
+export function subtotal(items) {
+  return items.reduce((s, i) => s + i.price * i.qty, 1);
+}
+export function applyDiscount(total, code) {
+  if (code === "TEN") return total * 0.1;
+  if (code === "FIVEOFF") return Math.max(0, total - 5);
+  return total;
+}
+export function slug(title) {
+  return title.toLowerCase().replace(" ", "-");
+}
+export function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i <= arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+"""
+JS_TESTS = """import assert from "node:assert/strict";
+import { subtotal, applyDiscount, slug, chunk } from "./cart.mjs";
+assert.equal(subtotal([{ price: 2, qty: 3 }, { price: 1.5, qty: 2 }]), 9);
+assert.equal(subtotal([]), 0);
+assert.equal(applyDiscount(50, "TEN"), 45);
+assert.equal(applyDiscount(3, "FIVEOFF"), 0);
+assert.equal(applyDiscount(20, "NOPE"), 20);
+assert.equal(slug("Hello Big  World"), "hello-big-world");
+assert.deepEqual(chunk([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
+assert.deepEqual(chunk([], 3), []);
+console.log("ALL PASS");
+"""
+
 TASKS = {
     "data": {
         "prompt": "Using Python with random seed 7, generate /workspace/sales.csv with a header and 500 rows: "
@@ -145,6 +187,34 @@ TASKS = {
                   "folder). Fix the code in calc.py, not the tests, until they pass, then reply with what you changed.",
         "check": "cd /workspace/bugs && cat > /tmp/t.py <<'EOF'\n" + BUG_TESTS + "EOF\ncp /tmp/t.py ./_hidden.py && "
                  "python3 _hidden.py && rm _hidden.py",
+    },
+    "sqlite": {
+        "setup": {"orders.csv": ORDERS},
+        "prompt": "Load /workspace/orders.csv into a SQLite database /workspace/shop.db (table orders). Using SQL on that "
+                  "database, write /workspace/answers.json with: top_customer (the customer with the highest total "
+                  "amount), top_customer_total (that total, 2 decimals), busiest_month (YYYY-MM with the most orders; "
+                  "earliest month wins a tie), average_order (mean amount, 2 decimals) and orders_over_200 (count of "
+                  "orders with amount above 200). Reply with the answers.",
+        "check": "cd /workspace && python3 -c \"import csv,json,collections\n"
+                 "rows=list(csv.DictReader(open('orders.csv')))\nt=collections.Counter()\nm=collections.Counter()\n"
+                 "for r in rows: t[r['customer']]+=float(r['amount']); m[r['date'][:7]]+=1\n"
+                 "top=max(t,key=t.get)\nbm=sorted(m.items(),key=lambda x:(-x[1],x[0]))[0][0]\n"
+                 "a=json.load(open('answers.json'))\nimport sqlite3; assert sqlite3.connect('shop.db').execute('select count(*) from orders').fetchone()[0]==400\n"
+                 "exp={'top_customer':top,'top_customer_total':round(t[top],2),'busiest_month':bm,"
+                 "'average_order':round(sum(float(r['amount']) for r in rows)/len(rows),2),"
+                 "'orders_over_200':sum(float(r['amount'])>200 for r in rows)}\n"
+                 "bad={k:(a.get(k),v) for k,v in exp.items() if (abs(float(a.get(k,-1))-v)>0.011 if isinstance(v,float) else a.get(k)!=v)}\n"
+                 "assert not bad, bad\"",
+    },
+    "jsfix": {
+        "setup": {"cart/cart.mjs": JS_BUGGY, "cart/package.json": '{"name":"cart","type":"module"}\n'},
+        "prompt": "/workspace/cart/cart.mjs has several bugs. Write tests for every exported function with node:test "
+                  "or node:assert in /workspace/cart/cart.test.mjs, find and fix all the bugs in cart.mjs (keep the "
+                  "function names and signatures; applyDiscount 'TEN' means ten percent off, 'FIVEOFF' means 5 off but "
+                  "never below 0; slug joins words with single hyphens), run your tests with node, and reply with "
+                  "the bugs you fixed.",
+        "check": "cd /workspace/cart && cat > /tmp/h.mjs <<'EOF'\n" + JS_TESTS + "EOF\ncp /tmp/h.mjs ./_hidden.mjs && "
+                 "node _hidden.mjs && rm _hidden.mjs",
     },
     "webapp": {
         "prompt": "Build a small to-do web app in /workspace/todo: one index.html with inline JavaScript, items kept in "
