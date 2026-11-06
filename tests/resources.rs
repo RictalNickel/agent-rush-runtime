@@ -17,6 +17,18 @@ fn headroom_is_reserved_and_capacity_never_exceeds_the_actual_node() {
     assert!(ResourcePolicy::new(256, 1024).is_err());
 }
 #[test]
+fn large_hosts_keep_a_bounded_reserve() {
+    assert_eq!(ResourcePolicy::new(4096, 9000).unwrap().headroom_mb, 1024);
+    let p = ResourcePolicy::new(32768, 40000).unwrap();
+    assert_eq!((p.headroom_mb, p.usable_memory_mb), (4096, 28672));
+    let p = ResourcePolicy::new(65536, 70000).unwrap();
+    assert_eq!((p.headroom_mb, p.usable_memory_mb), (6144, 59392));
+    assert_eq!(
+        ResourcePolicy::new(65536, 8192).unwrap().usable_memory_mb,
+        8192
+    );
+}
+#[test]
 fn slot_and_memory_admission_are_atomic_even_with_concurrent_schedulers() {
     let db = Arc::new(Ledger::memory(8192).unwrap());
     let jobs: Vec<_> = (0..8)

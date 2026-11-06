@@ -32,6 +32,7 @@ A variable marked "none" has no default and is unset unless you set it.
 | `AR_SESSION_MAX_STREAMS` | `8` | Live event streams one owner may hold at once (1–1000) |
 | `AR_SESSION_MAX_LONG_REQUESTS` | `8` | Direct exec and file calls, and MCP waits, one owner may have in flight (1–1000) |
 | `AR_SESSION_MAX_BOX_CALLS` | `16` | Box exec and file calls in flight across all sessions (1–1000). Raise it with the worker's `AR_BOX_MAX` |
+| `AR_SESSION_BOX_MB` | `1024` | Memory a session box starts with (256–65536, at most the worker's `AR_BOX_CEILING_MB`). Each box reserves this much of the worker's capacity, and grows from it under load |
 | `AR_SESSION_TURN_USD`, `AR_SESSION_USD` | `0.50`, `5.00` | Model spend one turn, and one session, may reach before the next model call is refused. The turn cap must not exceed the session cap |
 
 Fixed in code and not settable: per-turn limits (30 minutes, $0.50 spend; there is no step count), per-session spend ($5), and the per-owner and box call caps listed in [API.md](API.md#limits). See [SECURITY.md](SECURITY.md#known-limits).
@@ -42,7 +43,7 @@ Fixed in code and not settable: per-turn limits (30 minutes, $0.50 spend; there 
 | --- | --- | --- |
 | `AR_DATA_DIR` | `runtime` | State directory for the worker. The installer uses `/var/lib/agent-rush/worker` |
 | `AR_WORKER_TOKEN` | none | Bearer token every worker route requires, at least 32 characters |
-| `AR_CAPACITY_MB` | `2048` | Memory the worker may admit. It is clamped to the memory the host has. The example file sets `6144` |
+| `AR_CAPACITY_MB` | `2048` | Memory the worker may admit. It is clamped to the host's memory less a reserve (a quarter of the host, at most 2 GiB plus 1/16: 2 GiB of 8, 4 GiB of 32, 6 GiB of 64). The example file sets `6144` |
 | `AR_QUALIFICATION_REPORT` | none | Job qualification report. The worker refuses to start without it and refuses work once it is more than two hours old |
 | `AR_SANDBOX_IMAGE` | `rust:1.90.0-bookworm@sha256:3914072c…` (the `IMAGE` constant in `src/worker.rs`) | Pinned image for one-shot runs |
 | `AR_BOX_IMAGE` | none | Workspace image reference for session boxes. Without it the worker serves one-shot runs only. Both `deploy/install-worker.sh` and `scripts/install.sh` (worker role) set it to the digest of the image they build |
@@ -50,7 +51,7 @@ Fixed in code and not settable: per-turn limits (30 minutes, $0.50 spend; there 
 | `AR_BOX_QUALIFICATION_REPORT` | `/var/lib/agent-rush/box-qualification.json` | Box qualification report. Box creation and restarts are refused unless it is fresh and passing for this host, boot, image and network |
 | `AR_BOX_IDLE_SECONDS` | `1800` | Idle seconds before a box is parked: its container is removed and its `/workspace` kept. The next call restarts it |
 | `AR_BOX_RETENTION_SECONDS` | `604800` (7 days) | Seconds a parked workspace is kept without a call. Its files are deleted then, or when the session closes. Must be at least `AR_BOX_IDLE_SECONDS` |
-| `AR_BOX_MAX` | `8` | Boxes the worker runs at once (1–200), on top of the `AR_CAPACITY_MB` memory check. Size it to the host: the benchmark in [docs/BENCHMARKS.md](BENCHMARKS.md) shows what 4 and 8 vCPUs sustain |
+| `AR_BOX_MAX` | `8` | Boxes the worker runs at once (1–200), on top of the `AR_CAPACITY_MB` memory check. Size it to the host: the benchmark in [docs/BENCHMARKS.md](BENCHMARKS.md) shows what 4, 8 and 16 vCPUs sustain. Each session box also reserves `AR_SESSION_BOX_MB` of `AR_CAPACITY_MB` |
 | `AR_BOX_CEILING_MB` | `4096` | Largest memory a box may grow to. Must be between 1024 and 65536 |
 | `AR_BOX_DISK_MB` | `4096` | Hard size of each box's `/workspace`, in MiB. Must be between 256 and 262144. Creating a box needs twice this plus 2 GiB free, after the headroom existing workspaces may still grow into |
 | `AR_BOX_GUARD_MARKER` | `/run/agent-rush/box-network.env` | Marker that `deploy/box-network.sh` writes once the egress rules and host input guard are verified, recording the boot ID. Box starts are refused without a marker for the current boot. It lives in `/run`, so a reboot clears it until the root unit reruns |

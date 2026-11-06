@@ -21,7 +21,9 @@ impl ResourcePolicy {
             total_mb >= 512 && configured_mb > 0,
             "worker needs at least 512 MiB and a positive budget"
         );
-        let reserve = (total_mb / 4).max(256);
+        // A quarter of a small host, but no more than 2 GiB plus 1/16 of a large one: a flat
+        // quarter held back 16 GiB of a 64 GiB worker, capping it at 47 one-GiB session boxes.
+        let reserve = (total_mb / 4).min(2048 + total_mb / 16).max(256);
         Ok(Self {
             physical_memory_mb: total_mb,
             headroom_mb: reserve,

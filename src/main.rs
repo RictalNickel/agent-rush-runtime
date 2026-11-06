@@ -220,8 +220,13 @@ fn session_limits_from_env() -> Result<SessionLimits> {
         max_box_calls: var("AR_SESSION_MAX_BOX_CALLS", d.max_box_calls)?,
         max_turn_usd: var("AR_SESSION_TURN_USD", d.max_turn_usd)?,
         max_session_usd: var("AR_SESSION_USD", d.max_session_usd)?,
+        box_memory_mb: var("AR_SESSION_BOX_MB", d.box_memory_mb)?,
         ..d
     };
+    anyhow::ensure!(
+        (256..=65536).contains(&limits.box_memory_mb),
+        "AR_SESSION_BOX_MB must be 256–65536 (and at most the worker's AR_BOX_CEILING_MB)"
+    );
     anyhow::ensure!(
         (1..=1000).contains(&limits.max_open_sessions_per_owner)
             && (1..=1000).contains(&limits.max_streams_per_owner)
