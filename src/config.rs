@@ -58,6 +58,8 @@ pub struct Settings {
     pub qualification_report: Option<PathBuf>,
     /// Operator-configured remote MCP servers (`AR_MCP_SERVERS_FILE`); credentials stay here.
     pub mcp_servers_file: Option<PathBuf>,
+    /// Optional local voice service (`AR_VOICE_URL`); `/v1/voice/*` is 404 without it.
+    pub voice_url: Option<String>,
 }
 impl Settings {
     pub fn local() -> Self {
@@ -82,6 +84,7 @@ impl Settings {
             sandbox_image: String::new(),
             qualification_report: None,
             mcp_servers_file: None,
+            voice_url: None,
         }
     }
     pub fn from_env() -> Result<Self> {
@@ -150,6 +153,21 @@ impl Settings {
             .ok()
             .filter(|s| !s.is_empty())
             .map(PathBuf::from);
+        s.voice_url = env::var("AR_VOICE_URL")
+            .ok()
+            .map(|v| v.trim().trim_end_matches('/').to_string())
+            .filter(|v| !v.is_empty());
+        if let Some(url) = &s.voice_url {
+            let parsed = reqwest::Url::parse(url)?;
+            ensure!(
+                matches!(parsed.scheme(), "http" | "https"),
+                "voice URL must use http or https"
+            );
+            ensure!(
+                parsed.username().is_empty() && parsed.password().is_none(),
+                "voice URL must not embed credentials"
+            );
+        }
         Ok(s)
     }
     pub fn inference_configured(&self) -> bool {

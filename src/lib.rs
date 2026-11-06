@@ -2,7 +2,10 @@
 pub mod agent;
 pub mod agent_config;
 pub mod api;
+pub mod api_keys;
+pub mod api_v1;
 pub mod auth;
+pub mod box_client;
 pub mod config;
 pub mod deploy;
 pub mod domain;
@@ -20,4 +23,5 @@ pub mod session;
 pub mod session_store;
 pub mod skills;
 pub mod tools;
+pub mod webhooks;
 pub mod worker;

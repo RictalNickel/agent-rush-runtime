@@ -1,0 +1,715 @@
+mod common;
+
+use agent_rush::{
+    api_keys::looks_like_key,
+    session_store::SessionStatus,
+    webhooks::{self, UrlGuard, hmac_sha256, is_forbidden_ip, signature},
+};
+use axum::{
+    Router,
+    body::{Body, Bytes},
+    http::{HeaderMap, Request, StatusCode},
+    routing::post,
+};
+use common::{App, app, app_without_sessions, bash, call, reply, send};
+use futures_util::StreamExt;
+use http_body_util::BodyExt;
+use serde_json::{Value, json};
+use std::time::Duration;
+
+const WAIT: Duration = Duration::from_secs(10);
+
+/// Every key-scoped route, with a placeholder session id.
+fn key_scoped_routes(id: &str) -> Vec<(&'static str, String)> {
+    vec![
+        ("GET", "/v1/status".into()),
+        ("GET", "/v1/keys".into()),
+        ("POST", "/v1/keys".into()),
+        ("DELETE", "/v1/keys/some-key".into()),
+        ("GET", "/v1/sessions".into()),
+        ("POST", "/v1/sessions".into()),
+        ("GET", format!("/v1/sessions/{id}")),
+        ("DELETE", format!("/v1/sessions/{id}")),
+        ("POST", format!("/v1/sessions/{id}/messages")),
+        ("POST", format!("/v1/sessions/{id}/cancel")),
+        ("GET", format!("/v1/sessions/{id}/events")),
+        ("GET", format!("/v1/sessions/{id}/stream")),
+        ("GET", format!("/v1/sessions/{id}/files?path=a.txt")),
+        ("PUT", format!("/v1/sessions/{id}/files?path=a.txt")),
+        ("POST", format!("/v1/sessions/{id}/exec")),
+        ("GET", "/v1/skills".into()),
+        ("POST", "/v1/skills".into()),
+        ("GET", "/v1/skills/demo".into()),
+        ("PUT", "/v1/skills/demo".into()),
+        ("DELETE", "/v1/skills/demo".into()),
+        ("GET", "/v1/agent-config".into()),
+        ("PUT", "/v1/agent-config".into()),
+        ("GET", "/v1/agent-config/history".into()),
+        ("POST", "/v1/agent-config/revert".into()),
+        ("GET", "/v1/webhooks".into()),
+        ("POST", "/v1/webhooks".into()),
+        ("DELETE", "/v1/webhooks/some-hook".into()),
+        ("POST", "/v1/voice/transcribe".into()),
+        ("POST", "/v1/voice/speak".into()),
+    ]
+}
+
+#[tokio::test]
+async fn every_key_scoped_route_rejects_a_missing_key() {
+    let a = app(vec![]);
+    let session = a.sessions.create("alice", None).unwrap();
+    for (method, path) in key_scoped_routes(&session.id) {
+        let (status, body) = call(&a.router, method, &path, None, Some(json!({}))).await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "{method} {path}");
+        assert!(
+            body["error"].as_str().unwrap().contains("API key"),
+            "{body}"
+        );
+        // A malformed or unknown key is rejected the same way.
+        let (status, _) = call(&a.router, method, &path, Some("ar_nope"), None).await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "{method} {path}");
+    }
+}
+
+#[tokio::test]
+async fn keys_are_shown_once_listed_without_secret_and_revocable() {
+    let a = app(vec![]);
+    let bootstrap = a.key("alice");
+    let (status, created) = call(
+        &a.router,
+        "POST",
+        "/v1/keys",
+        Some(&bootstrap),
+        Some(json!({"name":"ci"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let key = created["key"].as_str().unwrap().to_string();
+    assert!(looks_like_key(&key) && key.len() == 51, "{key}");
+    assert_eq!(created["prefix"], key[..11]);
+    let (status, list) = call(&a.router, "GET", "/v1/keys", Some(&key), None).await;
+    assert_eq!(status, StatusCode::OK);
+    let text = list.to_string();
+    assert!(!text.contains(&key), "the key must never be listed");
+    assert!(!text.contains(&agent_rush::api_keys::key_hash(&key)));
+    assert_eq!(list["keys"].as_array().unwrap().len(), 2);
+
+    // Another owner cannot revoke it.
+    let bob = a.key("bob");
+    let id = created["id"].as_str().unwrap();
+    let (status, _) = call(
+        &a.router,
+        "DELETE",
+        &format!("/v1/keys/{id}"),
+        Some(&bob),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let (status, _) = call(
+        &a.router,
+        "DELETE",
+        &format!("/v1/keys/{id}"),
+        Some(&bootstrap),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, body) = call(&a.router, "GET", "/v1/sessions", Some(&key), None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(body["error"], "Invalid or revoked API key");
+    // The bootstrap key still works, and the revoked key shows as revoked.
+    let (status, list) = call(&a.router, "GET", "/v1/keys", Some(&bootstrap), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        list["keys"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|k| k["id"] == id && k["revoked"] == true)
+    );
+}
+
+#[tokio::test]
+async fn the_operator_cookie_with_csrf_can_create_keys() {
+    let a = app(vec![]);
+    let response = send(
+        &a.router,
+        Request::post("/api/login")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"password": common::PASSWORD}).to_string(),
+            ))
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    let cookie = response.headers()["set-cookie"]
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .to_string();
+    let body: Value =
+        serde_json::from_slice(&response.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    let csrf = body["csrf"].as_str().unwrap().to_string();
+    let create = |csrf: Option<&str>| {
+        let mut builder = Request::post("/v1/keys")
+            .header("cookie", &cookie)
+            .header("content-type", "application/json");
+        if let Some(csrf) = csrf {
+            builder = builder.header("x-csrf-token", csrf);
+        }
+        builder.body(Body::from("{}")).unwrap()
+    };
+    assert_eq!(
+        send(&a.router, create(None)).await.status(),
+        StatusCode::FORBIDDEN
+    );
+    let response = send(&a.router, create(Some(&csrf))).await;
+    assert_eq!(response.status(), StatusCode::CREATED);
+    let body: Value =
+        serde_json::from_slice(&response.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    let key = body["key"].as_str().unwrap();
+    assert_eq!(
+        a.ledger().api_key_owner(key).unwrap().as_deref(),
+        Some("operator")
+    );
+}
+
+#[tokio::test]
+async fn another_owner_gets_404_on_every_session_route() {
+    let a = app(vec![]);
+    let alice = a.key("alice");
+    let bob = a.key("bob");
+    let (status, created) = call(&a.router, "POST", "/v1/sessions", Some(&alice), None).await;
+    assert_eq!(status, StatusCode::CREATED);
+    let id = created["session"]["id"].as_str().unwrap().to_string();
+    let missing = "00000000-0000-0000-0000-000000000000";
+    for target in [id.as_str(), missing] {
+        let routes: Vec<(&str, String, Option<Value>)> = vec![
+            ("GET", format!("/v1/sessions/{target}"), None),
+            (
+                "POST",
+                format!("/v1/sessions/{target}/messages"),
+                Some(json!({"text":"hi"})),
+            ),
+            ("POST", format!("/v1/sessions/{target}/cancel"), None),
+            ("GET", format!("/v1/sessions/{target}/events"), None),
+            ("GET", format!("/v1/sessions/{target}/stream"), None),
+            (
+                "GET",
+                format!("/v1/sessions/{target}/files?path=a.txt"),
+                None,
+            ),
+            (
+                "PUT",
+                format!("/v1/sessions/{target}/files?path=a.txt"),
+                Some(json!("x")),
+            ),
+            (
+                "POST",
+                format!("/v1/sessions/{target}/exec"),
+                Some(json!({"command":"id"})),
+            ),
+            ("DELETE", format!("/v1/sessions/{target}"), None),
+        ];
+        for (method, path, body) in routes {
+            let (status, body) = call(&a.router, method, &path, Some(&bob), body).await;
+            assert_eq!(status, StatusCode::NOT_FOUND, "{method} {path}: {body}");
+            assert_eq!(body["error"], "Session not found", "{method} {path}");
+        }
+    }
+    // Bob's attempts changed nothing: no box, no events, still idle, not closed.
+    let view = a.sessions.get("alice", &id).unwrap().unwrap();
+    assert_eq!(view.status, SessionStatus::Idle);
+    assert_eq!(view.last_seq, 0);
+    assert!(view.box_id.is_none());
+    let (status, list) = call(&a.router, "GET", "/v1/sessions", Some(&bob), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(list["sessions"], json!([]));
+}
+
+/// Reads SSE frames until `done` holds for the event ids seen so far.
+async fn read_sse(
+    body: &mut (impl futures_util::Stream<Item = Result<Bytes, axum::Error>> + Unpin),
+    ids: &mut Vec<i64>,
+    kinds: &mut Vec<String>,
+    done: impl Fn(&[String]) -> bool,
+) {
+    let mut buffer = String::new();
+    tokio::time::timeout(WAIT, async {
+        while !done(kinds) {
+            let chunk = body.next().await.expect("stream ended").unwrap();
+            buffer.push_str(&String::from_utf8_lossy(&chunk));
+            while let Some(end) = buffer.find("\n\n") {
+                let frame: String = buffer.drain(..end + 2).collect();
+                for line in frame.lines() {
+                    if let Some(id) = line.strip_prefix("id: ") {
+                        ids.push(id.parse().unwrap());
+                    }
+                    if let Some(kind) = line.strip_prefix("event: ") {
+                        kinds.push(kind.to_string());
+                    }
+                }
+            }
+        }
+    })
+    .await
+    .expect("timed out reading the event stream");
+}
+
+#[tokio::test]
+async fn session_turn_then_sse_replays_after_last_event_id_and_streams_live() {
+    let a = app(vec![bash("echo hi"), reply("Done: hi")]);
+    let alice = a.key("alice");
+    let (status, created) = call(
+        &a.router,
+        "POST",
+        "/v1/sessions",
+        Some(&alice),
+        Some(json!({"title":"demo","message":"say hi"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{created}");
+    let id = created["session"]["id"].as_str().unwrap().to_string();
+    assert_eq!(created["sent"]["interjection"], false);
+    let view = a.sessions.wait_idle("alice", &id, WAIT).await.unwrap();
+    assert_eq!(view.status, SessionStatus::Idle);
+
+    let (status, events) = call(
+        &a.router,
+        "GET",
+        &format!("/v1/sessions/{id}/events?after=0&limit=1000"),
+        Some(&alice),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let kinds: Vec<&str> = events["events"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["kind"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        kinds,
+        [
+            "user",
+            "status",
+            "tool_call",
+            "tool_result",
+            "assistant",
+            "status"
+        ]
+    );
+    let last = events["next_after"].as_i64().unwrap();
+    assert_eq!(last, 6);
+
+    // Reconnect after event 2: the replay starts at 3 and has no repeats.
+    let response = send(
+        &a.router,
+        Request::get(format!("/v1/sessions/{id}/stream"))
+            .header("authorization", format!("Bearer {alice}"))
+            .header("last-event-id", "2")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert!(
+        response.headers()["content-type"]
+            .to_str()
+            .unwrap()
+            .starts_with("text/event-stream")
+    );
+    let mut body = response.into_body().into_data_stream();
+    let (mut ids, mut seen) = (Vec::new(), Vec::new());
+    read_sse(&mut body, &mut ids, &mut seen, |k| k.len() >= 4).await;
+    assert_eq!(ids, [3, 4, 5, 6]);
+    assert_eq!(seen, ["tool_call", "tool_result", "assistant", "status"]);
+
+    // Then live: a new message streams its events after the replay.
+    let (status, sent) = call(
+        &a.router,
+        "POST",
+        &format!("/v1/sessions/{id}/messages"),
+        Some(&alice),
+        Some(json!({"text":"again"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::ACCEPTED);
+    assert_eq!(sent["seq"], 7);
+    read_sse(&mut body, &mut ids, &mut seen, |k| {
+        k.iter().filter(|k| *k == "assistant").count() == 2
+    })
+    .await;
+    assert_eq!(&ids[4..7], [7, 8, 9]);
+
+    // `?after=` works the same way.
+    let response = send(
+        &a.router,
+        Request::get(format!("/v1/sessions/{id}/stream?after=8"))
+            .header("authorization", format!("Bearer {alice}"))
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    let mut body = response.into_body().into_data_stream();
+    let (mut ids, mut seen) = (Vec::new(), Vec::new());
+    read_sse(&mut body, &mut ids, &mut seen, |k| k.len() >= 2).await;
+    assert_eq!(ids, [9, 10]);
+}
+
+#[tokio::test]
+async fn files_exec_and_close() {
+    let a = app(vec![]);
+    let alice = a.key("alice");
+    let (_, created) = call(&a.router, "POST", "/v1/sessions", Some(&alice), None).await;
+    let id = created["session"]["id"].as_str().unwrap().to_string();
+
+    let response = send(
+        &a.router,
+        Request::put(format!("/v1/sessions/{id}/files?path=notes/a.md"))
+            .header("authorization", format!("Bearer {alice}"))
+            .body(Body::from("# hello\n"))
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    let response = send(
+        &a.router,
+        Request::get(format!("/v1/sessions/{id}/files?path=notes/a.md"))
+            .header("authorization", format!("Bearer {alice}"))
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers()["content-type"],
+        "text/plain; charset=utf-8"
+    );
+    assert!(
+        response.headers()["content-disposition"]
+            .to_str()
+            .unwrap()
+            .starts_with("attachment")
+    );
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(&bytes[..], b"# hello\n");
+
+    let (status, listing) = call(
+        &a.router,
+        "GET",
+        &format!("/v1/sessions/{id}/files?path=."),
+        Some(&alice),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(listing["entries"][0]["name"], "notes/a.md");
+
+    let (status, missing) = call(
+        &a.router,
+        "GET",
+        &format!("/v1/sessions/{id}/files?path=nope.txt"),
+        Some(&alice),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "{missing}");
+
+    let (status, ran) = call(
+        &a.router,
+        "POST",
+        &format!("/v1/sessions/{id}/exec"),
+        Some(&alice),
+        Some(json!({"command":"ls -la","timeout_seconds":30})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(ran["stdout"], "ran: ls -la\n");
+    let (status, _) = call(
+        &a.router,
+        "POST",
+        &format!("/v1/sessions/{id}/exec"),
+        Some(&alice),
+        Some(json!({"command":"ls","timeout_seconds":0})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    let (status, _) = call(
+        &a.router,
+        "DELETE",
+        &format!("/v1/sessions/{id}"),
+        Some(&alice),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, body) = call(
+        &a.router,
+        "POST",
+        &format!("/v1/sessions/{id}/messages"),
+        Some(&alice),
+        Some(json!({"text":"hi"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT, "{body}");
+}
+
+#[tokio::test]
+async fn sessions_without_a_worker_answer_503_but_skills_still_work() {
+    let a = app_without_sessions();
+    let key = a.key("alice");
+    let (status, body) = call(&a.router, "GET", "/v1/sessions", Some(&key), None).await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert!(body["error"].as_str().unwrap().contains("not configured"));
+    let (status, _) = call(&a.router, "GET", "/v1/skills", Some(&key), None).await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, body) = call(&a.router, "GET", "/v1/status", Some(&key), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["sessions_available"], false);
+    assert_eq!(body["voice_available"], false);
+    assert_eq!(body["mcp_servers"], json!([]));
+    assert_eq!(body["limits"]["max_file_bytes"], 25 * 1024 * 1024);
+}
+
+#[tokio::test]
+async fn voice_routes_are_404_when_unconfigured() {
+    let a = app(vec![]);
+    let key = a.key("alice");
+    for path in ["/v1/voice/transcribe", "/v1/voice/speak"] {
+        let (status, body) = call(
+            &a.router,
+            "POST",
+            path,
+            Some(&key),
+            Some(json!({"text":"hi"})),
+        )
+        .await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{path}");
+        assert_eq!(body["error"], "Voice is not configured on this deployment");
+    }
+}
+
+#[tokio::test]
+async fn skills_and_agent_config_round_trip_with_the_mcp_allowlist_enforced() {
+    let a = app(vec![]);
+    let key = a.key("alice");
+    let k = Some(key.as_str());
+    let (status, _) = call(
+        &a.router,
+        "POST",
+        "/v1/skills",
+        k,
+        Some(json!({"name":"deploy","description":"Ship it","body":"Run make deploy."})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let (status, skill) = call(&a.router, "GET", "/v1/skills/deploy", k, None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(skill["markdown"].as_str().unwrap().contains("name: deploy"));
+    let (status, _) = call(
+        &a.router,
+        "PUT",
+        "/v1/skills/deploy",
+        k,
+        Some(json!({"name":"other","description":"x","body":"y"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (_, list) = call(&a.router, "GET", "/v1/skills", k, None).await;
+    assert_eq!(list["skills"][0]["name"], "deploy");
+    let bob = a.key("bob");
+    let (status, _) = call(&a.router, "DELETE", "/v1/skills/deploy", Some(&bob), None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _) = call(&a.router, "DELETE", "/v1/skills/deploy", k, None).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // An MCP server the operator did not configure is refused.
+    let (status, body) = call(
+        &a.router,
+        "PUT",
+        "/v1/agent-config",
+        k,
+        Some(json!({"config":{"mcp_servers":["not-configured"]}})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+    let (status, body) = call(
+        &a.router,
+        "PUT",
+        "/v1/agent-config",
+        k,
+        Some(json!({"config":{"system_addendum":"Be brief.","disabled_tools":["browser"]},"reason":"tune"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["version"], 1);
+    let (_, current) = call(&a.router, "GET", "/v1/agent-config", k, None).await;
+    assert_eq!(current["config"]["system_addendum"], "Be brief.");
+    let (status, body) = call(
+        &a.router,
+        "POST",
+        "/v1/agent-config/revert",
+        k,
+        Some(json!({"version":0})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["version"], 2);
+    let (_, history) = call(&a.router, "GET", "/v1/agent-config/history", k, None).await;
+    assert_eq!(history["history"].as_array().unwrap().len(), 2);
+    assert_eq!(history["history"][0]["author"], "user");
+    let (status, _) = call(
+        &a.router,
+        "POST",
+        "/v1/agent-config/revert",
+        k,
+        Some(json!({"version":99})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[test]
+fn hmac_matches_rfc_4231() {
+    // RFC 4231 test case 2.
+    assert_eq!(
+        hex::encode(hmac_sha256(b"Jefe", b"what do ya want for nothing?")),
+        "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+    );
+    // Test case 6: a key longer than the block size.
+    assert_eq!(
+        hex::encode(hmac_sha256(
+            &[0xaa; 131],
+            b"Test Using Larger Than Block-Size Key - Hash Key First"
+        )),
+        "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
+    );
+}
+
+#[tokio::test]
+async fn the_production_guard_refuses_private_and_reserved_webhook_targets() {
+    let public = UrlGuard::public();
+    for url in [
+        "https://127.0.0.1/hook",
+        "https://localhost/hook",
+        "https://10.1.2.3/hook",
+        "https://172.16.0.1/hook",
+        "https://192.168.1.1/hook",
+        "https://169.254.169.254/latest/meta-data",
+        "https://100.64.0.1/hook",
+        "https://0.0.0.0/hook",
+        "https://[::1]/hook",
+        "https://[fd00::1]/hook",
+        "https://[fe80::1]/hook",
+        "https://[::ffff:10.0.0.1]/hook",
+        "http://93.184.215.14/hook",
+        "https://user:pw@93.184.215.14/hook",
+        "not a url",
+    ] {
+        assert!(public.check(url).await.is_err(), "{url} must be refused");
+    }
+    assert!(public.check("https://93.184.215.14/hook").await.is_ok());
+    assert!(!is_forbidden_ip("8.8.8.8".parse().unwrap()));
+    // The test-only guard allows loopback and nothing else private.
+    let test = UrlGuard::allow_loopback_for_tests();
+    assert!(test.check("http://127.0.0.1:9/hook").await.is_ok());
+    for url in [
+        "http://10.0.0.1/hook",
+        "http://169.254.169.254/",
+        "http://[fd00::1]/",
+    ] {
+        assert!(test.check(url).await.is_err(), "{url} must be refused");
+    }
+    // The API applies the guard at create time.
+    let a = app(vec![]);
+    let key = a.key("alice");
+    let (status, body) = call(
+        &a.router,
+        "POST",
+        "/v1/webhooks",
+        Some(&key),
+        Some(json!({"url":"http://169.254.169.254/latest"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+}
+
+#[tokio::test]
+async fn turn_end_webhook_is_signed_with_the_webhook_secret() {
+    // An in-process receiver on loopback (allowed only by the test-only guard).
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<(HeaderMap, Bytes)>();
+    let receiver = Router::new().route(
+        "/hook",
+        post(move |headers: HeaderMap, body: Bytes| {
+            let tx = tx.clone();
+            async move {
+                tx.send((headers, body)).unwrap();
+                "ok"
+            }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    tokio::spawn(async move { axum::serve(listener, receiver).await.unwrap() });
+
+    let a: App = app(vec![reply("Bob done"), reply("All done")]);
+    let key = a.key("alice");
+    let (status, hook) = call(
+        &a.router,
+        "POST",
+        "/v1/webhooks",
+        Some(&key),
+        Some(json!({"url": format!("http://127.0.0.1:{port}/hook")})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{hook}");
+    let secret = hook["secret"].as_str().unwrap().to_string();
+    let (_, list) = call(&a.router, "GET", "/v1/webhooks", Some(&key), None).await;
+    assert!(
+        !list.to_string().contains(&secret),
+        "secrets are shown once"
+    );
+    // Another owner's turns never reach alice's webhook.
+    let bob_session = a.sessions.create("bob", None).unwrap();
+
+    webhooks::spawn(
+        a.sessions.clone(),
+        a.state.ledger.clone(),
+        UrlGuard::allow_loopback_for_tests(),
+    );
+    a.sessions.send("bob", &bob_session.id, "hi").unwrap();
+    a.sessions
+        .wait_idle("bob", &bob_session.id, WAIT)
+        .await
+        .unwrap();
+    let session = a.sessions.create("alice", None).unwrap();
+    a.sessions.send("alice", &session.id, "finish up").unwrap();
+
+    let (headers, body) = tokio::time::timeout(WAIT, rx.recv())
+        .await
+        .expect("no webhook delivery")
+        .unwrap();
+    let sig = headers["x-agent-signature"].to_str().unwrap();
+    assert_eq!(sig, signature(&secret, &body));
+    assert_eq!(
+        sig,
+        format!(
+            "sha256={}",
+            hex::encode(hmac_sha256(secret.as_bytes(), &body))
+        )
+    );
+    assert_ne!(sig, signature("whsec_wrong", &body));
+    let payload: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload["session_id"], session.id);
+    assert_eq!(payload["status"], "idle");
+    assert_eq!(payload["last_reply"], "All done");
+    assert!(rx.try_recv().is_err(), "only alice's turn end is delivered");
+}
