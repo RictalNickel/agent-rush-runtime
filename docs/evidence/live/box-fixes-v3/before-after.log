@@ -1,0 +1,13 @@
+## before: tmpfs options rw,nosuid,nodev
+none /tmp tmpfs rw,nosuid,noexec,size=1048576k,mode=1777 0 0
+none /home/agent tmpfs rw,nosuid,noexec,size=1048576k,mode=0755,uid=1000,gid=1000 0 0
+ImportError: /home/agent/pkgs/numpy/core/_multiarray_umath.cpython-312-x86_64-linux-gnu.so: failed to map segment from shared object
+Original error was: /home/agent/pkgs/numpy/core/_multiarray_umath.cpython-312-x86_64-linux-gnu.so: failed to map segment from shared object
+exit=0
+## after: tmpfs options rw,exec,nosuid,nodev
+none /tmp tmpfs rw,nosuid,size=1048576k,mode=1777 0 0
+none /home/agent tmpfs rw,nosuid,size=1048576k,mode=0755,uid=1000,gid=1000 0 0
+numpy 1.26.4 loaded from /home/agent/pkgs/numpy/__init__.py
+exit=0
+## before: the old exec wrapper, command in argv; it runs pkill -f 'python3 app.py'
+docker exec exit=143 (no AREXEC header: the worker answered HTTP 500)

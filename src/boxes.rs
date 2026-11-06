@@ -188,8 +188,11 @@ pub fn docker_create_args(spec: &BoxSpec, image: &str, network: &str, box_id: &s
         "--ulimit=nofile=4096:4096".into(),
         "--log-driver=none".into(),
         "--init".into(),
-        "--tmpfs=/tmp:rw,nosuid,nodev,size=1024m,mode=1777".into(),
-        "--tmpfs=/home/agent:rw,nosuid,nodev,size=1024m,uid=1000,gid=1000,mode=0755".into(),
+        // Docker mounts tmpfs noexec unless told otherwise, and then no compiled Python or
+        // Node package installed under $HOME (or built in /tmp) can load. The gVisor box is
+        // the sandbox, and /workspace is executable anyway, so these two are as well.
+        "--tmpfs=/tmp:rw,exec,nosuid,nodev,size=1024m,mode=1777".into(),
+        "--tmpfs=/home/agent:rw,exec,nosuid,nodev,size=1024m,uid=1000,gid=1000,mode=0755".into(),
         "--workdir=/workspace".into(),
         "-v".into(),
         format!("{name}:/workspace"),
@@ -233,16 +236,81 @@ fn valid_box_id(id: &str) -> bool {
 /// and at most `$2` bytes of each stream. Output goes to files first, so a server left
 /// running in the background cannot hold the exec open; `timeout` kills the command's
 /// process group, and the box itself bounds /tmp.
-const EXEC_SCRIPT: &str = r#"d=$(mktemp -d /tmp/.arexec.XXXXXX) || exit 125
+///
+/// The command arrives on stdin as its first `$3` bytes, ahead of the caller's own stdin,
+/// and is run from a file with `eval` (the same semantics as `bash -lc`). It never appears
+/// in any process's arguments, so a `pkill -f` aimed at a server the command started
+/// cannot match, and kill, the shells running it. If the command kills them anyway (with
+/// `kill 0`, say), its output is still in `/tmp/.arexec.$4` for `COLLECT_SCRIPT`.
+const EXEC_SCRIPT: &str = r#"d=/tmp/.arexec.$4
+mkdir -m 0700 "$d" || exit 125
+head -c "$3" >"$d/command" || exit 125
 s=$(date +%s)
-timeout -k 5 "$1" bash -lc "$3" >"$d/o" 2>"$d/e"
+timeout -k 5 "$1" bash -lc '__arexec_c=$(<"$1") && shift && eval "unset __arexec_c; $__arexec_c"' bash "$d/command" >"$d/o" 2>"$d/e"
 rc=$?
 to=0
 if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then [ $(( $(date +%s) - s )) -ge "$1" ] && to=1; fi
-printf 'AREXEC %s %s %s %s\n' "$rc" "$to" "$(stat -c %s "$d/o")" "$(stat -c %s "$d/e")"
-head -c "$2" "$d/o"
-head -c "$2" "$d/e"
+o=$(stat -c %s "$d/o") e=$(stat -c %s "$d/e")
+printf 'AREXEC %s %s %s %s\n' "$rc" "$to" "$o" "$e"
+head -c $(( o < $2 ? o : $2 )) "$d/o"
+head -c $(( e < $2 ? e : $2 )) "$d/e"
 rm -rf "$d""#;
+/// The in-box arguments and stdin of `EXEC_SCRIPT` for one command, run as `run` (32 hex
+/// digits, unique per call).
+pub fn exec_invocation(
+    command: &str,
+    stdin: Option<&str>,
+    seconds: u32,
+    run: &str,
+) -> (Vec<String>, Vec<u8>) {
+    let args = vec![
+        "bash".into(),
+        "-c".into(),
+        EXEC_SCRIPT.into(),
+        "arexec".into(),
+        seconds.to_string(),
+        MAX_EXEC_OUTPUT_BYTES.to_string(),
+        command.len().to_string(),
+        run.into(),
+    ];
+    let mut input = command.as_bytes().to_vec();
+    input.extend_from_slice(stdin.unwrap_or_default().as_bytes());
+    (args, input)
+}
+/// Collects what a command wrote before it killed the `EXEC_SCRIPT` running it, in the same
+/// format, with `$3` as the exit code; exits 4 when there is nothing to collect.
+const COLLECT_SCRIPT: &str = r#"d=/tmp/.arexec.$1
+[ -d "$d" ] || exit 4
+o=$(stat -c %s "$d/o" 2>/dev/null || echo 0) e=$(stat -c %s "$d/e" 2>/dev/null || echo 0)
+printf 'AREXEC %s 0 %s %s\n' "$3" "$o" "$e"
+[ "$o" -eq 0 ] || head -c $(( o < $2 ? o : $2 )) "$d/o"
+[ "$e" -eq 0 ] || head -c $(( e < $2 ? e : $2 )) "$d/e"
+rm -rf "$d""#;
+/// `docker exec` exits 128+N when the process it ran died of signal N. For an exec, that
+/// process is the wrapper shell, so this is the command killing its own shell (a broad
+/// `pkill -f`, `kill 0`), not a broken box: the exec still has a result, with exit code
+/// 128+N (as a shell reports it) and a note for stderr. Any other status without a result
+/// means the exec itself failed.
+pub fn killed_shell_exit(docker_code: Option<i32>) -> Option<(i64, String)> {
+    let signal = docker_code?
+        .checked_sub(128)
+        .filter(|n| (1..=64).contains(n))?;
+    let name = match signal {
+        1 => " (SIGHUP)",
+        2 => " (SIGINT)",
+        3 => " (SIGQUIT)",
+        6 => " (SIGABRT)",
+        9 => " (SIGKILL)",
+        11 => " (SIGSEGV)",
+        13 => " (SIGPIPE)",
+        15 => " (SIGTERM)",
+        _ => "",
+    };
+    Some((
+        128 + i64::from(signal),
+        format!("[the shell was terminated by signal {signal}{name}]"),
+    ))
+}
 /// Shared prologue of the file scripts: resolve symlinks inside the box, then refuse any
 /// result outside /workspace and /tmp (exit 3).
 const RESOLVE: &str = r#"p=$(realpath -m -- "$1") || exit 3
@@ -1510,23 +1578,17 @@ impl BoxManager {
             .unwrap_or(DEFAULT_EXEC_TIMEOUT_SECONDS)
             .clamp(1, MAX_EXEC_TIMEOUT_SECONDS);
         let _call = self.enter(box_id).await?;
-        let script = vec![
-            "bash".into(),
-            "-c".into(),
-            EXEC_SCRIPT.into(),
-            "arexec".into(),
-            seconds.to_string(),
-            MAX_EXEC_OUTPUT_BYTES.to_string(),
-            request.command.clone(),
-        ];
-        let stdin = Bytes::from(request.stdin.clone().unwrap_or_default());
+        let run = uuid::Uuid::new_v4().simple().to_string();
+        let (script, input) =
+            exec_invocation(&request.command, request.stdin.as_deref(), seconds, &run);
+        let limit = 2 * MAX_EXEC_OUTPUT_BYTES + 256;
         let out = self
             .box_exec(
                 box_id,
                 &script,
                 &cwd,
-                Some(stdin),
-                2 * MAX_EXEC_OUTPUT_BYTES + 256,
+                Some(Bytes::from(input)),
+                limit,
                 Duration::from_secs(seconds as u64 + 20),
             )
             .await?;
@@ -1540,33 +1602,54 @@ impl BoxManager {
                 truncated: false,
             });
         }
-        let Some((header, body)) = split_header(&out.stdout, b'\n') else {
-            if out.stderr.contains("no such file or directory") && out.stderr.contains("chdir") {
-                return Err(invalid(format!("working directory {cwd} does not exist")).into());
-            }
-            anyhow::bail!("box exec failed: {}", out.stderr);
+        if let Some((header, body)) = split_header(&out.stdout, b'\n') {
+            return parse_exec_report(header, body);
+        }
+        if out.stderr.contains("no such file or directory") && out.stderr.contains("chdir") {
+            return Err(invalid(format!("working directory {cwd} does not exist")).into());
+        }
+        let Some((exit_code, note)) = killed_shell_exit(out.code) else {
+            anyhow::bail!(
+                "box exec failed (docker exit {}): {}",
+                out.code.map_or("none".into(), |c| c.to_string()),
+                out.stderr
+            );
         };
-        let fields: Vec<&str> = header.split(' ').collect();
-        let [tag, rc, to, olen, elen] = fields[..] else {
-            anyhow::bail!("box exec returned a malformed header");
+        tracing::info!(box_id=%box_id, exit_code, "the command killed the shell running it");
+        let collect = vec![
+            "bash".into(),
+            "-c".into(),
+            COLLECT_SCRIPT.into(),
+            "arcollect".into(),
+            run,
+            MAX_EXEC_OUTPUT_BYTES.to_string(),
+            exit_code.to_string(),
+        ];
+        let collected = self
+            .box_exec(
+                box_id,
+                &collect,
+                "/tmp",
+                None,
+                limit,
+                Duration::from_secs(60),
+            )
+            .await?;
+        let mut result = match split_header(&collected.stdout, b'\n') {
+            Some((header, body)) if !collected.timed_out => parse_exec_report(header, body)?,
+            _ => ExecResult {
+                exit_code,
+                stdout: String::new(),
+                stderr: String::new(),
+                timed_out: false,
+                truncated: false,
+            },
         };
-        ensure!(tag == "AREXEC", "box exec returned a malformed header");
-        let (rc, olen, elen): (i64, usize, usize) = (rc.parse()?, olen.parse()?, elen.parse()?);
-        let kept_out = olen.min(MAX_EXEC_OUTPUT_BYTES).min(body.len());
-        let kept_err = elen.min(MAX_EXEC_OUTPUT_BYTES).min(body.len() - kept_out);
-        let (stdout, cut_out) = truncate_utf8(&body[..kept_out], MAX_EXEC_OUTPUT_BYTES);
-        let (stderr, cut_err) =
-            truncate_utf8(&body[kept_out..kept_out + kept_err], MAX_EXEC_OUTPUT_BYTES);
-        Ok(ExecResult {
-            exit_code: rc,
-            stdout,
-            stderr,
-            timed_out: to == "1",
-            truncated: cut_out
-                || cut_err
-                || olen > MAX_EXEC_OUTPUT_BYTES
-                || elen > MAX_EXEC_OUTPUT_BYTES,
-        })
+        if !result.stderr.is_empty() && !result.stderr.ends_with('\n') {
+            result.stderr.push('\n');
+        }
+        result.stderr.push_str(&note);
+        Ok(result)
     }
 
     async fn file_script(
@@ -2100,6 +2183,30 @@ fn recheck(resolved: &str) -> Result<()> {
         ))
     );
     Ok(())
+}
+/// An `AREXEC` header and the at most `MAX_EXEC_OUTPUT_BYTES` of each stream after it.
+fn parse_exec_report(header: &str, body: &[u8]) -> Result<ExecResult> {
+    let fields: Vec<&str> = header.split(' ').collect();
+    let [tag, rc, to, olen, elen] = fields[..] else {
+        anyhow::bail!("box exec returned a malformed header");
+    };
+    ensure!(tag == "AREXEC", "box exec returned a malformed header");
+    let (rc, olen, elen): (i64, usize, usize) = (rc.parse()?, olen.parse()?, elen.parse()?);
+    let kept_out = olen.min(MAX_EXEC_OUTPUT_BYTES).min(body.len());
+    let kept_err = elen.min(MAX_EXEC_OUTPUT_BYTES).min(body.len() - kept_out);
+    let (stdout, cut_out) = truncate_utf8(&body[..kept_out], MAX_EXEC_OUTPUT_BYTES);
+    let (stderr, cut_err) =
+        truncate_utf8(&body[kept_out..kept_out + kept_err], MAX_EXEC_OUTPUT_BYTES);
+    Ok(ExecResult {
+        exit_code: rc,
+        stdout,
+        stderr,
+        timed_out: to == "1",
+        truncated: cut_out
+            || cut_err
+            || olen > MAX_EXEC_OUTPUT_BYTES
+            || elen > MAX_EXEC_OUTPUT_BYTES,
+    })
 }
 fn split_header(bytes: &[u8], end: u8) -> Option<(&str, &[u8])> {
     let at = bytes.iter().take(8192).position(|b| *b == end)?;
