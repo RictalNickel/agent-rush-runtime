@@ -13,9 +13,9 @@ use crate::{
     session_store::{MAX_MESSAGE_BYTES, SessionEvent, SessionStatus, SessionView},
     skills::builtin_skills,
     tools::{
-        AgentConfigPatch, ConfigAction, McpAction, SkillAction, SkillIndexEntry, ToolCall,
-        apply_edit, clip_strings, effort, expand_template, json_span, parse_call, shell_quote,
-        system_prompt, truncate_bytes, truncate_text,
+        AgentConfigPatch, ConfigAction, MAX_COMMAND_BYTES, McpAction, SkillAction, SkillIndexEntry,
+        ToolCall, apply_edit, clip_strings, effort, expand_template, json_span, parse_call,
+        shell_quote, system_prompt, truncate_bytes, truncate_text,
     },
 };
 use anyhow::{Context, Result, anyhow, bail, ensure};
@@ -25,7 +25,7 @@ use serde_json::{Value, json};
 use std::{
     collections::HashMap,
     future::Future,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, MutexGuard},
     time::Duration,
 };
 use tokio::{
@@ -61,14 +61,20 @@ pub trait SessionModel: Send + Sync {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SessionLimits {
     /// Model calls per turn.
     pub max_turn_steps: u32,
     pub max_turn_seconds: u64,
     pub box_memory_mb: u32,
     pub box_cpu_millis: u32,
+    /// Model spend one turn may reach before its next model call is refused.
+    pub max_turn_usd: f64,
+    /// Model spend a session may reach before its next model call is refused.
+    pub max_session_usd: f64,
 }
+// The spend caps are finite configuration values, never NaN, so equality is total.
+impl Eq for SessionLimits {}
 impl Default for SessionLimits {
     fn default() -> Self {
         Self {
@@ -76,8 +82,42 @@ impl Default for SessionLimits {
             max_turn_seconds: 1800,
             box_memory_mb: 1024,
             box_cpu_millis: 1000,
+            max_turn_usd: 0.50,
+            max_session_usd: 5.00,
         }
     }
+}
+
+/// A model call that failed after it was billed: the gateway kept `usd` in its spend
+/// ledger (a settled amount, or the reservation it retained), so the session records it.
+/// Display and the error chain are those of the wrapped error.
+#[derive(Debug)]
+pub struct ChargedError {
+    pub usd: f64,
+    error: anyhow::Error,
+}
+impl ChargedError {
+    pub fn wrap(error: anyhow::Error, usd: f64) -> anyhow::Error {
+        anyhow::Error::new(Self { usd, error })
+    }
+}
+impl std::fmt::Display for ChargedError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.error, f)
+    }
+}
+impl std::error::Error for ChargedError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.error.chain().nth(1)
+    }
+}
+/// The amount a failed model call was billed, when the error says so.
+fn charged_usd(error: &anyhow::Error) -> Option<f64> {
+    error
+        .chain()
+        .find_map(|e| e.downcast_ref::<ChargedError>())
+        .map(|c| c.usd)
+        .filter(|usd| usd.is_finite() && *usd > 0.0)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -103,12 +143,18 @@ struct Cancelled;
 #[derive(Debug, thiserror::Error)]
 #[error("turn time limit reached")]
 struct TimeLimit;
+#[derive(Debug, thiserror::Error)]
+#[error("spend limit reached: {0}")]
+struct SpendLimit(String);
 
 const INTERJECTION_PREFIX: &str = "[Message from the user, sent while you were working]\n";
 /// Events read back to rebuild the model's history at the start of a turn.
 const HISTORY_EVENTS: usize = 400;
 const BOX_CREATE_SECONDS: u64 = 180;
 const BOX_FILE_SECONDS: u64 = 120;
+/// Largest recorded `tool_call` event payload. A call that cannot be clipped below it is
+/// recorded as a stub and refused.
+const MAX_RECORDED_CALL_BYTES: usize = 64 * 1024;
 
 #[derive(Clone)]
 pub struct Sessions {
@@ -126,6 +172,32 @@ struct Inner {
     /// This lock also orders "queue an interjection" against "end the turn".
     turns: Mutex<HashMap<String, watch::Sender<bool>>>,
     box_locks: Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>,
+}
+
+/// Settles a turn task that panicked or was dropped before it settled itself, so the
+/// session never stays `running` with a stale `turns` entry.
+struct TurnGuard {
+    inner: Arc<Inner>,
+    owner: String,
+    id: String,
+    settled: bool,
+}
+impl Drop for TurnGuard {
+    fn drop(&mut self) {
+        if self.settled {
+            return;
+        }
+        let (inner, owner, id) = (self.inner.clone(), self.owner.clone(), self.id.clone());
+        // While unwinding, a second panic (say, from a poisoned ledger lock) would abort
+        // the process, so the cleanup runs as its own task when a runtime is available.
+        if std::thread::panicking()
+            && let Ok(runtime) = tokio::runtime::Handle::try_current()
+        {
+            runtime.spawn(async move { inner.abandon_turn(&owner, &id) });
+            return;
+        }
+        inner.abandon_turn(&owner, &id);
+    }
 }
 
 struct ToolOutput {
@@ -200,7 +272,7 @@ impl Sessions {
         );
         let inner = &self.inner;
         // Holding the turns lock orders this against a turn ending and against close.
-        let mut turns = inner.turns.lock().unwrap();
+        let mut turns = inner.lock_turns();
         let session = inner.owned(owner, id)?;
         if session.status == SessionStatus::Closed {
             return Err(SessionError::Closed.into());
@@ -253,11 +325,24 @@ impl Sessions {
         self.inner.events.subscribe()
     }
     /// Stops the running turn, if any, and drops queued interjections.
+    ///
+    /// A tool already running finishes and its result is recorded; the turn then stops
+    /// before its next model call. A model call in flight is abandoned by the turn but
+    /// completes in the background so its cost is still recorded. Dropped interjections
+    /// are marked in the log (`dropped_interjections`) and never reach the model.
     pub fn cancel(&self, owner: &str, id: &str) -> Result<()> {
         self.inner.owned(owner, id)?;
-        let turns = self.inner.turns.lock().unwrap();
+        let turns = self.inner.lock_turns();
         if let Some(signal) = turns.get(id) {
-            self.inner.ledger.take_pending(id)?;
+            let dropped = self.inner.ledger.take_pending(id)?.len();
+            let first = !*signal.borrow();
+            if first || dropped > 0 {
+                self.inner.emit(
+                    id,
+                    "status",
+                    json!({"status":"running","reason":"cancelling","dropped_interjections":dropped}),
+                )?;
+            }
             let _ = signal.send(true);
         }
         Ok(())
@@ -267,7 +352,7 @@ impl Sessions {
         let inner = &self.inner;
         inner.owned(owner, id)?;
         {
-            let turns = inner.turns.lock().unwrap();
+            let turns = inner.lock_turns();
             if let Some(signal) = turns.get(id) {
                 let _ = signal.send(true);
             }
@@ -275,7 +360,7 @@ impl Sessions {
             inner.ledger.set_session_status(id, SessionStatus::Closed)?;
         }
         let lock = inner.box_lock(id);
-        let _guard = lock.lock().await;
+        let guard = lock.lock().await;
         let session = inner.owned(owner, id)?;
         if let Some(box_id) = &session.box_id {
             match tokio::time::timeout(Duration::from_secs(60), inner.boxes.destroy(box_id)).await {
@@ -285,8 +370,16 @@ impl Sessions {
             }
             inner.ledger.set_session_box(id, None)?;
         }
+        drop(guard);
+        // A closed session never uses its box lock again.
+        inner.box_locks.lock().unwrap().remove(id);
         inner.emit(id, "status", json!({"status":"closed"}))?;
         Ok(())
+    }
+    /// Box locks currently tracked (one per session that used its box and is not closed).
+    #[doc(hidden)]
+    pub fn tracked_box_locks(&self) -> usize {
+        self.inner.box_locks.lock().unwrap().len()
     }
     /// Waits until no turn is running, or the timeout passes; returns the current view.
     pub async fn wait_idle(&self, owner: &str, id: &str, timeout: Duration) -> Result<SessionView> {
@@ -295,7 +388,7 @@ impl Sessions {
         loop {
             let session = self.inner.owned(owner, id)?;
             let running = session.status == SessionStatus::Running
-                || self.inner.turns.lock().unwrap().contains_key(id);
+                || self.inner.lock_turns().contains_key(id);
             let now = Instant::now();
             if !running || now >= deadline {
                 return Ok(session);
@@ -362,9 +455,49 @@ impl Inner {
             .or_default()
             .clone()
     }
+    /// The turns map. A panic elsewhere must not wedge every session, so a poisoned lock
+    /// is recovered (the map holds no invariant a panic could break halfway).
+    fn lock_turns(&self) -> MutexGuard<'_, HashMap<String, watch::Sender<bool>>> {
+        self.turns.lock().unwrap_or_else(|e| e.into_inner())
+    }
 
-    /// Runs turns until no message is queued, then settles the session status.
-    async fn run(self: Arc<Self>, owner: String, id: String, mut cancel: watch::Receiver<bool>) {
+    /// Runs turns until no message is queued, then settles the session status. If the
+    /// task panics or is dropped first, `TurnGuard` settles it instead.
+    async fn run(self: Arc<Self>, owner: String, id: String, cancel: watch::Receiver<bool>) {
+        let mut guard = TurnGuard {
+            inner: self.clone(),
+            owner: owner.clone(),
+            id: id.clone(),
+            settled: false,
+        };
+        self.run_turns(&owner, &id, cancel).await;
+        guard.settled = true;
+    }
+
+    /// Cleanup for a turn task that ended without settling: forget the turn and mark the
+    /// session failed. Queued interjections stay queued for the next turn.
+    fn abandon_turn(&self, owner: &str, id: &str) {
+        let mut turns = self.lock_turns();
+        turns.remove(id);
+        let closed = self
+            .ledger
+            .agent_session(owner, id)
+            .ok()
+            .flatten()
+            .is_none_or(|s| s.status == SessionStatus::Closed);
+        if !closed {
+            let _ = self.ledger.set_session_status(id, SessionStatus::Failed);
+            let _ = self.emit(
+                id,
+                "error",
+                json!({"message":"The turn stopped because of an internal error. Send a message to continue."}),
+            );
+            let _ = self.emit(id, "status", json!({"status":"failed","reason":"error"}));
+        }
+    }
+
+    async fn run_turns(&self, owner: &str, id: &str, mut cancel: watch::Receiver<bool>) {
+        let (owner, id) = (owner.to_string(), id.to_string());
         loop {
             let outcome = self.turn(&owner, &id, &mut cancel).await;
             let (status, reason) = match &outcome {
@@ -378,6 +511,8 @@ impl Inner {
                     );
                     let reason = if e.is::<TimeLimit>() {
                         "time_limit"
+                    } else if e.is::<SpendLimit>() {
+                        "spend_limit"
                     } else if e.to_string().contains("step limit") {
                         "step_limit"
                     } else {
@@ -386,7 +521,7 @@ impl Inner {
                     (SessionStatus::Failed, reason)
                 }
             };
-            let mut turns = self.turns.lock().unwrap();
+            let mut turns = self.lock_turns();
             let closed = self
                 .ledger
                 .agent_session(&owner, &id)
@@ -395,7 +530,8 @@ impl Inner {
                 .is_none_or(|s| s.status == SessionStatus::Closed);
             // Messages queued while this turn ran (even during its final model call) are
             // never dropped: they start the next turn. They are already recorded as
-            // `interjection` events, which the next turn's history includes.
+            // `interjection` events, which the next turn's history places after the reply
+            // (see `rebuild_history`), so its request is the user's latest input.
             let queued = if closed {
                 Vec::new()
             } else {
@@ -420,16 +556,31 @@ impl Inner {
     }
 
     /// Model history rebuilt from the event log, so sessions survive restarts.
+    ///
+    /// An interjection is recorded when it arrives but reaches the model only before the
+    /// next model call, so it is placed where it was delivered: after the next
+    /// `tool_result` or `assistant` event (or at the end). An interjection that arrives
+    /// during a turn's final model call therefore follows that reply and ends the history.
+    /// Interjections dropped by cancel (`dropped_interjections` on a status event; always
+    /// the newest undelivered ones) are left out.
     fn rebuild_history(&self, id: &str) -> Result<Vec<Value>> {
         let mut history = Vec::new();
+        let mut undelivered: Vec<Value> = Vec::new();
         for event in self.ledger.recent_session_events(id, HISTORY_EVENTS)? {
             let p = &event.payload;
             match event.kind.as_str() {
-                "user" => history.push(message("user", p["text"].as_str().unwrap_or(""))),
-                "interjection" => history.push(message(
+                "user" => {
+                    history.append(&mut undelivered);
+                    history.push(message("user", p["text"].as_str().unwrap_or("")));
+                }
+                "interjection" => undelivered.push(message(
                     "user",
                     format!("{INTERJECTION_PREFIX}{}", p["text"].as_str().unwrap_or("")),
                 )),
+                "status" => {
+                    let dropped = p["dropped_interjections"].as_u64().unwrap_or(0) as usize;
+                    undelivered.truncate(undelivered.len().saturating_sub(dropped));
+                }
                 "tool_call" => history.push(message(
                     "assistant",
                     if p["invalid"] == true {
@@ -438,22 +589,29 @@ impl Inner {
                         p["call"].to_string()
                     },
                 )),
-                "tool_result" => history.push(message(
-                    "user",
-                    tool_result_message(
-                        p["tool"].as_str().unwrap_or("tool call"),
-                        p["ok"] == true,
-                        p["output"].as_str().unwrap_or(""),
-                    ),
-                )),
-                "assistant" => history.push(message(
-                    "assistant",
-                    json!({"tool":"reply","text":p["text"],"attachments":p["attachments"]})
-                        .to_string(),
-                )),
+                "tool_result" => {
+                    history.push(message(
+                        "user",
+                        tool_result_message(
+                            p["tool"].as_str().unwrap_or("tool call"),
+                            p["ok"] == true,
+                            p["output"].as_str().unwrap_or(""),
+                        ),
+                    ));
+                    history.append(&mut undelivered);
+                }
+                "assistant" => {
+                    history.push(message(
+                        "assistant",
+                        json!({"tool":"reply","text":p["text"],"attachments":p["attachments"]})
+                            .to_string(),
+                    ));
+                    history.append(&mut undelivered);
+                }
                 _ => {}
             }
         }
+        history.append(&mut undelivered);
         Ok(history)
     }
 
@@ -484,30 +642,44 @@ impl Inner {
         let deadline = Instant::now() + Duration::from_secs(self.limits.max_turn_seconds);
         let budget = self.model.budget();
         let output_cap = (budget.max_bytes / 5).clamp(2000, 60_000);
-        let mut history = self.rebuild_history(id)?;
+        let mut history = {
+            // Every interjection recorded so far is in the event log, so the queue is
+            // cleared (under the lock `send` holds while queueing) to deliver each once.
+            let _turns = self.lock_turns();
+            self.ledger.take_pending(id)?;
+            self.rebuild_history(id)?
+        };
         if history.is_empty() {
             history.push(message("user", "Continue."));
         }
         let pinned = history.len() - 1;
+        let mut turn_usd = 0.0;
         for _ in 0..self.limits.max_turn_steps {
             if *cancel.borrow() {
                 return Err(Cancelled.into());
             }
+            self.check_spend(owner, id, turn_usd)?;
             for text in self.ledger.take_pending(id)? {
                 history.push(message("user", format!("{INTERJECTION_PREFIX}{text}")));
             }
             let (version, config) = self.ledger.agent_config(owner)?;
             let system = self.prompt(owner, &config, version)?;
             let messages = fit_messages(&system, &history, pinned, budget);
-            let reply = guarded(
-                cancel,
-                deadline,
-                self.model
-                    .complete_with_effort(&system, &messages, effort(&config)),
-            )
-            .await?;
+            let reply = match self
+                .call_model(id, cancel, deadline, system, messages, effort(&config))
+                .await
+            {
+                Ok(reply) => reply,
+                Err(error) => {
+                    if let Some(usd) = charged_usd(&error) {
+                        self.ledger.add_session_spend(id, usd)?;
+                    }
+                    return Err(error);
+                }
+            };
             if reply.cost_usd.is_finite() && reply.cost_usd > 0.0 {
                 self.ledger.add_session_spend(id, reply.cost_usd)?;
+                turn_usd += reply.cost_usd;
             }
             history.push(message("assistant", reply.text.clone()));
             let call = match parse_call(&reply.text, &config) {
@@ -543,11 +715,17 @@ impl Inner {
                 return Ok(());
             }
             let name = call.name().to_string();
-            let recorded = serde_json::from_str::<Value>(json_span(&reply.text))
-                .map(|v| clip_strings(&v, 16384))
-                .unwrap_or(Value::Null);
-            self.emit(id, "tool_call", json!({"tool": name, "call": recorded}))?;
-            let output = if config.disabled_tools.contains(&name) {
+            let recorded = record_call(&name, &reply.text);
+            self.emit(id, "tool_call", recorded.event)?;
+            let output = if !recorded.fits {
+                ToolOutput {
+                    ok: false,
+                    text: format!(
+                        "error: this {name} call is too large to record ({} bytes); split it into smaller calls or write large data to a file first",
+                        reply.text.len()
+                    ),
+                }
+            } else if config.disabled_tools.contains(&name) {
                 ToolOutput {
                     ok: false,
                     text: format!(
@@ -555,9 +733,16 @@ impl Inner {
                     ),
                 }
             } else {
-                match guarded(cancel, deadline, self.run_tool(owner, id, call, &config)).await {
+                // Cancel does not interrupt a running tool: it finishes and its result is
+                // recorded, then the turn stops before the next model call.
+                let run = self.run_tool(owner, id, call, &config);
+                match tokio::time::timeout_at(deadline, run)
+                    .await
+                    .map_err(|_| anyhow::Error::from(TimeLimit))
+                    .and_then(|r| r)
+                {
                     Ok(output) => output,
-                    Err(e) if e.is::<Cancelled>() || e.is::<TimeLimit>() => {
+                    Err(e) if e.is::<TimeLimit>() => {
                         let _ = self.emit(
                             id,
                             "tool_result",
@@ -586,6 +771,74 @@ impl Inner {
             "turn step limit reached ({} model calls)",
             self.limits.max_turn_steps
         )
+    }
+
+    /// Refuses the next model call once the turn or the session reached its spend cap.
+    fn check_spend(&self, owner: &str, id: &str, turn_usd: f64) -> Result<()> {
+        let limits = &self.limits;
+        if turn_usd >= limits.max_turn_usd {
+            return Err(SpendLimit(format!(
+                "this turn spent ${turn_usd:.4} of its ${:.2} cap",
+                limits.max_turn_usd
+            ))
+            .into());
+        }
+        let session_usd = self.owned(owner, id)?.spend_usd;
+        if session_usd >= limits.max_session_usd {
+            return Err(SpendLimit(format!(
+                "this session spent ${session_usd:.4} of its ${:.2} cap",
+                limits.max_session_usd
+            ))
+            .into());
+        }
+        Ok(())
+    }
+
+    /// One model call, raced against cancel and the turn deadline. The call runs as its
+    /// own task: when the turn stops waiting for it, it still completes in the background
+    /// and its cost (or the amount a failed call was charged) is added to the session.
+    async fn call_model(
+        &self,
+        id: &str,
+        cancel: &mut watch::Receiver<bool>,
+        deadline: Instant,
+        system: String,
+        messages: Vec<Value>,
+        effort: Option<&str>,
+    ) -> Result<ModelReply> {
+        let model = self.model.clone();
+        let effort = effort.map(String::from);
+        let mut call = tokio::spawn(async move {
+            model
+                .complete_with_effort(&system, &messages, effort.as_deref())
+                .await
+        });
+        fn joined(
+            result: Result<Result<ModelReply>, tokio::task::JoinError>,
+        ) -> Result<ModelReply> {
+            match result {
+                Ok(reply) => reply,
+                Err(e) if e.is_panic() => Err(anyhow!("the model call panicked")),
+                Err(_) => Err(anyhow!("the model call was aborted")),
+            }
+        }
+        let outcome = guarded(cancel, deadline, async { joined((&mut call).await) }).await;
+        if let Err(e) = &outcome
+            && (e.is::<Cancelled>() || e.is::<TimeLimit>())
+        {
+            let ledger = self.ledger.clone();
+            let id = id.to_string();
+            tokio::spawn(async move {
+                let usd = match joined(call.await) {
+                    Ok(reply) => Some(reply.cost_usd),
+                    Err(error) => charged_usd(&error),
+                };
+                if let Some(usd) = usd.filter(|usd| usd.is_finite() && *usd > 0.0) {
+                    let _ = ledger.add_session_spend(&id, usd);
+                }
+            });
+        }
+        outcome
     }
 
     async fn run_tool(
@@ -753,14 +1006,14 @@ impl Inner {
                 );
                 match action {
                     McpAction::ListTools => {
-                        let tools = self.mcp.list_tools(&server).await?;
+                        let tools = self.mcp.list_tools_for_owner(owner, &server).await?;
                         Ok(ToolOutput::ok(serde_json::to_string(&tools)?))
                     }
                     McpAction::Call => {
                         let tool = name.context("call needs the MCP tool name in \"name\"")?;
                         let result = self
                             .mcp
-                            .call(&server, &tool, arguments.unwrap_or(Value::Null))
+                            .call_for_owner(owner, &server, &tool, arguments.unwrap_or(Value::Null))
                             .await?;
                         Ok(mcp_output(&result))
                     }
@@ -913,6 +1166,12 @@ impl Inner {
         cwd: Option<String>,
         timeout_seconds: Option<u32>,
     ) -> Result<ToolOutput> {
+        // Every model-driven command (bash, custom tools, browser and the rest) passes here.
+        ensure!(
+            !command.trim().is_empty() && command.len() <= MAX_COMMAND_BYTES,
+            "the command is {} bytes; commands must be 1-{MAX_COMMAND_BYTES} bytes (write long input to a file first)",
+            command.len()
+        );
         let request = ExecRequest {
             command,
             cwd,
@@ -934,9 +1193,11 @@ impl Inner {
 
     async fn ensure_box(&self, owner: &str, id: &str) -> Result<String> {
         let lock = self.box_lock(id);
-        let _guard = lock.lock().await;
+        let guard = lock.lock().await;
         let session = self.owned(owner, id)?;
         if session.status == SessionStatus::Closed {
+            drop(guard);
+            self.box_locks.lock().unwrap().remove(id);
             return Err(SessionError::Closed.into());
         }
         if let Some(box_id) = session.box_id {
@@ -1072,6 +1333,35 @@ async fn guarded<T>(
     tokio::select! {
         result = tokio::time::timeout_at(deadline, future) => result.map_err(|_| anyhow::Error::from(TimeLimit))?,
         _ = cancelled => Err(Cancelled.into()),
+    }
+}
+
+struct RecordedCall {
+    /// The `tool_call` event payload, always below `MAX_RECORDED_CALL_BYTES`.
+    event: Value,
+    /// False when the call could not be recorded faithfully; it is refused, not run.
+    fits: bool,
+}
+
+/// The `tool_call` event for a decoded call. Long strings are clipped for the log; a call
+/// with so many fields that clipping cannot bound it is recorded as a stub.
+fn record_call(name: &str, raw: &str) -> RecordedCall {
+    let call = serde_json::from_str::<Value>(json_span(raw)).unwrap_or(Value::Null);
+    for max in [16384, 1024] {
+        let event = json!({"tool": name, "call": clip_strings(&call, max)});
+        if json_len(&event) <= MAX_RECORDED_CALL_BYTES {
+            return RecordedCall { event, fits: true };
+        }
+    }
+    RecordedCall {
+        event: json!({
+            "tool": name,
+            "call": {"tool": name},
+            "oversized": true,
+            "bytes": raw.len(),
+            "raw": clip(raw, 4096),
+        }),
+        fits: false,
     }
 }
 

@@ -7,15 +7,22 @@ use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     path::Path,
-    sync::atomic::{AtomicU64, Ordering},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU64, Ordering},
+    },
     time::Duration,
 };
 
 pub const PROTOCOL_VERSION: &str = "2025-06-18";
 const MAX_RESPONSE_BYTES: usize = 4 * 1024 * 1024;
 const MAX_SERVERS: usize = 32;
+/// Owner sessions remembered per server before idle ones are forgotten.
+const MAX_OWNER_SESSIONS: usize = 4096;
+/// The owner used by the owner-less `list_tools` and `call`.
+const SHARED_OWNER: &str = "";
 const SESSION_HEADER: &str = "mcp-session-id";
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -53,15 +60,31 @@ enum ConfigFile {
     Wrapped { servers: Vec<McpServerConfig> },
 }
 
+#[derive(Clone)]
 struct Session {
     id: Option<String>,
     protocol: String,
 }
 
+/// One owner's MCP session with one server. The lock is held only while the session is
+/// initialized or read, never across a tool request, so calls run concurrently.
+type SessionSlot = Arc<tokio::sync::Mutex<Option<Session>>>;
+
 struct Server {
     config: McpServerConfig,
     headers: HeaderMap,
-    session: tokio::sync::Mutex<Option<Session>>,
+    /// Sessions by owner, so one owner's server-side state never serves another's.
+    sessions: Mutex<HashMap<String, SessionSlot>>,
+}
+impl Server {
+    fn slot(&self, owner: &str) -> SessionSlot {
+        let mut sessions = self.sessions.lock().unwrap_or_else(|e| e.into_inner());
+        if !sessions.contains_key(owner) && sessions.len() >= MAX_OWNER_SESSIONS {
+            // Forget idle sessions first; a forgotten one is simply initialized again.
+            sessions.retain(|_, slot| Arc::strong_count(slot) > 1);
+        }
+        sessions.entry(owner.to_string()).or_default().clone()
+    }
 }
 
 pub struct McpRegistry {
@@ -141,7 +164,7 @@ impl McpRegistry {
             servers.push(Server {
                 config,
                 headers,
-                session: tokio::sync::Mutex::new(None),
+                sessions: Mutex::new(HashMap::new()),
             });
         }
         Ok(Self {
@@ -163,7 +186,16 @@ impl McpRegistry {
             .find(|s| s.config.name == name)
             .ok_or_else(|| anyhow!("unknown MCP server {name:?}"))
     }
+    /// `list_tools_for_owner` with a session shared by every owner-less caller.
     pub async fn list_tools(&self, server: &str) -> Result<Vec<McpTool>> {
+        self.list_tools_for_owner(SHARED_OWNER, server).await
+    }
+    /// `call_for_owner` with a session shared by every owner-less caller.
+    pub async fn call(&self, server: &str, tool: &str, args: Value) -> Result<Value> {
+        self.call_for_owner(SHARED_OWNER, server, tool, args).await
+    }
+    /// Lists the server's (allowed) tools in `owner`'s MCP session.
+    pub async fn list_tools_for_owner(&self, owner: &str, server: &str) -> Result<Vec<McpTool>> {
         let server = self.server(server)?;
         let result = async {
             let mut tools = Vec::new();
@@ -173,7 +205,7 @@ impl McpRegistry {
                     Some(c) => json!({"cursor": c}),
                     None => json!({}),
                 };
-                let page = self.rpc(server, "tools/list", params).await?;
+                let page = self.rpc(server, owner, "tools/list", params).await?;
                 for tool in page["tools"].as_array().into_iter().flatten() {
                     let Some(name) = tool["name"].as_str() else {
                         continue;
@@ -200,8 +232,15 @@ impl McpRegistry {
         .await;
         result.map_err(|e| redacted(server, e))
     }
-    /// Calls a tool and returns the JSON-RPC `result` (`{content, isError?, ...}`).
-    pub async fn call(&self, server: &str, tool: &str, args: Value) -> Result<Value> {
+    /// Calls a tool in `owner`'s MCP session and returns the JSON-RPC `result`
+    /// (`{content, isError?, ...}`).
+    pub async fn call_for_owner(
+        &self,
+        owner: &str,
+        server: &str,
+        tool: &str,
+        args: Value,
+    ) -> Result<Value> {
         let server = self.server(server)?;
         ensure!(
             allowed(&server.config, tool),
@@ -212,6 +251,7 @@ impl McpRegistry {
         ensure!(args.is_object(), "MCP tool arguments must be a JSON object");
         self.rpc(
             server,
+            owner,
             "tools/call",
             json!({"name": tool, "arguments": args}),
         )
@@ -219,20 +259,43 @@ impl McpRegistry {
         .map_err(|e| redacted(server, e))
     }
 
-    async fn rpc(&self, server: &Server, method: &str, params: Value) -> Result<Value> {
-        let mut session = server.session.lock().await;
-        if session.is_none() {
-            *session = Some(self.initialize(server).await?);
+    /// `owner`'s session with `server`, initialized on first use. When `stale` is given,
+    /// that session expired: it is replaced unless a concurrent call already did so.
+    async fn session(
+        &self,
+        server: &Server,
+        owner: &str,
+        stale: Option<&Session>,
+    ) -> Result<Session> {
+        let slot = server.slot(owner);
+        let mut current = slot.lock().await;
+        let expired = match (stale, current.as_ref()) {
+            (Some(stale), Some(now)) => stale.id == now.id,
+            _ => false,
+        };
+        if current.is_none() || expired {
+            *current = Some(self.initialize(server).await?);
         }
+        Ok(current.clone().expect("session was just set"))
+    }
+
+    async fn rpc(
+        &self,
+        server: &Server,
+        owner: &str,
+        method: &str,
+        params: Value,
+    ) -> Result<Value> {
+        let session = self.session(server, owner, None).await?;
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let body = json!({"jsonrpc":"2.0","id":id,"method":method,"params":params});
-        match self.post(server, session.as_ref(), &body, Some(id)).await {
+        match self.post(server, Some(&session), &body, Some(id)).await {
             // The server forgot our session: start a new one and retry once.
             Err(e) if e.downcast_ref::<SessionExpired>().is_some() => {
-                *session = Some(self.initialize(server).await?);
+                let session = self.session(server, owner, Some(&session)).await?;
                 let id = self.next_id.fetch_add(1, Ordering::Relaxed);
                 let body = json!({"jsonrpc":"2.0","id":id,"method":method,"params":params});
-                let (value, _) = self.post(server, session.as_ref(), &body, Some(id)).await?;
+                let (value, _) = self.post(server, Some(&session), &body, Some(id)).await?;
                 value.context("server sent no response")
             }
             other => other?.0.context("server sent no response"),

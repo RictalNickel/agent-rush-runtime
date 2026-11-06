@@ -20,6 +20,9 @@ const SECRET: &str = "Bearer sk-live-very-secret-token-123";
 struct Calls {
     initialize: AtomicUsize,
     initialized: AtomicUsize,
+    /// Signalled when a `slow` call arrives; `release` lets it answer.
+    slow_started: tokio::sync::Notify,
+    release: tokio::sync::Notify,
 }
 
 fn rpc_result(id: &Value, result: Value) -> Value {
@@ -39,19 +42,30 @@ async fn handle(calls: Arc<Calls>, sse: bool, headers: HeaderMap, body: String) 
     }
     let method = message["method"].as_str().unwrap_or("");
     if method == "initialize" {
-        calls.initialize.fetch_add(1, Ordering::SeqCst);
+        let n = calls.initialize.fetch_add(1, Ordering::SeqCst) + 1;
         assert_eq!(message["params"]["protocolVersion"], "2025-06-18");
         let body = rpc_result(
             &id,
             json!({"protocolVersion":"2025-06-18","capabilities":{"tools":{}},"serverInfo":{"name":"fake","version":"1"}}),
         );
-        return ([("mcp-session-id", "sess-1")], axum::Json(body)).into_response();
+        let sid = format!("sess-{n}");
+        return ([("mcp-session-id", sid.as_str())], axum::Json(body)).into_response();
     }
     if method == "notifications/initialized" {
         calls.initialized.fetch_add(1, Ordering::SeqCst);
         return StatusCode::ACCEPTED.into_response();
     }
-    if headers.get("mcp-session-id").and_then(|v| v.to_str().ok()) != Some("sess-1") {
+    // Only session ids this server issued are accepted.
+    let session = headers
+        .get("mcp-session-id")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+    let issued = session
+        .strip_prefix("sess-")
+        .and_then(|n| n.parse::<usize>().ok())
+        .is_some_and(|n| (1..=calls.initialize.load(Ordering::SeqCst)).contains(&n));
+    if !issued {
         return (StatusCode::BAD_REQUEST, "no session").into_response();
     }
     let result = match method {
@@ -66,6 +80,12 @@ async fn handle(calls: Arc<Calls>, sse: bool, headers: HeaderMap, body: String) 
         "tools/call" => match message["params"]["name"].as_str() {
             Some("echo") => {
                 json!({"content":[{"type":"text","text":message["params"]["arguments"]["text"]}]})
+            }
+            Some("whoami") => json!({"content":[{"type":"text","text":session}]}),
+            Some("slow") => {
+                calls.slow_started.notify_one();
+                calls.release.notified().await;
+                json!({"content":[{"type":"text","text":"slow done"}]})
             }
             Some("fail") => {
                 // A careless server that echoes the credential back in its error.
@@ -205,6 +225,58 @@ async fn errors_never_reveal_header_values() {
     assert!(error.contains("401"), "{error}");
     assert!(!error.contains("other-credential"), "{error}");
     assert!(!format!("{wrong:?}").contains("other-credential"));
+}
+
+#[tokio::test]
+async fn each_owner_gets_its_own_mcp_session() {
+    let (base, calls) = fake_server().await;
+    let registry = McpRegistry::new(vec![config("docs", format!("{base}/mcp"), None)]).unwrap();
+    let registry = &registry;
+    let whoami = move |owner: &'static str| async move {
+        registry
+            .call_for_owner(owner, "docs", "whoami", json!({}))
+            .await
+            .unwrap()["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .to_string()
+    };
+    let alice = whoami("alice").await;
+    let bob = whoami("bob").await;
+    assert_ne!(alice, bob, "owners never share a server-side session");
+    assert_eq!(whoami("alice").await, alice, "a session is reused");
+    assert_eq!(calls.initialize.load(Ordering::SeqCst), 2);
+    let tools = registry.list_tools_for_owner("bob", "docs").await.unwrap();
+    assert_eq!(tools.len(), 3);
+    assert_eq!(calls.initialize.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn a_slow_call_does_not_block_other_calls_to_the_server() {
+    let (base, calls) = fake_server().await;
+    let registry =
+        Arc::new(McpRegistry::new(vec![config("docs", format!("{base}/mcp"), None)]).unwrap());
+    let slow = {
+        let registry = registry.clone();
+        tokio::spawn(async move {
+            registry
+                .call_for_owner("alice", "docs", "slow", json!({}))
+                .await
+        })
+    };
+    calls.slow_started.notified().await;
+    let quick = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        registry.call_for_owner("alice", "docs", "echo", json!({"text":"quick"})),
+    )
+    .await
+    .expect("a call waited for another call's HTTP request")
+    .unwrap();
+    assert_eq!(quick["content"][0]["text"], "quick");
+    calls.release.notify_one();
+    let slow = slow.await.unwrap().unwrap();
+    assert_eq!(slow["content"][0]["text"], "slow done");
+    assert_eq!(calls.initialize.load(Ordering::SeqCst), 1);
 }
 
 #[test]

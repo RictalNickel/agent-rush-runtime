@@ -5,9 +5,9 @@ use agent_rush::{
     sandbox_api::{
         BoxClient, BoxInfo, BoxSpec, DirEntry, ExecRequest, ExecResult, FileRead, WriteResult,
     },
-    session::{ModelReply, SessionError, SessionLimits, SessionModel, Sessions},
+    session::{ChargedError, ModelReply, SessionError, SessionLimits, SessionModel, Sessions},
     session_store::{SessionEvent, SessionStatus},
-    tools::{apply_edit, expand_template, parse_call, shell_quote, truncate_bytes},
+    tools::{ToolCall, apply_edit, expand_template, parse_call, shell_quote, truncate_bytes},
 };
 use anyhow::{Result, anyhow, bail};
 use futures_util::future::BoxFuture;
@@ -27,6 +27,8 @@ use tokio::sync::{Notify, Semaphore};
 enum Step {
     Say(String),
     Gated(Arc<Notify>, Arc<Semaphore>, String),
+    /// The gateway failed after billing this many dollars.
+    FailCharged(f64),
 }
 
 #[derive(Default)]
@@ -96,6 +98,12 @@ impl SessionModel for FakeModel {
                     release.acquire().await.unwrap().forget();
                     text
                 }
+                Some(Step::FailCharged(usd)) => {
+                    return Err(ChargedError::wrap(
+                        anyhow!("gateway broke after billing"),
+                        usd,
+                    ));
+                }
                 None => match self.fallback.lock().unwrap().clone() {
                     Some(text) => text,
                     None => bail!("script exhausted"),
@@ -118,6 +126,8 @@ struct FakeBoxes {
     commands: Mutex<Vec<(String, String)>>,
     lose_once: AtomicBool,
     exec_started: Notify,
+    /// Releases a running `block` command.
+    exec_release: Notify,
     creates: AtomicUsize,
 }
 fn normalize(path: &str) -> String {
@@ -158,7 +168,10 @@ impl BoxClient for FakeBoxes {
             }
             if command == "block" {
                 self.exec_started.notify_one();
-                std::future::pending::<()>().await;
+                self.exec_release.notified().await;
+            }
+            if command == "panic" {
+                panic!("the fake worker panicked");
             }
             let stdout = match command {
                 "big" => "log line\n".repeat(10 * 1024 * 1024 / 9 + 1),
@@ -397,6 +410,11 @@ async fn interjection_after_the_final_model_call_starts_a_new_turn() {
     let calls = h.model.calls();
     assert_eq!(calls.len(), 2, "the queued message started another turn");
     assert!(FakeModel::all_text(&calls[1].1).contains("Follow-up"));
+    // The follow-up turn's request is the interjection, after the first reply.
+    let last = calls[1].1.last().unwrap();
+    assert_eq!(last["role"], "user", "{:?}", calls[1].1);
+    assert!(last["content"].as_str().unwrap().contains("Follow-up"));
+    assert!(FakeModel::all_text(&calls[1].1).contains("First answer"));
     let replies: Vec<_> = h
         .events(&session.id)
         .into_iter()
@@ -410,17 +428,24 @@ async fn interjection_after_the_final_model_call_starts_a_new_turn() {
 }
 
 #[tokio::test]
-async fn cancel_stops_the_turn() {
+async fn cancel_lets_the_running_tool_finish_then_stops_before_the_next_model_call() {
     let h = harness(
         vec![bash("block"), reply("never")],
         SessionLimits::default(),
     );
     let session = h.sessions.create("alice", None).unwrap();
-    h.sessions
-        .send("alice", &session.id, "Run forever")
-        .unwrap();
+    h.sessions.send("alice", &session.id, "Run it").unwrap();
     h.boxes.exec_started.notified().await;
     h.sessions.cancel("alice", &session.id).unwrap();
+    // The box exec is not dropped mid-flight: the turn waits for it.
+    let view = h
+        .sessions
+        .wait_idle("alice", &session.id, Duration::from_millis(300))
+        .await
+        .unwrap();
+    assert_eq!(view.status, SessionStatus::Running);
+    assert!(h.results(&session.id).is_empty());
+    h.boxes.exec_release.notify_one();
     let view = h
         .sessions
         .wait_idle("alice", &session.id, WAIT)
@@ -430,7 +455,54 @@ async fn cancel_stops_the_turn() {
     let events = h.events(&session.id);
     assert!(events.iter().all(|e| e.kind != "assistant"));
     assert_eq!(events.last().unwrap().payload["reason"], "cancelled");
-    assert_eq!(h.model.calls().len(), 1);
+    let results = h.results(&session.id);
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0]["ok"], true, "the command's real result is kept");
+    assert!(
+        results[0]["output"]
+            .as_str()
+            .unwrap()
+            .contains("ran: block")
+    );
+    assert_eq!(h.model.calls().len(), 1, "no model call after cancel");
+}
+
+#[tokio::test]
+async fn cancel_during_a_model_call_still_records_its_cost() {
+    let h = harness(vec![], SessionLimits::default());
+    let (started, release) = h.model.push_gated(bash("echo late"));
+    let session = h.sessions.create("alice", None).unwrap();
+    h.sessions.send("alice", &session.id, "Think").unwrap();
+    started.notified().await;
+    h.sessions.cancel("alice", &session.id).unwrap();
+    let view = h
+        .sessions
+        .wait_idle("alice", &session.id, WAIT)
+        .await
+        .unwrap();
+    assert_eq!(view.status, SessionStatus::Idle);
+    assert!(view.spend_usd < 1e-12);
+    // The abandoned call completes in the background and its cost is recorded.
+    release.add_permits(1);
+    let deadline = tokio::time::Instant::now() + WAIT;
+    loop {
+        let spend = h
+            .sessions
+            .get("alice", &session.id)
+            .unwrap()
+            .unwrap()
+            .spend_usd;
+        if (spend - 0.001).abs() < 1e-9 {
+            break;
+        }
+        assert!(
+            tokio::time::Instant::now() < deadline,
+            "spend never recorded"
+        );
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    assert!(h.results(&session.id).is_empty(), "its tool call never ran");
+    assert!(h.boxes.commands.lock().unwrap().is_empty());
 }
 
 #[tokio::test]
@@ -814,4 +886,308 @@ async fn another_owner_cannot_get_send_exec_or_read_events() {
             .downcast_ref::<SessionError>(),
         Some(SessionError::Closed)
     ));
+}
+
+#[tokio::test]
+async fn replace_all_cannot_grow_a_file_past_the_file_limit() {
+    let h = harness(
+        vec![
+            json!({"tool":"write_file","path":"a.txt","content":"a".repeat(1000)}),
+            json!({"tool":"edit_file","path":"a.txt","old":"a","new":"x".repeat(30_000),"replace_all":true}),
+            reply("Tried"),
+        ],
+        SessionLimits::default(),
+    );
+    let id = h.run("Grow it").await;
+    let results = h.results(&id);
+    assert_eq!(results[1]["ok"], false);
+    assert!(
+        results[1]["output"].as_str().unwrap().contains("25 MiB"),
+        "{}",
+        results[1]["output"]
+    );
+    {
+        let boxes = h.boxes.boxes.lock().unwrap();
+        assert_eq!(boxes["box-1"]["a.txt"].len(), 1000, "the file is unchanged");
+    }
+    // The size is checked before replacing, for unique matches too.
+    let big = "y".repeat(25 * 1024 * 1024);
+    assert!(apply_edit(&big, "y", "zz", true).is_err());
+    assert!(apply_edit("abc", "b", &"q".repeat(25 * 1024 * 1024), false).is_err());
+    assert_eq!(
+        apply_edit("aXaXa", "X", "--", true).unwrap(),
+        ("a--a--a".to_string(), 2)
+    );
+}
+
+#[tokio::test]
+async fn expanded_and_generated_commands_obey_the_command_limit() {
+    let h = harness(
+        vec![
+            json!({"tool":"triple","a":"z".repeat(30_000)}),
+            json!({"tool":"browser","action":"eval","js":"j".repeat(70_000)}),
+            json!({"tool":"triple","a":"ok"}),
+            reply("Done"),
+        ],
+        SessionLimits::default(),
+    );
+    let config = AgentConfig {
+        custom_tools: vec![CustomTool {
+            name: "triple".into(),
+            description: "Echo three times".into(),
+            command_template: "echo {{a}} {{a}} {{a}}".into(),
+        }],
+        ..Default::default()
+    };
+    h.ledger
+        .update_agent_config("alice", &config, "add tool", "user")
+        .unwrap();
+    let id = h.run("Expand").await;
+    let results = h.results(&id);
+    assert_eq!(results[0]["ok"], false);
+    assert!(results[0]["output"].as_str().unwrap().contains("65536"));
+    assert_eq!(results[1]["ok"], false);
+    assert!(results[1]["output"].as_str().unwrap().contains("65536"));
+    let commands = h.boxes.commands.lock().unwrap().clone();
+    assert_eq!(
+        commands.len(),
+        1,
+        "only the small command ran: {commands:?}"
+    );
+    assert_eq!(commands[0].1, "echo 'ok' 'ok' 'ok'");
+    let args = json!({"a": "z".repeat(40_000)});
+    let error = expand_template("{{a}}{{a}}", args.as_object().unwrap()).unwrap_err();
+    assert!(error.to_string().contains("65536"));
+}
+
+#[tokio::test]
+async fn spend_caps_end_the_turn_before_the_next_model_call() {
+    // Per turn: each fake call costs $0.001.
+    let h = harness(
+        vec![],
+        SessionLimits {
+            max_turn_usd: 0.0025,
+            ..Default::default()
+        },
+    );
+    *h.model.fallback.lock().unwrap() = Some(bash("true").to_string());
+    let id = h.run("Spend").await;
+    let view = h.sessions.get("alice", &id).unwrap().unwrap();
+    assert_eq!(view.status, SessionStatus::Failed);
+    assert_eq!(h.model.calls().len(), 3);
+    let events = h.events(&id);
+    let error = events.iter().find(|e| e.kind == "error").unwrap();
+    assert!(
+        error.payload["message"]
+            .as_str()
+            .unwrap()
+            .contains("spend limit")
+    );
+    assert_eq!(events.last().unwrap().payload["reason"], "spend_limit");
+
+    // Per session: the second turn is refused before any model call.
+    let h = harness(
+        vec![bash("true"), reply("First")],
+        SessionLimits {
+            max_session_usd: 0.0015,
+            ..Default::default()
+        },
+    );
+    let id = h.run("One").await;
+    assert_eq!(
+        h.sessions.get("alice", &id).unwrap().unwrap().status,
+        SessionStatus::Idle
+    );
+    h.model.push(reply("Second"));
+    h.sessions.send("alice", &id, "Two").unwrap();
+    let view = h.sessions.wait_idle("alice", &id, WAIT).await.unwrap();
+    assert_eq!(view.status, SessionStatus::Failed);
+    assert_eq!(h.model.calls().len(), 2);
+    assert_eq!(
+        h.events(&id).last().unwrap().payload["reason"],
+        "spend_limit"
+    );
+}
+
+#[tokio::test]
+async fn a_model_error_that_was_billed_is_still_recorded() {
+    let h = harness(vec![bash("true")], SessionLimits::default());
+    h.model
+        .steps
+        .lock()
+        .unwrap()
+        .push_back(Step::FailCharged(0.25));
+    let id = h.run("Fail late").await;
+    let view = h.sessions.get("alice", &id).unwrap().unwrap();
+    assert_eq!(view.status, SessionStatus::Failed);
+    assert!((view.spend_usd - 0.251).abs() < 1e-9, "{}", view.spend_usd);
+    let events = h.events(&id);
+    let error = events.iter().find(|e| e.kind == "error").unwrap();
+    assert!(
+        error.payload["message"]
+            .as_str()
+            .unwrap()
+            .contains("gateway broke after billing")
+    );
+}
+
+#[tokio::test]
+async fn a_panic_inside_a_turn_does_not_leave_the_session_running() {
+    let h = harness(vec![bash("panic")], SessionLimits::default());
+    let session = h.sessions.create("alice", None).unwrap();
+    h.sessions.send("alice", &session.id, "Crash").unwrap();
+    let view = h
+        .sessions
+        .wait_idle("alice", &session.id, WAIT)
+        .await
+        .unwrap();
+    assert_eq!(view.status, SessionStatus::Failed);
+    let events = h.events(&session.id);
+    assert!(events.iter().any(|e| e.kind == "error"));
+    assert_eq!(events.last().unwrap().payload["status"], "failed");
+    // The turn is forgotten: the next message starts a new turn, not an interjection.
+    h.model.push(reply("Back"));
+    let outcome = h.sessions.send("alice", &session.id, "Again").unwrap();
+    assert!(!outcome.interjection);
+    let view = h
+        .sessions
+        .wait_idle("alice", &session.id, WAIT)
+        .await
+        .unwrap();
+    assert_eq!(view.status, SessionStatus::Idle);
+    // Short invalid UTF-8 whose lossy text outgrows the cap never underflows.
+    for len in [1, 90, 100, 200, 256] {
+        let (text, _) = truncate_bytes(&vec![0xff; len], 0);
+        assert!(text.len() <= 256, "{len}: {}", text.len());
+    }
+}
+
+#[tokio::test]
+async fn an_oversized_tool_call_is_clipped_in_the_log_or_refused() {
+    let mut wide = serde_json::Map::new();
+    wide.insert("tool".into(), json!("browser"));
+    wide.insert("action".into(), json!("eval"));
+    for i in 0..30 {
+        wide.insert(format!("k{i}"), json!("w".repeat(16_000)));
+    }
+    let mut many = serde_json::Map::new();
+    many.insert("tool".into(), json!("browser"));
+    many.insert("action".into(), json!("snapshot"));
+    for i in 0..3000 {
+        many.insert(format!("key{i}"), json!("m".repeat(100)));
+    }
+    let h = harness(
+        vec![Value::Object(wide), Value::Object(many), reply("Survived")],
+        SessionLimits::default(),
+    );
+    let id = h.run("Big calls").await;
+    let view = h.sessions.get("alice", &id).unwrap().unwrap();
+    assert_eq!(view.status, SessionStatus::Idle);
+    let calls: Vec<Value> = h
+        .events(&id)
+        .into_iter()
+        .filter(|e| e.kind == "tool_call")
+        .map(|e| e.payload)
+        .collect();
+    assert_eq!(calls.len(), 2);
+    for call in &calls {
+        assert!(serde_json::to_vec(call).unwrap().len() <= 64 * 1024);
+    }
+    assert_eq!(calls[0]["call"]["action"], "eval");
+    assert_eq!(calls[1]["oversized"], true);
+    let results = h.results(&id);
+    assert_eq!(results[0]["ok"], false, "the command limit refused it");
+    assert_eq!(results[1]["ok"], false);
+    assert!(
+        results[1]["output"]
+            .as_str()
+            .unwrap()
+            .contains("too large to record")
+    );
+    assert!(h.boxes.commands.lock().unwrap().is_empty());
+}
+
+#[test]
+fn tool_calls_are_found_in_prose_fences_and_after_stray_braces() {
+    let config = AgentConfig::default();
+    let text = |call: ToolCall| match call {
+        ToolCall::Reply { text, .. } => text,
+        other => panic!("not a reply: {other:?}"),
+    };
+    let prose = r#"I'll keep {braces} and {"a":1} aside. {"tool":"reply","text":"hi"} Done }."#;
+    assert_eq!(text(parse_call(prose, &config).unwrap()), "hi");
+    let two = "{\"tool\":\"reply\",\"text\":\"first\"}\n{\"tool\":\"reply\",\"text\":\"second\"}";
+    assert_eq!(text(parse_call(two, &config).unwrap()), "first");
+    let fenced = "```json\n{\"tool\":\"reply\",\"text\":\"fenced\"}\n```\nNote: done }";
+    assert_eq!(text(parse_call(fenced, &config).unwrap()), "fenced");
+    let nested = r#"{"tool":"reply","text":"say {\"tool\":\"bash\"}"}"#;
+    assert_eq!(
+        text(parse_call(nested, &config).unwrap()),
+        r#"say {"tool":"bash"}"#
+    );
+    // Strict decoding still applies to the object that was found.
+    let error = parse_call(r#"Sure: {"tool":"bash","command":"ls","x":1}"#, &config)
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("unknown field"), "{error}");
+    assert!(parse_call(r#"{"tool":"bash""#, &config).is_err());
+    assert!(parse_call("no json here", &config).is_err());
+}
+
+#[tokio::test]
+async fn cancelled_interjections_never_reach_a_later_turn() {
+    let h = harness(vec![], SessionLimits::default());
+    let (started, release) = h.model.push_gated(bash("echo 1"));
+    let session = h.sessions.create("alice", None).unwrap();
+    h.sessions.send("alice", &session.id, "Start").unwrap();
+    started.notified().await;
+    let outcome = h.sessions.send("alice", &session.id, "Ignore me").unwrap();
+    assert!(outcome.interjection);
+    h.sessions.cancel("alice", &session.id).unwrap();
+    h.sessions
+        .wait_idle("alice", &session.id, WAIT)
+        .await
+        .unwrap();
+    release.add_permits(1);
+    h.model.push(reply("Fresh"));
+    h.sessions.send("alice", &session.id, "Next").unwrap();
+    let view = h
+        .sessions
+        .wait_idle("alice", &session.id, WAIT)
+        .await
+        .unwrap();
+    assert_eq!(view.status, SessionStatus::Idle);
+    let calls = h.model.calls();
+    assert_eq!(calls.len(), 2);
+    let text = FakeModel::all_text(&calls[1].1);
+    assert!(text.contains("Start") && text.contains("Next"), "{text}");
+    assert!(!text.contains("Ignore me"), "{text}");
+}
+
+#[tokio::test]
+async fn closing_a_session_forgets_its_box_lock() {
+    let h = harness(vec![], SessionLimits::default());
+    let session = h.sessions.create("alice", None).unwrap();
+    h.sessions
+        .exec(
+            "alice",
+            &session.id,
+            ExecRequest {
+                command: "true".into(),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(h.sessions.tracked_box_locks(), 1);
+    h.sessions.close("alice", &session.id).await.unwrap();
+    assert_eq!(h.sessions.tracked_box_locks(), 0);
+    // A late box access on the closed session does not bring it back.
+    assert!(
+        h.sessions
+            .read_file("alice", &session.id, "a")
+            .await
+            .is_err()
+    );
+    assert_eq!(h.sessions.tracked_box_locks(), 0);
 }
