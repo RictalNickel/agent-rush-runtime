@@ -18,7 +18,10 @@ const EXAMPLES = {
 };
 const PROVIDER_LABEL = { vultr: 'Vultr Serverless Inference', anthropic: 'Anthropic Claude' };
 const STATE_LABEL = { idle: 'Ready', running: 'Working', failed: 'Failed', closed: 'Closed' };
-const FAILED_LABEL = { time_limit: 'The turn reached its time limit.' };
+const FAILED_LABEL = {
+  time_limit: 'The turn reached its time limit.',
+  repeating: 'The agent kept repeating the same step, so the turn was stopped.',
+};
 
 // 24 px stroke icons, one per tool family.
 const ICONS = {
@@ -101,6 +104,53 @@ async function fetchBlob(path, options = {}) {
   const response = await fetch(path, { credentials: 'same-origin', ...options, headers: authHeaders(options.headers) });
   if (!response.ok) throw await failure(response);
   return response.blob();
+}
+
+// Screenshots load through a queue of two requests. The server allows four workspace calls per
+// session and answers the rest with 429, so an answer with many images would otherwise fail.
+// A slot stays held through a retry's wait, so one page never has more than two requests in flight.
+const IMAGE_SLOTS = 2;
+const RETRY_STATUS = [429, 503];
+const RETRY_DELAYS_MS = [500, 1000, 2000, 4000];
+const MAX_RETRY_AFTER_MS = 30000;
+const imageQueue = [];
+let imageSlots = 0;
+
+const sleep = ms => new Promise(resolve => { setTimeout(resolve, ms); });
+
+// Retry-After is seconds or an HTTP date. The fixed schedule applies when the header is missing.
+function retryAfterMs(response) {
+  const value = response.headers.get('Retry-After');
+  if (!value) return null;
+  const ms = /^\s*\d+\s*$/.test(value) ? Number(value) * 1000 : Date.parse(value) - Date.now();
+  return Number.isFinite(ms) ? Math.min(Math.max(ms, 0), MAX_RETRY_AFTER_MS) : null;
+}
+
+async function fetchImage(url) {
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await fetch(url, { credentials: 'same-origin', headers: authHeaders() });
+    if (response.ok) return response.blob();
+    if (!RETRY_STATUS.includes(response.status) || attempt >= RETRY_DELAYS_MS.length) throw await failure(response);
+    await sleep(retryAfterMs(response) ?? RETRY_DELAYS_MS[attempt]);
+  }
+}
+
+function drainImageQueue() {
+  while (imageSlots < IMAGE_SLOTS && imageQueue.length) {
+    const job = imageQueue.shift();
+    imageSlots += 1;
+    fetchImage(job.url).then(job.resolve, job.reject).finally(() => {
+      imageSlots -= 1;
+      drainImageQueue();
+    });
+  }
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    imageQueue.push({ url, resolve, reject });
+    drainImageQueue();
+  });
 }
 
 function objectUrl(blob) {
@@ -245,6 +295,9 @@ function openSession(session, { fresh = false } = {}) {
 function revokeUrls() {
   for (const url of ui.urls) URL.revokeObjectURL(url);
   ui.urls = [];
+  shotObserver?.disconnect();
+  // Screenshots still queued belong to the session being left.
+  for (const job of imageQueue.splice(0)) job.reject(new Error('The screenshot is no longer needed.'));
 }
 
 // Live updates: SSE first, polling the event log if the stream fails.
@@ -474,15 +527,38 @@ function finishRow(row, p) {
   }
 }
 
+// A screenshot loads once it nears the viewport, so a long answer does not queue every image at once.
+const waitingShots = new WeakMap();
+let shotObserver = null;
+
 function picture(path) {
   const img = el('img', { alt: `Screenshot ${baseName(path)}`, decoding: 'async' });
   const figure = el('figure', { className: 'shot' }, img, el('figcaption', { textContent: path }));
   const id = ui.current?.id;
-  fetchBlob(filesUrl(id, path)).then(blob => {
-    if (ui.current?.id === id) img.src = objectUrl(blob);
-  }).catch(() => {
-    figure.replaceChildren(el('p', { className: 'step-note', textContent: `The image ${path} could not be loaded.` }));
-  });
+  const load = () => {
+    loadImage(filesUrl(id, path)).then(blob => {
+      if (ui.current?.id === id) img.src = objectUrl(blob);
+    }).catch(() => {
+      figure.replaceChildren(el('p', { className: 'step-note', textContent: `The image ${path} could not be loaded.` }));
+    });
+  };
+  if (typeof IntersectionObserver !== 'function') {
+    load();
+    return figure;
+  }
+  if (!shotObserver) {
+    shotObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        const start = waitingShots.get(entry.target);
+        if (!entry.isIntersecting || !start) continue;
+        waitingShots.delete(entry.target);
+        shotObserver.unobserve(entry.target);
+        start();
+      }
+    }, { rootMargin: '200px 0px' });
+  }
+  waitingShots.set(figure, load);
+  shotObserver.observe(figure);
   return figure;
 }
 
