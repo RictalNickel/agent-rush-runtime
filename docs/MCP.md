@@ -1,6 +1,6 @@
 # MCP server (`/mcp`)
 
-Agent Rush is also an MCP server. Any MCP client (Claude Code, Claude Desktop, Cursor and others) can start agent sessions, hand them tasks, and work in their workspaces.
+Vultr-Placeholder-Test123 is also an MCP server. Any MCP client (Claude Code, Claude Desktop, Cursor and others) can start agent sessions, hand them tasks, and work in their workspaces.
 
 - **Transport:** streamable HTTP. JSON-RPC 2.0 over `POST /mcp`, answered with `application/json`. It is stateless and has no server-sent stream, so `GET /mcp` returns 405.
 - **Protocol version:** `2025-06-18`.

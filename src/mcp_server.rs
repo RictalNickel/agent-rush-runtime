@@ -162,7 +162,7 @@ async fn dispatch(s: &AppState, owner: &str, message: Value) -> Option<Value> {
             json!({
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "agent-rush", "title": "Agent Rush", "version": env!("CARGO_PKG_VERSION")},
+                "serverInfo": {"name": "vultr-placeholder-test123", "title": "Vultr-Placeholder-Test123", "version": env!("CARGO_PKG_VERSION")},
                 "instructions": "Agent sessions with a persistent Linux workspace. Call start_session (optionally with a first message), then wait_for_reply. Use send_message for follow-ups; messages sent while a turn runs are delivered to the agent as interjections. run_command, read_file, write_file and list_files act directly on the session's workspace.",
             }),
         ),

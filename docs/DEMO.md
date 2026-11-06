@@ -2,7 +2,7 @@
 
 ## One-sentence pitch
 
-Agent Rush gives an AI agent a disposable Rust development environment and gives its operator execution evidence whose authority stays outside the model.
+Vultr-Placeholder-Test123 gives an AI agent a disposable Rust development environment and gives its operator execution evidence whose authority stays outside the model.
 
 ## Three-minute demonstration after cloud acceptance
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install Agent Rush from this checkout on Ubuntu 24.04.
+# Install Vultr-Placeholder-Test123 from this checkout on Ubuntu 24.04.
 #
 # Usage: scripts/install.sh [--role all|control|worker] [--with LIST] [--yes] [--dry-run]
 #   --role     all (default): control and worker on this host. This is a weaker separation than two
@@ -691,7 +691,7 @@ summary() {
 
 main() {
   parse_args "$@"
-  say "Agent Rush install: role=$ROLE features=${WITH:-none}$([ "$DRY_RUN" -eq 1 ] && echo ' (dry run)')"
+  say "Vultr-Placeholder-Test123 install: role=$ROLE features=${WITH:-none}$([ "$DRY_RUN" -eq 1 ] && echo ' (dry run)')"
   preflight
   confirm
 

@@ -1,6 +1,8 @@
-# Agent Rush
+# Vultr-Placeholder-Test123
 
-Agent Rush is a backend for AI agents that do real work. Each session gets its own workspace box: a gVisor container on a private worker VM with a shell, a headless browser, language runtimes and file converters. Your app drives the agent through a REST API, a live event stream or an MCP server.
+_Previously called Agent Rush. Older evidence, links and internal names (the `agent-rush` binary and services, `AR_*` settings) still use that name._
+
+Vultr-Placeholder-Test123 is a backend for AI agents that do real work. Each session gets its own workspace box: a gVisor container on a private worker VM with a shell, a headless browser, language runtimes and file converters. Your app drives the agent through a REST API, a live event stream or an MCP server.
 
 Everything the model runs stays inside the box. The box holds no credentials, and an egress filter keeps it away from cloud metadata, private networks and mail ports.
 
@@ -111,7 +113,7 @@ Each owner has caps on open sessions (20), live event streams (8) and long reque
 
 ## Use it from an MCP client
 
-Agent Rush is also an MCP server at `/mcp` (streamable HTTP, same API keys):
+Vultr-Placeholder-Test123 is also an MCP server at `/mcp` (streamable HTTP, same API keys):
 
 ```sh
 claude mcp add --transport http agent https://<host>/mcp --header "Authorization: Bearer ar_..."

@@ -1,5 +1,5 @@
 [Unit]
-Description=Agent Rush private Rust execution node
+Description=Vultr-Placeholder-Test123 private Rust execution node
 After=network-online.target docker.service agent-rush-box-network.service
 Requires=docker.service agent-rush-box-network.service
 

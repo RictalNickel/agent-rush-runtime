@@ -1,6 +1,6 @@
 {
   "status": "deployed_2026-11-05",
-  "project": "Agent Rush",
+  "project": "Vultr-Placeholder-Test123",
   "timezone": "America/Chicago",
   "inference": {
     "provider": "Vultr Serverless Inference",
