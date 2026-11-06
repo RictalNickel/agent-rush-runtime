@@ -1,0 +1,8 @@
+[Unit]
+Description=Agent Rush session box containment requalification
+After=docker.service agent-rush-box-network.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/agent-rush/requalify-box.sh

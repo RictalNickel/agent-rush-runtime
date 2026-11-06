@@ -119,6 +119,7 @@ fn a_missing_path_is_not_a_missing_box() {
         BoxError::Invalid("i".into()),
         BoxError::TooLarge("t".into()),
         BoxError::Capacity,
+        BoxError::Busy("b".into()),
         BoxError::Unavailable("u".into()),
     ] {
         let back = BoxError::from_code(e.code(), e.to_string()).unwrap();
@@ -127,6 +128,212 @@ fn a_missing_path_is_not_a_missing_box() {
     let internal = error_status(&anyhow::anyhow!("docker said /secret/path"));
     assert_eq!(internal.0, 500);
     assert!(!internal.2.contains("secret"));
+}
+
+#[test]
+fn idle_boxes_are_parked_and_old_workspaces_purged_but_busy_ones_kept() {
+    use agent_rush::boxes::{Reap, reap_decision};
+    let (idle, retention) = (1800, 7 * 86_400);
+    // Running: parked once idle, never while a call is in flight.
+    assert_eq!(reap_decision(true, 0, 0, 1799, idle, retention), Reap::Keep);
+    assert_eq!(reap_decision(true, 0, 0, 1800, idle, retention), Reap::Park);
+    assert_eq!(
+        reap_decision(true, 1, 0, 99_999_999, idle, retention),
+        Reap::Keep
+    );
+    // A running box is never purged directly, however old: it is parked first.
+    assert_eq!(
+        reap_decision(true, 0, 0, retention as i64 * 2, idle, retention),
+        Reap::Park
+    );
+    // Parked: the workspace is kept until retention runs out, then purged.
+    assert_eq!(
+        reap_decision(false, 0, 0, 1800, idle, retention),
+        Reap::Keep
+    );
+    assert_eq!(
+        reap_decision(false, 0, 0, retention as i64 - 1, idle, retention),
+        Reap::Keep
+    );
+    assert_eq!(
+        reap_decision(false, 0, 0, retention as i64, idle, retention),
+        Reap::Purge
+    );
+    assert_eq!(
+        reap_decision(false, 2, 0, retention as i64, idle, retention),
+        Reap::Keep
+    );
+    // A clock behind last use never reaps.
+    assert_eq!(reap_decision(true, 0, 100, 0, 0, 0), Reap::Keep);
+    assert_eq!(reap_decision(false, 0, 100, 0, 0, 0), Reap::Keep);
+}
+
+#[test]
+fn box_creation_needs_twice_the_quota_plus_2_gib_after_existing_workspaces_grow() {
+    use agent_rush::boxes::disk_space_ok;
+    const GIB: u64 = 1 << 30;
+    // 4 GiB quota: 10 GiB free is the threshold.
+    assert!(disk_space_ok(10 * GIB, 0, 4096));
+    assert!(!disk_space_ok(10 * GIB - 1, 0, 4096));
+    // Retained workspaces' unallocated headroom counts against free space.
+    assert!(!disk_space_ok(20 * GIB, 11 * GIB, 4096));
+    assert!(disk_space_ok(20 * GIB, 10 * GIB, 4096));
+    assert!(!disk_space_ok(GIB, 5 * GIB, 256));
+}
+
+#[test]
+fn host_tool_output_is_parsed_strictly() {
+    use agent_rush::boxes::{parse_df_avail, parse_losetup};
+    assert_eq!(
+        parse_df_avail("    Avail\n99631116288\n"),
+        Some(99_631_116_288)
+    );
+    assert_eq!(parse_df_avail("Avail\n"), None);
+    assert_eq!(parse_df_avail("Avail\n-\n"), None);
+    assert_eq!(
+        parse_losetup(
+            "/dev/loop3: []: (/var/lib/agent-rush/worker/boxes/disks/a.img)\n/dev/loop12: [64770]:131 (/x/a.img)\n"
+        ),
+        ["/dev/loop3", "/dev/loop12"]
+    );
+    assert!(parse_losetup("").is_empty());
+    for hostile in ["/dev/sda: x", "/dev/loop: x", "/dev/loop1x: x", "loop1: x"] {
+        assert!(parse_losetup(hostile).is_empty(), "{hostile}");
+    }
+}
+
+#[test]
+fn workspace_disk_is_ext4_owned_by_the_box_user_and_mounted_by_docker() {
+    use agent_rush::boxes::{mkfs_args, volume_create_args};
+    let args = mkfs_args(std::path::Path::new("/d/abc.img")).join(" ");
+    assert!(args.contains("root_owner=1000:1000") && args.contains("-m 0"));
+    assert!(args.ends_with("/d/abc.img"));
+    let id = "0123456789abcdef0123456789abcdef";
+    let args = volume_create_args(id, "/dev/loop7", "ar-box")
+        .unwrap()
+        .join(" ");
+    for required in [
+        "--opt=type=ext4",
+        "--opt=device=/dev/loop7",
+        "nodev,nosuid",
+        "--label=agent-rush.box=true",
+    ] {
+        assert!(args.contains(required), "missing {required}");
+    }
+    assert!(args.ends_with(&format!("arbox-{id}")));
+    for bad in ["/dev/sda", "/dev/loop", "/dev/loop1 --opt=o=bind", "/etc"] {
+        assert!(volume_create_args(id, bad, "ar-box").is_err(), "{bad}");
+    }
+}
+
+#[test]
+fn boxes_start_only_with_the_network_guard_installed_this_boot() {
+    use agent_rush::boxes::guard_marker_valid;
+    let good =
+        "boot_id=b-1\nnetwork=ar-box\nsubnet=172.30.0.0/24\nguard_host_input=1\negress_rules=21\n";
+    assert!(guard_marker_valid(good, "b-1\n", "ar-box").is_ok());
+    // A reboot voids it: the rules are gone until the unit reinstalls them.
+    assert!(guard_marker_valid(good, "b-2", "ar-box").is_err());
+    assert!(guard_marker_valid(good, "b-1", "ar-box-test").is_err());
+    assert!(
+        guard_marker_valid(
+            &good.replace("guard_host_input=1", "guard_host_input=0"),
+            "b-1",
+            "ar-box"
+        )
+        .is_err()
+    );
+    assert!(guard_marker_valid("", "b-1", "ar-box").is_err());
+    assert!(
+        guard_marker_valid("boot_id=\nnetwork=ar-box\nguard_host_input=1", "", "ar-box").is_err()
+    );
+}
+
+#[test]
+fn a_new_box_must_find_host_and_metadata_refused() {
+    use agent_rush::boxes::guard_probe_ok;
+    let targets = vec![
+        "172.30.0.1:22".to_string(),
+        "169.254.169.254:80".to_string(),
+    ];
+    assert!(
+        guard_probe_ok(
+            "169.254.169.254:80 rejected\n172.30.0.1:22 rejected\n",
+            &targets
+        )
+        .is_ok()
+    );
+    // SSH answering (no guard), a closed port answering RST (no guard), a silent drop, or a
+    // missing line all refuse the box.
+    for out in [
+        "172.30.0.1:22 open\n169.254.169.254:80 rejected\n",
+        "172.30.0.1:22 refused\n169.254.169.254:80 rejected\n",
+        "172.30.0.1:22 rejected\n169.254.169.254:80 timeout\n",
+        "172.30.0.1:22 rejected\n",
+        "",
+    ] {
+        assert!(guard_probe_ok(out, &targets).is_err(), "{out:?}");
+    }
+}
+
+#[test]
+fn a_manager_recovers_only_boxes_on_its_own_network() {
+    use agent_rush::boxes::{container_owned, volume_stray};
+    // Labelled boxes: the label decides, whatever the network mode says.
+    assert!(container_owned(Some("ar-box"), "ar-box", "ar-box"));
+    assert!(!container_owned(Some("ar-box-test"), "ar-box", "ar-box"));
+    assert!(!container_owned(Some("ar-box"), "ar-box", "ar-box-test"));
+    // Boxes from before the label: the network they are attached to decides.
+    assert!(container_owned(None, "ar-box", "ar-box"));
+    assert!(!container_owned(None, "ar-box", "ar-box-test"));
+    // Volumes: another network's are never stray; unlabelled ones only after the grace
+    // period, so a volume whose box is being created right now is left alone.
+    assert!(volume_stray(Some("ar-box"), "ar-box", 0));
+    assert!(!volume_stray(Some("ar-box"), "ar-box-test", 99_999));
+    assert!(!volume_stray(None, "ar-box", 60));
+    assert!(volume_stray(None, "ar-box", 900));
+}
+
+#[test]
+fn box_disk_and_retention_settings_are_validated() {
+    let dir = tempfile::tempdir().unwrap();
+    let config = |disk_mb: u32, idle_seconds: u64, retention_seconds: u64| BoxConfig {
+        image: format!("ws@sha256:{}", "a".repeat(64)),
+        network: "ar-box".into(),
+        report: dir.path().join("r.json"),
+        state_dir: dir.path().join("boxes"),
+        idle_seconds,
+        ceiling_mb: 4096,
+        disk_mb,
+        retention_seconds,
+        guard_marker: dir.path().join("m.env"),
+    };
+    let manager =
+        |c| agent_rush::boxes::BoxManager::new(DockerRunner::new(IMAGE).unwrap(), c, 4096);
+    assert!(manager(config(4096, 1800, 604_800)).is_ok());
+    assert!(manager(config(255, 1800, 604_800)).is_err());
+    assert!(manager(config(262_145, 1800, 604_800)).is_err());
+    // A workspace is kept at least as long as its box may sit idle before parking.
+    assert!(manager(config(4096, 1800, 60)).is_err());
+    // Workspaces live in a private directory under the state dir.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = std::fs::metadata(dir.path().join("boxes/disks"))
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o700);
+    }
+}
+
+#[test]
+fn busy_boxes_answer_429() {
+    let busy: anyhow::Error =
+        BoxError::Busy("this box is running its maximum of calls".into()).into();
+    let (status, code, message) = error_status(&busy);
+    assert_eq!((status, code), (429, "busy"));
+    assert!(message.contains("maximum"));
 }
 
 fn node(dir: &std::path::Path, boxes: bool) -> NodeState {
@@ -148,6 +355,9 @@ fn node(dir: &std::path::Path, boxes: bool) -> NodeState {
             state_dir: dir.join("boxes"),
             idle_seconds: 1800,
             ceiling_mb: 4096,
+            disk_mb: agent_rush::boxes::DEFAULT_DISK_MB,
+            retention_seconds: agent_rush::boxes::DEFAULT_RETENTION_SECONDS,
+            guard_marker: dir.join("box-network.env"),
         })
         .unwrap()
 }
@@ -253,11 +463,17 @@ async fn live_box_round_trip() {
     .unwrap()
     .with_boxes(BoxConfig {
         image,
-        network: "ar-box".into(),
+        // A scratch network and marker can stand in for the live ones.
+        network: std::env::var("AR_TEST_BOX_NETWORK").unwrap_or_else(|_| "ar-box".into()),
         report: report.into(),
         state_dir: dir.path().join("boxes"),
         idle_seconds: 1800,
         ceiling_mb: 4096,
+        disk_mb: 1024,
+        retention_seconds: agent_rush::boxes::DEFAULT_RETENTION_SECONDS,
+        guard_marker: std::env::var("AR_TEST_BOX_GUARD_MARKER")
+            .unwrap_or_else(|_| agent_rush::boxes::DEFAULT_GUARD_MARKER.into())
+            .into(),
     })
     .unwrap();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -480,8 +696,13 @@ async fn live_box_round_trip() {
     ));
     log("exec after destroy", format!("{e:#}"));
 
-    // A box lost outside the manager (an operator `docker rm -f`) leaves `list` at once.
+    // A box whose container is lost outside the manager (an operator `docker rm -f`) keeps
+    // its workspace: it is parked, and the next call starts a new container on it.
     let lost = client.create(&spec).await.unwrap();
+    client
+        .write_file(&lost, "survivor.txt", b"workspace kept")
+        .await
+        .unwrap();
     let removed = std::process::Command::new("docker")
         .args(["rm", "-f", &format!("arbox-{lost}")])
         .output()
@@ -492,21 +713,16 @@ async fn live_box_round_trip() {
         "list after the container was removed behind the manager's back",
         format!("{list:?}"),
     );
-    assert!(list.is_empty());
-    let e = client.exec(&lost, &exec("true")).await.unwrap_err();
-    assert!(matches!(
-        e.downcast_ref::<BoxError>(),
-        Some(BoxError::NotFound)
-    ));
+    assert!(list.iter().any(|b| b.box_id == lost));
+    let r = client.exec(&lost, &exec("cat survivor.txt")).await.unwrap();
+    log("exec on the lost box", format!("{r:?}"));
+    assert_eq!(r.stdout, "workspace kept");
+    client.destroy(&lost).await.unwrap();
     let volume = std::process::Command::new("docker")
         .args(["volume", "inspect", &format!("arbox-{lost}")])
         .output()
         .unwrap();
-    assert!(
-        !volume.status.success(),
-        "the lost box's volume is removed too"
-    );
-    log("exec on the lost box", format!("{e:#}; its volume is gone"));
+    assert!(!volume.status.success(), "destroy removes the volume");
 
     // A stopped box (as after an out-of-memory kill) is restarted with its workspace.
     let stopped = client.create(&spec).await.unwrap();
@@ -523,4 +739,224 @@ async fn live_box_round_trip() {
     log("exec on a killed box", format!("{r:?}"));
     assert_eq!(r.stdout, "still here");
     client.destroy(&stopped).await.unwrap();
+}
+
+/// Workspace lifecycle on a real worker host: the hard disk quota, parking an idle box
+/// (container gone, workspace kept), the transparent restart, adoption by a new worker
+/// process, retention, and full removal. Run as the worker user with the `disk` group:
+///   AR_TEST_BOX_IMAGE=<pinned image> AR_TEST_BOX_REPORT=<passing report> \
+///   AR_TEST_BOX_NETWORK=<network> AR_TEST_BOX_GUARD_MARKER=<marker> \
+///   AR_TEST_BOX_STATE_DIR=<dir on the data disk> \
+///   cargo test --test boxes live_workspace -- --ignored --nocapture
+#[tokio::test]
+#[ignore]
+async fn live_workspace_quota_parking_and_retention() {
+    use agent_rush::{
+        boxes::BoxManager,
+        sandbox_api::{ExecRequest, FileRead},
+    };
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter("agent_rush=info")
+        .with_ansi(false)
+        .try_init();
+    let var = |name: &str| std::env::var(name).unwrap_or_else(|_| panic!("{name}"));
+    let state_dir = std::path::PathBuf::from(var("AR_TEST_BOX_STATE_DIR"));
+    let config = || BoxConfig {
+        image: var("AR_TEST_BOX_IMAGE"),
+        network: var("AR_TEST_BOX_NETWORK"),
+        report: var("AR_TEST_BOX_REPORT").into(),
+        state_dir: state_dir.clone(),
+        idle_seconds: 2,
+        ceiling_mb: 4096,
+        disk_mb: 300,
+        retention_seconds: 5,
+        guard_marker: var("AR_TEST_BOX_GUARD_MARKER").into(),
+    };
+    let log = |label: &str, value: String| println!("## {label}\n{value}\n");
+    let disks = state_dir.join("disks");
+    let manager = BoxManager::new(DockerRunner::new(IMAGE).unwrap(), config(), 6144).unwrap();
+    let spec = BoxSpec {
+        session_id: "live-workspace".into(),
+        owner: "smoke".into(),
+        memory_mb: 512,
+        cpu_millis: 500,
+    };
+    let exec = |command: &str| ExecRequest {
+        command: command.into(),
+        ..Default::default()
+    };
+    let started = std::time::Instant::now();
+    let id = manager.create(&spec).await.unwrap();
+    log(
+        "create (with the in-box guard probe)",
+        format!("box_id={id} in {:?}", started.elapsed()),
+    );
+    let image = disks.join(format!("{id}.img"));
+    assert!(image.is_file());
+
+    // The quota: /workspace is the 300 MiB image; writing past it fails with ENOSPC.
+    let r = manager
+        .exec_box(
+            &id,
+            &exec("ls -la /workspace; df -B1 --output=size,avail /workspace; dd if=/dev/zero of=/workspace/fill bs=1M count=400 2>/tmp/dd.err; echo dd_exit=$?; cat /tmp/dd.err; stat -c %s /workspace/fill"),
+        )
+        .await
+        .unwrap();
+    log("dd 400 MiB into a 300 MiB workspace", format!("{r:#?}"));
+    assert!(r.stdout.contains("No space left on device"));
+    assert!(!r.stdout.contains("lost+found"));
+    let written: u64 = r.stdout.lines().last().unwrap().trim().parse().unwrap();
+    assert!(written <= 300 * 1024 * 1024);
+    let e = manager
+        .write_box_file(&id, "more.bin", vec![b'x'; 8 * 1024 * 1024].into())
+        .await
+        .unwrap_err();
+    log("8 MiB file write into the full workspace", format!("{e:#}"));
+    assert!(matches!(
+        e.downcast_ref::<BoxError>(),
+        Some(BoxError::TooLarge(_))
+    ));
+    manager
+        .exec_box(&id, &exec("rm /workspace/fill"))
+        .await
+        .unwrap();
+    manager
+        .write_box_file(
+            &id,
+            "notes/keep.txt",
+            b"kept across parking".to_vec().into(),
+        )
+        .await
+        .unwrap();
+
+    // Parking: idle past AR_BOX_IDLE_SECONDS, the container goes, the workspace stays.
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    manager.reap(chrono::Utc::now().timestamp()).await;
+    let inspect = std::process::Command::new("docker")
+        .args(["inspect", "--type=container", &format!("arbox-{id}")])
+        .output()
+        .unwrap();
+    log(
+        "after the idle reap",
+        format!(
+            "boxes={} running={} container_present={} image_present={}",
+            manager.count(),
+            manager.running_count(),
+            inspect.status.success(),
+            image.is_file()
+        ),
+    );
+    assert_eq!((manager.count(), manager.running_count()), (1, 0));
+    assert!(!inspect.status.success() && image.is_file());
+
+    // The next call starts a new container on the same workspace.
+    let started = std::time::Instant::now();
+    let FileRead::File(bytes) = manager.read_box_file(&id, "notes/keep.txt").await.unwrap() else {
+        panic!("expected a file")
+    };
+    log(
+        "read after parking",
+        format!(
+            "{:?} in {:?} (includes the restart)",
+            String::from_utf8_lossy(&bytes),
+            started.elapsed()
+        ),
+    );
+    assert_eq!(bytes, b"kept across parking");
+    assert_eq!(manager.running_count(), 1);
+
+    // A new worker process adopts the running box; after another park, a third adopts the
+    // parked workspace from its metadata.
+    // A box of another manager (another network, as the live worker's boxes are to this
+    // test's) must survive this manager's recovery untouched.
+    let decoy = "decafbaddecafbaddecafbaddecafbad";
+    let created = std::process::Command::new("docker")
+        .args([
+            "create",
+            "--name",
+            &format!("arbox-{decoy}"),
+            "--network=bridge",
+            "--label=agent-rush.box=true",
+            &format!("--label=agent-rush.box.id={decoy}"),
+            "--label=agent-rush.box.owner=someone-else",
+            "debian:bookworm-slim",
+            "true",
+        ])
+        .output()
+        .unwrap();
+    assert!(created.status.success(), "{created:?}");
+    let second = BoxManager::new(DockerRunner::new(IMAGE).unwrap(), config(), 6144).unwrap();
+    let recovered = second.recover().await.unwrap();
+    log("second worker recover", recovered.to_string());
+    let decoy_kept = std::process::Command::new("docker")
+        .args(["inspect", "--type=container", &format!("arbox-{decoy}")])
+        .output()
+        .unwrap()
+        .status
+        .success();
+    let _ = std::process::Command::new("docker")
+        .args(["rm", "-f", &format!("arbox-{decoy}")])
+        .output();
+    assert!(decoy_kept, "another network's box was removed");
+    assert!(!recovered.to_string().contains(decoy));
+    assert_eq!(second.running_count(), 1);
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    second.reap(chrono::Utc::now().timestamp()).await;
+    assert_eq!(second.running_count(), 0);
+    let third = BoxManager::new(DockerRunner::new(IMAGE).unwrap(), config(), 6144).unwrap();
+    let recovered = third.recover().await.unwrap();
+    log("third worker recover", recovered.to_string());
+    assert!(
+        recovered["parked"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p == id.as_str())
+    );
+    let r = third
+        .exec_box(&id, &exec("cat notes/keep.txt"))
+        .await
+        .unwrap();
+    assert_eq!(r.stdout, "kept across parking");
+
+    // Retention: parked longer than AR_BOX_RETENTION_SECONDS, the workspace is deleted.
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    third.reap(chrono::Utc::now().timestamp()).await; // parks
+    assert_eq!((third.count(), third.running_count()), (1, 0));
+    tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+    third.reap(chrono::Utc::now().timestamp()).await; // purges
+    log(
+        "after retention",
+        format!(
+            "boxes={} image_present={} meta_present={}",
+            third.count(),
+            image.exists(),
+            disks.join(format!("{id}.json")).exists()
+        ),
+    );
+    assert_eq!(third.count(), 0);
+    assert!(!image.exists() && !disks.join(format!("{id}.json")).exists());
+    let e = third.exec_box(&id, &exec("true")).await.unwrap_err();
+    assert!(matches!(
+        e.downcast_ref::<BoxError>(),
+        Some(BoxError::NotFound)
+    ));
+
+    // Explicit destroy removes container, volume, loop device and image at once.
+    let id = third.create(&spec).await.unwrap();
+    let (container, workspace) = third.destroy_box(&id).await.unwrap();
+    let losetup = std::process::Command::new("losetup")
+        .args(["-a"])
+        .output()
+        .unwrap();
+    log(
+        "destroy",
+        format!(
+            "container_removed={container} workspace_removed={workspace} image_present={}",
+            disks.join(format!("{id}.img")).exists()
+        ),
+    );
+    assert!(container && workspace);
+    assert!(!disks.join(format!("{id}.img")).exists());
+    assert!(!String::from_utf8_lossy(&losetup.stdout).contains(&id));
 }

@@ -1,0 +1,21 @@
+[Unit]
+Description=Agent Rush session box network, egress filter and host input guard
+Documentation=file:///opt/agent-rush/box-network.sh
+# iptables rules do not survive a reboot: reinstall them at every boot, after Docker and
+# before the worker, and again whenever Docker restarts (PartOf). The worker requires this
+# unit, and refuses to start a box without the marker it writes for the current boot.
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+PartOf=docker.service
+Before=agent-rush-worker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/agent-rush/box-network.sh --guard-host-input
+# Stopping the unit withdraws the marker; the rules stay, so running boxes stay contained.
+ExecStopPost=/bin/rm -f /run/agent-rush/box-network.env
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,314 @@
+{
+  "schema": "agent-rush.box-qualification.v1",
+  "qualified": true,
+  "host": "a000d28bbc9b6a1b968661928c4059237f240f6e401a42e06749c8e2b3154c0c",
+  "image": "agent-rush-workspace@sha256:ebc275674643ed89334e12402cba4522621c56898ef30953e896e262d4cc303c",
+  "network": "ar-box-test",
+  "created_at": 1793930974,
+  "expires_at": 1793938174,
+  "checks": [
+    {
+      "name": "metadata_blocked",
+      "passed": true,
+      "detail": {
+        "curl_exit": 7,
+        "probes": [
+          {
+            "ms": 121,
+            "result": "rejected",
+            "target": "169.254.169.254:80"
+          },
+          {
+            "ms": 121,
+            "result": "rejected",
+            "target": "169.254.169.254:443"
+          }
+        ]
+      }
+    },
+    {
+      "name": "private_blocked",
+      "passed": true,
+      "detail": {
+        "host_controls": [
+          {
+            "reachable_from_host": true,
+            "target": "10.42.0.3:22"
+          }
+        ],
+        "probes": [
+          {
+            "ms": 316,
+            "result": "rejected",
+            "target": "10.0.0.1:80"
+          },
+          {
+            "ms": 387,
+            "result": "rejected",
+            "target": "172.16.0.1:80"
+          },
+          {
+            "ms": 383,
+            "result": "rejected",
+            "target": "192.168.0.1:80"
+          },
+          {
+            "ms": 3298,
+            "result": "rejected",
+            "target": "100.64.0.1:80"
+          },
+          {
+            "ms": 1292,
+            "result": "rejected",
+            "target": "172.17.0.1:80"
+          },
+          {
+            "ms": 3239,
+            "result": "rejected",
+            "target": "10.42.0.3:22"
+          }
+        ]
+      }
+    },
+    {
+      "name": "host_services_blocked",
+      "passed": true,
+      "detail": {
+        "gateway": "172.31.250.1",
+        "guard_marker": "present for this boot and network",
+        "probes": [
+          {
+            "ms": 93,
+            "result": "rejected",
+            "target": "172.31.250.1:22"
+          },
+          {
+            "ms": 1089,
+            "result": "rejected",
+            "target": "172.31.250.1:53"
+          },
+          {
+            "ms": 1073,
+            "result": "rejected",
+            "target": "172.31.250.1:80"
+          },
+          {
+            "ms": 1072,
+            "result": "rejected",
+            "target": "172.31.250.1:443"
+          },
+          {
+            "ms": 1084,
+            "result": "rejected",
+            "target": "172.31.250.1:2375"
+          },
+          {
+            "ms": 1070,
+            "result": "rejected",
+            "target": "172.31.250.1:2376"
+          },
+          {
+            "ms": 1077,
+            "result": "rejected",
+            "target": "172.31.250.1:5432"
+          },
+          {
+            "ms": 1072,
+            "result": "rejected",
+            "target": "172.31.250.1:6379"
+          },
+          {
+            "ms": 76,
+            "result": "rejected",
+            "target": "172.31.250.1:8090"
+          },
+          {
+            "ms": 1082,
+            "result": "rejected",
+            "target": "172.31.250.1:8443"
+          },
+          {
+            "ms": 1066,
+            "result": "rejected",
+            "target": "172.31.250.1:9100"
+          },
+          {
+            "ms": 1068,
+            "result": "rejected",
+            "target": "10.42.0.4:22"
+          },
+          {
+            "ms": 1074,
+            "result": "rejected",
+            "target": "10.42.0.4:8090"
+          },
+          {
+            "ms": 1069,
+            "result": "rejected",
+            "target": "10.42.0.4:8443"
+          },
+          {
+            "ms": 1082,
+            "result": "rejected",
+            "target": "WORKER-PUBLIC-IP-REDACTED:22"
+          },
+          {
+            "ms": 1070,
+            "result": "rejected",
+            "target": "WORKER-PUBLIC-IP-REDACTED:8090"
+          },
+          {
+            "ms": 1068,
+            "result": "rejected",
+            "target": "WORKER-PUBLIC-IP-REDACTED:8443"
+          },
+          {
+            "ms": 1079,
+            "result": "rejected",
+            "target": "172.17.0.1:22"
+          },
+          {
+            "ms": 72,
+            "result": "rejected",
+            "target": "172.17.0.1:8090"
+          },
+          {
+            "ms": 1091,
+            "result": "rejected",
+            "target": "172.17.0.1:8443"
+          },
+          {
+            "ms": 1059,
+            "result": "rejected",
+            "target": "172.30.0.1:22"
+          },
+          {
+            "ms": 1074,
+            "result": "rejected",
+            "target": "172.30.0.1:8090"
+          },
+          {
+            "ms": 1076,
+            "result": "rejected",
+            "target": "172.30.0.1:8443"
+          }
+        ]
+      }
+    },
+    {
+      "name": "smtp_blocked",
+      "passed": true,
+      "detail": {
+        "gmail_smtp_in": "192.178.209.27",
+        "host_controls": [
+          {
+            "reachable_from_host": true,
+            "target": "smtp.gmail.com:587"
+          },
+          {
+            "reachable_from_host": true,
+            "target": "smtp.gmail.com:465"
+          }
+        ],
+        "probes": [
+          {
+            "ms": 206,
+            "result": "refused",
+            "target": "74.125.126.109:587"
+          },
+          {
+            "ms": 285,
+            "result": "refused",
+            "target": "74.125.126.109:465"
+          },
+          {
+            "ms": 293,
+            "result": "refused",
+            "target": "192.178.209.27:25"
+          }
+        ],
+        "smtp_gmail_com": "74.125.126.109"
+      }
+    },
+    {
+      "name": "public_https_allowed",
+      "passed": true,
+      "detail": {
+        "resolved": "172.66.147.243",
+        "status": "200",
+        "url": "https://example.com"
+      }
+    },
+    {
+      "name": "no_credentials",
+      "passed": true,
+      "detail": {
+        "mounts": [
+          "/",
+          "/dev",
+          "/tmp",
+          "/sys",
+          "/proc",
+          "/dev/shm",
+          "/dev/pts",
+          "/workspace",
+          "/etc/hosts",
+          "/home/agent",
+          "/etc/hostname",
+          "/sys/fs/cgroup",
+          "/sys/fs/cgroup/cpu",
+          "/sys/fs/cgroup/cpuacct",
+          "/sys/fs/cgroup/cpuset",
+          "/sys/fs/cgroup/devices",
+          "/sys/fs/cgroup/job",
+          "/sys/fs/cgroup/memory",
+          "/sys/fs/cgroup/pids",
+          "/etc/resolv.conf",
+          "/usr/sbin/docker-init"
+        ],
+        "secret_like_env": [],
+        "secret_paths": [],
+        "worker_token_compared": true,
+        "worker_token_in_env": false
+      }
+    },
+    {
+      "name": "non_root_readonly",
+      "passed": true,
+      "detail": {
+        "cap_eff": "0000000000000000",
+        "no_new_privs": "1",
+        "rootfs_writable": [],
+        "sudo_present": false,
+        "uid": 1000,
+        "workspace_writable": true
+      }
+    },
+    {
+      "name": "disk_quota_enforced",
+      "passed": true,
+      "detail": {
+        "attempted_mb": 576,
+        "bytes_written": 500125696,
+        "dd_exit": 1,
+        "disk_mb": 512,
+        "enospc": true,
+        "fs_size_bytes": "510873600",
+        "writable_after_cleanup": true
+      }
+    },
+    {
+      "name": "volume_destroyed",
+      "passed": true,
+      "detail": {
+        "box_id": "d9cf9f5c56864d98be40a62f5a69480e",
+        "container_removed": true,
+        "workspace_removed": true
+      }
+    }
+  ],
+  "notes": [
+    "Box traffic to the host's own addresses is delivered locally (INPUT), not forwarded, so DOCKER-USER does not see it; the host input guard (deploy/box-network.sh) refuses all of it, and host_services_blocked requires every probed host port, open or closed, to be refused by that guard.",
+    "disk_quota_enforced runs on a 512 MiB workspace; boxes get the same mechanism at the configured 4096 MiB."
+  ]
+}

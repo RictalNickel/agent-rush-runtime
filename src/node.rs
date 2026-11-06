@@ -293,7 +293,9 @@ async fn health(State(s): State<NodeState>, headers: HeaderMap) -> Result<Json<V
     })?;
     health["resource_policy"] = json!(s.resources);
     health["boxes"] = match &s.boxes {
-        Some(boxes) => json!({"enabled":true,"image":boxes.image(),"count":boxes.count()}),
+        Some(boxes) => {
+            json!({"enabled":true,"image":boxes.image(),"count":boxes.count(),"running":boxes.running_count(),"disk_mb":boxes.disk_mb()})
+        }
         None => json!({"enabled":false}),
     };
     health["reserved_memory_mb"] = json!(
@@ -556,7 +558,7 @@ async fn box_write(
 ) -> Result<Response, NodeError> {
     Ok(
         match box_manager(&s)?
-            .write_box_file(&id, &query.path, &body)
+            .write_box_file(&id, &query.path, body)
             .await
         {
             Ok(result) => Json(result).into_response(),

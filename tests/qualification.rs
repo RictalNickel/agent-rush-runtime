@@ -142,43 +142,51 @@ fn box_report(at: i64) -> agent_rush::qualification::BoxReport {
 fn boxes_require_a_fresh_complete_passing_report_for_this_host_and_image() {
     let at = chrono::Utc::now().timestamp();
     let (host, image) = ("host-A", "workspace@sha256:aaaa");
-    assert!(box_report(at).assess(host, image, at).is_ok());
-    assert!(box_report(at).assess(host, image, at + 7199).is_ok());
+    assert!(box_report(at).assess(host, image, "ar-box", at).is_ok());
+    assert!(
+        box_report(at)
+            .assess(host, image, "ar-box", at + 7199)
+            .is_ok()
+    );
 
     let mut failing = box_report(at);
     failing.checks[0].passed = false;
-    assert!(failing.assess(host, image, at).is_err());
+    assert!(failing.assess(host, image, "ar-box", at).is_err());
     // A failed check cannot be outvoted by a passing duplicate of the same name.
     failing.checks.push(failing.checks[1].clone());
-    failing.checks[8].name = "metadata_blocked".into();
-    failing.checks[8].passed = true;
+    failing.checks[9].name = "metadata_blocked".into();
+    failing.checks[9].passed = true;
     failing.checks.remove(1);
-    assert!(failing.assess(host, image, at).is_err());
+    assert!(failing.assess(host, image, "ar-box", at).is_err());
 
     let stale = box_report(at - 7300);
-    assert!(stale.assess(host, image, at).is_err());
+    assert!(stale.assess(host, image, "ar-box", at).is_err());
     let mut forged_expiry = box_report(at);
     forged_expiry.expires_at = at + 86400;
-    assert!(forged_expiry.assess(host, image, at).is_err());
+    assert!(forged_expiry.assess(host, image, "ar-box", at).is_err());
     let future = box_report(at + 3600);
-    assert!(future.assess(host, image, at).is_err());
+    assert!(future.assess(host, image, "ar-box", at).is_err());
 
     assert!(
         box_report(at)
-            .assess(host, "workspace@sha256:bbbb", at)
+            .assess(host, "workspace@sha256:bbbb", "ar-box", at)
             .is_err()
     );
-    assert!(box_report(at).assess("host-B", image, at).is_err());
+    assert!(
+        box_report(at)
+            .assess("host-B", image, "ar-box", at)
+            .is_err()
+    );
 
     let mut unqualified = box_report(at);
     unqualified.qualified = false;
-    assert!(unqualified.assess(host, image, at).is_err());
+    assert!(unqualified.assess(host, image, "ar-box", at).is_err());
     let mut missing = box_report(at);
     missing.checks.retain(|c| c.name != "volume_destroyed");
-    assert!(missing.assess(host, image, at).is_err());
+    assert!(missing.assess(host, image, "ar-box", at).is_err());
     let mut renamed = box_report(at);
     renamed.schema = "agent-rush.qualification.v1".into();
-    assert!(renamed.assess(host, image, at).is_err());
+    assert!(renamed.assess(host, image, "ar-box", at).is_err());
 }
 
 #[test]
@@ -195,4 +203,92 @@ fn box_report_file_must_be_a_regular_file() {
         std::os::unix::fs::symlink(&real, &link).unwrap();
         assert!(BoxReport::load(&link).is_err());
     }
+}
+
+#[test]
+fn box_report_is_bound_to_the_network_and_to_this_boot() {
+    use agent_rush::qualification::{BOX_CHECKS, box_host_digest};
+    let at = chrono::Utc::now().timestamp();
+    let (host, image) = ("host-A", "workspace@sha256:aaaa");
+    assert!(
+        box_report(at)
+            .assess(host, image, "ar-box-test", at)
+            .is_err()
+    );
+    // The same machine after a reboot is another host: its firewall rules were reset.
+    let before = box_host_digest("machine-1\n", "boot-1\n");
+    assert_eq!(before, box_host_digest("machine-1", "boot-1"));
+    assert_ne!(before, box_host_digest("machine-1", "boot-2"));
+    assert_ne!(before, box_host_digest("machine-2", "boot-1"));
+    // Nine checks, including the host guard and the disk quota.
+    assert_eq!(BOX_CHECKS.len(), 9);
+    for name in [
+        "host_services_blocked",
+        "disk_quota_enforced",
+        "volume_destroyed",
+    ] {
+        assert!(BOX_CHECKS.contains(&name), "{name}");
+        let mut missing = box_report(at);
+        missing.checks.retain(|c| c.name != name);
+        assert!(missing.assess(host, image, "ar-box", at).is_err(), "{name}");
+    }
+    // An eight-check report from before the guard and quota checks no longer admits boxes.
+    let mut old = box_report(at);
+    old.checks.retain(|c| c.name != "disk_quota_enforced");
+    old.checks.push(agent_rush::qualification::BoxCheck {
+        name: "worker_listener_blocked".into(),
+        passed: true,
+        detail: json!({}),
+    });
+    assert!(old.assess(host, image, "ar-box", at).is_err());
+}
+
+#[test]
+fn host_probes_cover_closed_ports_on_the_gateway_and_ssh_everywhere() {
+    use agent_rush::qualification::host_probe_targets;
+    let addresses = vec![
+        "172.30.0.1".to_string(),
+        "10.0.0.4".to_string(),
+        "10.0.0.4".to_string(),
+    ];
+    let targets = host_probe_targets("172.30.0.1", &addresses, &[8090, 8443, 22]);
+    for closed in [22, 2375, 5432, 9100, 8090, 8443] {
+        assert!(
+            targets.contains(&format!("172.30.0.1:{closed}")),
+            "{closed}"
+        );
+    }
+    assert_eq!(
+        targets
+            .iter()
+            .filter(|t| t.starts_with("10.0.0.4:"))
+            .collect::<Vec<_>>(),
+        ["10.0.0.4:22", "10.0.0.4:8090", "10.0.0.4:8443"]
+    );
+    let mut unique = targets.clone();
+    unique.sort();
+    unique.dedup();
+    assert_eq!(unique.len(), targets.len());
+}
+
+#[test]
+fn box_report_replaces_an_existing_report_whole() {
+    use agent_rush::qualification::write_report_atomically;
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("box-qualification.json");
+    write_report_atomically(&path, b"first").unwrap();
+    write_report_atomically(&path, b"second").unwrap();
+    assert_eq!(std::fs::read(&path).unwrap(), b"second");
+    assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o600);
+    }
+    // A directory in the way fails cleanly and leaves no temporary file behind.
+    let blocked = dir.path().join("dir");
+    std::fs::create_dir(&blocked).unwrap();
+    assert!(write_report_atomically(&blocked, b"x").is_err());
+    assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 2);
 }

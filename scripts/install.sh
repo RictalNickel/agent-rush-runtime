@@ -5,7 +5,8 @@
 #   --role     all (default): control and worker on this host. This is a weaker separation than two
 #              VMs: the control plane and the sandboxes share one kernel and one disk.
 #              control: the public control plane. worker: the private execution node.
-#   --with     comma list: browser (workspace image for boxes, worker role),
+#   --with     comma list: browser (accepted for compatibility: the worker role always builds
+#              the session box workspace image, which includes the browser),
 #              voice-stt and voice-tts (optional voice service, control role),
 #              tls (Caddy with an sslip.io name, control role)
 #   --yes      run without asking for confirmation (required without a terminal)
@@ -241,7 +242,7 @@ packages() {
   step "System packages"
   local -a want=(ca-certificates curl gnupg jq openssl git)
   if [ -z "${AGENT_RUSH_BINARY:-}" ]; then want+=(build-essential pkg-config); fi
-  if [ "$DO_WORKER" -eq 1 ]; then want+=(docker.io); fi
+  if [ "$DO_WORKER" -eq 1 ]; then want+=(docker.io e2fsprogs util-linux iptables); fi
   if has_feature tls; then want+=(debian-keyring debian-archive-keyring apt-transport-https); fi
   local -a missing=()
   local pkg
@@ -382,10 +383,18 @@ accounts() {
   fi
   if [ "$DO_WORKER" -eq 1 ]; then
     if id -u agent-rush >/dev/null 2>&1; then
-      case " $(id -nG agent-rush) " in
-        *" docker "*) note "exists: agent-rush is in the docker group" ;;
-        *) act usermod -aG docker agent-rush ;;
-      esac
+      # docker: run sandboxes and boxes. disk: attach box workspace images to loop devices.
+      local group
+      for group in docker disk; do
+        case " $(id -nG agent-rush) " in
+          *" $group "*) note "exists: agent-rush is in the $group group" ;;
+          *)
+            act usermod -aG "$group" agent-rush
+            changed "added agent-rush to the $group group"
+            RESTART_WORKER=1
+            ;;
+        esac
+      done
     fi
   fi
   act install -d -m 0755 "$PREFIX"
@@ -443,12 +452,15 @@ env_files() {
 
 box_host() {
   step "Worker: box network, sandbox image and workspace image"
-  if [ -f "$REPO/deploy/box-network.sh" ]; then
-    act bash "$REPO/deploy/box-network.sh"
-    note "ran deploy/box-network.sh (egress filter for boxes)"
-  else
-    note "deploy/box-network.sh is not in this checkout: the box egress filter is not applied"
-  fi
+  # The egress filter and host input guard, reinstalled at every boot by a root unit that
+  # the worker requires (iptables rules do not survive a reboot).
+  install_file "$REPO/deploy/box-network.sh" "$PREFIX/box-network.sh" 0755
+  install_file "$REPO/deploy/agent-rush-box-network.service" "$UNITS/agent-rush-box-network.service" 0644
+  act systemctl daemon-reload
+  # Applied directly: restarting the unit would also restart the worker, which requires it.
+  act "$PREFIX/box-network.sh" --guard-host-input
+  act systemctl enable --now agent-rush-box-network.service
+  note "box network, egress filter and host input guard in place"
 
   if [ "$DRY_RUN" -eq 0 ] && docker image inspect "$SANDBOX_IMAGE" >/dev/null 2>&1; then
     note "present: sandbox image (pinned digest)"
@@ -457,14 +469,20 @@ box_host() {
     changed "pulled the pinned sandbox image"
   fi
 
-  if has_feature browser; then
-    if grep -q -- '--workspace' "$REPO/scripts/build-images.sh"; then
-      act "$REPO/scripts/build-images.sh" --workspace
-      changed "built the workspace image"
-    else
-      note "browser: scripts/build-images.sh has no workspace target in this checkout; not built"
-    fi
+  # The session box workspace image, pinned on this host by the digest it builds (rebuilds
+  # pick up newer apt packages, so each host qualifies its own build).
+  if [ "$DRY_RUN" -eq 1 ]; then
+    note "would build the workspace image (deploy/workspace.Dockerfile) and pin AR_BOX_IMAGE to its digest"
+    return 0
   fi
+  docker build -q -f "$REPO/deploy/workspace.Dockerfile" -t agent-rush-workspace:local "$REPO/deploy" >/dev/null
+  local workspace
+  workspace="agent-rush-workspace@$(docker image inspect agent-rush-workspace:local --format '{{.Id}}')"
+  local mark=${#CHANGES[@]}
+  env_set "$ETC/worker.env" AR_BOX_IMAGE "$workspace" force
+  env_set "$ETC/worker.env" AR_BOX_QUALIFICATION_REPORT "$DATA/box-qualification.json" fill
+  if [ "${#CHANGES[@]}" -gt "$mark" ]; then RESTART_WORKER=1; fi
+  note "workspace image: $workspace"
 }
 
 run_as_worker() {
@@ -477,7 +495,7 @@ worker_qualify() {
   local report="$DATA/qualification.json" next="$DATA/qualification.next.json"
   if [ "$DRY_RUN" -eq 1 ]; then
     note "would run: agent-rush qualify (writes $report)"
-    note "would run: agent-rush qualify-box, if this binary provides it"
+    note "would run: agent-rush qualify-box (writes $DATA/box-qualification.json)"
     return 0
   fi
   rm -f "$next"
@@ -488,18 +506,16 @@ worker_qualify() {
     die "qualification failed: the worker is not started. Read the output above, fix the host, then run install again."
   fi
 
-  local help
-  help="$("$BIN" --help 2>&1 || true)"
-  case "$help" in
-    *qualify-box*)
-      if run_as_worker qualify-box --output "$DATA/box-qualification.json"; then
-        changed "wrote the box qualification report"
-      else
-        die "box qualification failed: the worker is not started. Read the output above, then run install again."
-      fi
-      ;;
-    *) note "agent-rush qualify-box is not in this binary: box qualification skipped" ;;
-  esac
+  # Box qualification goes to a .next file and replaces the report only when it passes.
+  local box_report="$DATA/box-qualification.json" box_next="$DATA/box-qualification.next.json"
+  rm -f "$box_next"
+  if run_as_worker qualify-box --output "$box_next"; then
+    mv -f "$box_next" "$box_report"
+    changed "wrote the box qualification report"
+  else
+    [ ! -f "$box_next" ] || mv -f "$box_next" "$DATA/box-qualification.failed.json"
+    die "box qualification failed: the worker is not started. Read the output above (report: $DATA/box-qualification.failed.json), then run install again."
+  fi
 }
 
 worker_services() {
@@ -509,9 +525,12 @@ worker_services() {
   install_file "$REPO/deploy/requalify.sh" "$PREFIX/requalify.sh" 0755
   install_file "$REPO/deploy/agent-rush-requalify.service" "$UNITS/agent-rush-requalify.service" 0644
   install_file "$REPO/deploy/agent-rush-requalify.timer" "$UNITS/agent-rush-requalify.timer" 0644
+  install_file "$REPO/deploy/requalify-box.sh" "$PREFIX/requalify-box.sh" 0755
+  install_file "$REPO/deploy/agent-rush-requalify-box.service" "$UNITS/agent-rush-requalify-box.service" 0644
+  install_file "$REPO/deploy/agent-rush-requalify-box.timer" "$UNITS/agent-rush-requalify-box.timer" 0644
   act systemctl daemon-reload
-  act systemctl enable agent-rush-requalify.timer
-  act systemctl start agent-rush-requalify.timer
+  act systemctl enable agent-rush-requalify.timer agent-rush-requalify-box.timer
+  act systemctl start agent-rush-requalify.timer agent-rush-requalify-box.timer
   act systemctl enable agent-rush-worker
   if [ "$DRY_RUN" -eq 0 ] && [ "$RESTART_WORKER" -eq 1 ] && systemctl is-active --quiet agent-rush-worker; then
     note "restarting agent-rush-worker: in-flight sandbox runs stop"
