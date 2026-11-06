@@ -129,6 +129,14 @@ impl Ledger {
         })?;
         rows.map(|row| Ok(row?)).collect()
     }
+    /// `(name, description)` pairs for the system prompt's skills index.
+    pub fn skill_index(&self, owner: &str) -> Result<Vec<(String, String)>> {
+        let db = self.db.lock().unwrap();
+        let mut statement =
+            db.prepare("SELECT name,description FROM skills WHERE owner=?1 ORDER BY name")?;
+        let rows = statement.query_map([owner], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        rows.map(|row| Ok(row?)).collect()
+    }
     pub fn skill(&self, owner: &str, name: &str) -> Result<Option<Skill>> {
         let db = self.db.lock().unwrap();
         Ok(db

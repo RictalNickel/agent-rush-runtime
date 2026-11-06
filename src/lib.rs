@@ -16,6 +16,8 @@ pub mod qualification;
 pub mod resources;
 pub mod sandbox_api;
 pub mod service;
+pub mod session;
 pub mod session_store;
 pub mod skills;
+pub mod tools;
 pub mod worker;

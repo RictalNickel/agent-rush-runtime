@@ -324,12 +324,27 @@ impl InferenceGateway {
     }
     /// Returns the assistant text, an optional compaction block, and a usage receipt.
     pub async fn complete(&self, context: &AgentContext) -> Result<(String, Option<Value>, Value)> {
+        self.complete_with_effort(context, None).await
+    }
+    /// `complete` with a reasoning effort chosen by trusted code (an agent config
+    /// preference of low, medium or high) instead of the role default.
+    pub async fn complete_with_effort(
+        &self,
+        context: &AgentContext,
+        effort: Option<&str>,
+    ) -> Result<(String, Option<Value>, Value)> {
+        if let Some(effort) = effort {
+            ensure!(
+                crate::agent_config::REASONING_EFFORTS.contains(&effort),
+                "unsupported reasoning effort"
+            );
+        }
         match self.settings.inference_provider {
             Provider::Vultr => {
-                let (completion, receipt) = self.complete_vultr(context).await?;
+                let (completion, receipt) = self.complete_vultr(context, effort).await?;
                 Ok((completion.content, None, receipt))
             }
-            Provider::Anthropic => self.complete_anthropic(context).await,
+            Provider::Anthropic => self.complete_anthropic(context, effort).await,
         }
     }
     async fn read_bounded(response: reqwest::Response, limit: usize) -> Result<Vec<u8>> {
@@ -348,12 +363,16 @@ impl InferenceGateway {
     async fn complete_anthropic(
         &self,
         context: &AgentContext,
+        effort: Option<&str>,
     ) -> Result<(String, Option<Value>, Value)> {
         ensure!(
             self.settings.inference_configured(),
             "Anthropic API key must be configured"
         );
-        let (request, compaction) = build_anthropic_request(context)?;
+        let (mut request, compaction) = build_anthropic_request(context)?;
+        if let Some(effort) = effort {
+            request["output_config"]["effort"] = json!(effort);
+        }
         let call_id = uuid::Uuid::new_v4().to_string();
         let reservation =
             anthropic_reservation(context.role, serde_json::to_vec(&context.messages)?.len());
@@ -414,7 +433,7 @@ impl InferenceGateway {
             "origin": "https://api.anthropic.com/v1",
             "role": context.role,
             "model": completion.model,
-            "effort": spec.effort,
+            "effort": effort.unwrap_or(spec.effort),
             "cache_ttl": spec.cache_ttl.unwrap_or("default"),
             "provider_request_id": completion.provider_id,
             "input_tokens": tokens.input,
@@ -428,7 +447,11 @@ impl InferenceGateway {
         });
         Ok((completion.text, completion.compaction, receipt))
     }
-    async fn complete_vultr(&self, context: &AgentContext) -> Result<(Completion, Value)> {
+    async fn complete_vultr(
+        &self,
+        context: &AgentContext,
+        effort: Option<&str>,
+    ) -> Result<(Completion, Value)> {
         ensure!(
             self.settings.inference_configured(),
             "Vultr inference key, model and verified pricing must be configured"
@@ -442,10 +465,13 @@ impl InferenceGateway {
             .inference_output_per_million
             .context("output price required")?;
         validate_pricing(input, output)?;
-        let request = with_reasoning_effort(
+        let mut request = with_reasoning_effort(
             build_request(&self.settings.inference_model, &context.messages)?,
             context.role,
         );
+        if let Some(effort) = effort {
+            request["reasoning"]["effort"] = json!(effort);
+        }
         let call_id = uuid::Uuid::new_v4().to_string();
         // Reserve the complete maximum accepted usage, including unexpected provider accounting.
         let reservation = (64000.0 * input + OUTPUT_TOKENS as f64 * output) / 1_000_000.0;
@@ -478,7 +504,53 @@ impl InferenceGateway {
             "provider usage exceeds cost reservation; stop and reconcile billing"
         );
         let completion = decode_response(body)?;
-        let receipt = json!({"call_id":call_id,"provider":"Vultr Serverless Inference","origin":"https://api.vultrinference.com/v1","role":context.role,"effort":anthropic_role(context.role).effort,"model":completion.model,"provider_request_id":completion.provider_id,"input_tokens":completion.input_tokens,"output_tokens":completion.output_tokens,"accounted_usd":cost,"at":crate::domain::now()});
+        let receipt = json!({"call_id":call_id,"provider":"Vultr Serverless Inference","origin":"https://api.vultrinference.com/v1","role":context.role,"effort":effort.unwrap_or(anthropic_role(context.role).effort),"model":completion.model,"provider_request_id":completion.provider_id,"input_tokens":completion.input_tokens,"output_tokens":completion.output_tokens,"accounted_usd":cost,"at":crate::domain::now()});
         Ok((completion, receipt))
+    }
+}
+
+/// Adapts the inference gateway to sessions: role `Solo`, the gateway's context budget and
+/// its existing spend reservation and settlement.
+pub struct GatewayModel {
+    pub gateway: InferenceGateway,
+}
+impl GatewayModel {
+    async fn call(
+        &self,
+        system: &str,
+        messages: &[Value],
+        effort: Option<&str>,
+    ) -> Result<crate::session::ModelReply> {
+        let mut context =
+            AgentContext::with_role("session", "", Role::Solo, self.gateway.context_budget());
+        context.messages = std::iter::once(json!({"role":"system","content":system}))
+            .chain(messages.iter().cloned())
+            .collect();
+        let (text, _compaction, receipt) =
+            self.gateway.complete_with_effort(&context, effort).await?;
+        Ok(crate::session::ModelReply {
+            text,
+            cost_usd: receipt["accounted_usd"].as_f64().unwrap_or(0.0),
+        })
+    }
+}
+impl crate::session::SessionModel for GatewayModel {
+    fn complete<'a>(
+        &'a self,
+        system: &'a str,
+        messages: &'a [Value],
+    ) -> futures_util::future::BoxFuture<'a, Result<crate::session::ModelReply>> {
+        Box::pin(self.call(system, messages, None))
+    }
+    fn complete_with_effort<'a>(
+        &'a self,
+        system: &'a str,
+        messages: &'a [Value],
+        effort: Option<&'a str>,
+    ) -> futures_util::future::BoxFuture<'a, Result<crate::session::ModelReply>> {
+        Box::pin(self.call(system, messages, effort))
+    }
+    fn budget(&self) -> ContextBudget {
+        self.gateway.context_budget()
     }
 }
