@@ -302,3 +302,54 @@ fn config_file_is_validated() {
     }
     assert!(McpRegistry::empty().names().is_empty());
 }
+
+fn https_server(url: &str) -> McpServerConfig {
+    McpServerConfig {
+        name: "remote".into(),
+        url: url.into(),
+        headers: BTreeMap::new(),
+        allowed_tools: None,
+    }
+}
+
+#[test]
+fn an_https_server_at_a_private_address_is_refused_at_load() {
+    for url in [
+        "https://10.0.0.5/mcp",
+        "https://127.0.0.1/mcp",
+        "https://169.254.169.254/latest",
+        "https://100.64.0.1/mcp",
+        "https://[::1]/mcp",
+        "https://[fd00::1]/mcp",
+        "https://[::ffff:10.0.0.1]/mcp",
+    ] {
+        assert!(
+            McpRegistry::new(vec![https_server(url)]).is_err(),
+            "{url} must be refused"
+        );
+    }
+    // Public https and local http stay allowed.
+    assert!(McpRegistry::new(vec![https_server("https://93.184.215.14/mcp")]).is_ok());
+    assert!(McpRegistry::new(vec![https_server("http://127.0.0.1:9/mcp")]).is_ok());
+}
+
+/// A name that resolves to a private address (here `localhost`) passes the load-time
+/// check, but every request resolves it again and is refused before connecting.
+#[tokio::test]
+async fn an_https_server_name_resolving_to_a_private_address_is_refused() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let accepted = Arc::new(AtomicUsize::new(0));
+    let counter = accepted.clone();
+    tokio::spawn(async move {
+        while listener.accept().await.is_ok() {
+            counter.fetch_add(1, Ordering::SeqCst);
+        }
+    });
+    let registry =
+        McpRegistry::new(vec![https_server(&format!("https://localhost:{port}/mcp"))]).unwrap();
+    let error = registry.list_tools("remote").await.unwrap_err().to_string();
+    assert!(error.contains("private or reserved"), "{error}");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    assert_eq!(accepted.load(Ordering::SeqCst), 0, "no connection was made");
+}
