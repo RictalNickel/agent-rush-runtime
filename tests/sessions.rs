@@ -135,6 +135,8 @@ struct FakeBoxes {
     max_in_flight: AtomicUsize,
     /// Address of the last buffer `write_file_bytes` received.
     last_write_ptr: AtomicUsize,
+    /// Runs of the `poll` command, whose output changes every time.
+    polls: AtomicUsize,
 }
 fn normalize(path: &str) -> String {
     path.trim_start_matches("/workspace/")
@@ -190,6 +192,9 @@ impl BoxClient for FakeBoxes {
             }
             let stdout = match command {
                 "big" => "log line\n".repeat(10 * 1024 * 1024 / 9 + 1),
+                "poll" => format!("progress {}\n", self.polls.fetch_add(1, Ordering::SeqCst)),
+                // About 4 KB of output that names its command.
+                c if c.starts_with("noise-") => format!("ran: {c}\n{}\n", "x".repeat(4000)),
                 _ => format!("ran: {command}\n"),
             };
             Ok(ExecResult {
@@ -532,7 +537,7 @@ async fn cancel_during_a_model_call_still_records_its_cost() {
 
 #[tokio::test]
 async fn a_long_turn_is_not_cut_off_by_a_step_count() {
-    let mut script: Vec<Value> = (0..80).map(|_| bash("true")).collect();
+    let mut script: Vec<Value> = (0..80).map(|i| bash(&format!("step {i}"))).collect();
     script.push(reply("Done after 80 steps"));
     let h = harness(script, SessionLimits::default());
     let id = h.run("Work for a long time").await;
@@ -1366,4 +1371,256 @@ async fn owner_slots_are_capped_and_given_back_on_drop() {
     ));
     drop(long);
     s.long_request_slot("alice").unwrap();
+}
+
+/// Every model call fits the compact budget: 28,000 bytes with the system prompt and 13
+/// messages besides it, starting with a user message and alternating roles.
+fn assert_within_budget(model: &FakeModel) {
+    for (n, (system, messages)) in model.calls().iter().enumerate() {
+        let size = serde_json::to_vec(messages).unwrap().len() + system.len();
+        assert!(size <= 28_000, "call {n}: context of {size} bytes");
+        assert!(
+            messages.len() <= 13,
+            "call {n}: {} messages",
+            messages.len()
+        );
+        assert_eq!(messages[0]["role"], "user", "call {n}");
+        for pair in messages.windows(2) {
+            assert_ne!(
+                pair[0]["role"], pair[1]["role"],
+                "call {n}: roles alternate"
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn an_identical_call_loop_is_warned_then_stopped() {
+    let h = harness(vec![], SessionLimits::default());
+    // One call in three spellings: key order and spacing do not make it a new call.
+    let spellings = [
+        r#"{"tool":"bash","command":"same"}"#,
+        r#"{"command":"same","tool":"bash"}"#,
+        r#"{ "tool": "bash", "command": " same " }"#,
+    ];
+    for i in 0..20 {
+        h.model.push_raw(spellings[i % 3]);
+    }
+    let id = h.run("Make the chart").await;
+    let view = h.sessions.get("alice", &id).unwrap().unwrap();
+    assert_eq!(view.status, SessionStatus::Failed);
+    assert_eq!(
+        h.model.calls().len(),
+        6,
+        "the sixth identical call ended the turn"
+    );
+    assert_eq!(
+        h.boxes.commands.lock().unwrap().len(),
+        2,
+        "only the first two calls ran"
+    );
+    let results = h.results(&id);
+    assert_eq!(results.len(), 6, "every recorded call has a result");
+    assert!(results[..2].iter().all(|r| r["ok"] == true));
+    for (n, warned) in results[2..5].iter().enumerate() {
+        assert_eq!(warned["ok"], false);
+        let output = warned["output"].as_str().unwrap();
+        assert!(
+            output.contains(&format!(
+                "You have made this exact call {} times in a row with the same result. Change approach",
+                n + 3
+            )),
+            "{output}"
+        );
+    }
+    assert!(
+        results[5]["output"]
+            .as_str()
+            .unwrap()
+            .starts_with("not run")
+    );
+    // The warning reached the model.
+    assert!(FakeModel::all_text(&h.model.calls()[3].1).contains("Change approach"));
+    let events = h.events(&id);
+    let error = events.iter().find(|e| e.kind == "error").unwrap();
+    assert!(
+        error.payload["message"]
+            .as_str()
+            .unwrap()
+            .contains("same bash call 6 times in a row"),
+        "{:?}",
+        error.payload
+    );
+    let status = &events.last().unwrap().payload;
+    assert_eq!(
+        (&status["status"], &status["reason"]),
+        (&json!("failed"), &json!("repeating"))
+    );
+}
+
+#[tokio::test]
+async fn polling_whose_output_changes_is_not_stopped() {
+    let mut script: Vec<Value> = (0..8).map(|_| bash("poll")).collect();
+    script.push(reply("The job finished"));
+    let h = harness(script, SessionLimits::default());
+    let id = h.run("Wait for the job").await;
+    let view = h.sessions.get("alice", &id).unwrap().unwrap();
+    assert_eq!(view.status, SessionStatus::Idle);
+    assert_eq!(h.boxes.commands.lock().unwrap().len(), 8);
+    assert!(h.results(&id).iter().all(|r| r["ok"] == true));
+    assert!(h.events(&id).iter().all(|e| e.kind != "error"));
+}
+
+#[tokio::test]
+async fn a_different_call_resets_the_repeat_count() {
+    let h = harness(
+        vec![
+            bash("same"),
+            bash("same"),
+            bash("same"), // warned, not run
+            bash("other"),
+            bash("same"),
+            bash("same"),
+            bash("other"),
+            bash("same"),
+            bash("same"),
+            reply("Done"),
+        ],
+        SessionLimits::default(),
+    );
+    let id = h.run("Work").await;
+    let view = h.sessions.get("alice", &id).unwrap().unwrap();
+    assert_eq!(view.status, SessionStatus::Idle);
+    let ok: Vec<bool> = h.results(&id).iter().map(|r| r["ok"] == true).collect();
+    assert_eq!(
+        ok,
+        vec![true, true, false, true, true, true, true, true, true]
+    );
+    assert_eq!(h.boxes.commands.lock().unwrap().len(), 8);
+}
+
+#[tokio::test]
+async fn earlier_turns_stay_in_context_after_a_long_noisy_turn() {
+    let h = harness(vec![], SessionLimits::default());
+    for i in 1..=12 {
+        h.model.push(bash(&format!("noise-t1-{i:02}")));
+    }
+    let long_reply = format!(
+        "TURN1-REPLY North 2,100,750 {} END-OF-REPLY",
+        "detail ".repeat(1500)
+    );
+    h.model.push(reply(&long_reply));
+    // Enough steps that this turn alone overflows the window.
+    for i in 1..=7 {
+        h.model.push(bash(&format!("noise-t2-{i:02}")));
+    }
+    h.model.push(reply("Chart done"));
+    let id = h.sessions.create("alice", None).unwrap().id;
+    h.sessions
+        .send("alice", &id, "TURN1-REQUEST make sales.csv and total it")
+        .unwrap();
+    h.sessions.wait_idle("alice", &id, WAIT).await.unwrap();
+    let turn1_calls = h.model.calls().len();
+    assert_eq!(turn1_calls, 13);
+    h.sessions
+        .send("alice", &id, "TURN2-REQUEST chart the totals")
+        .unwrap();
+    let view = h.sessions.wait_idle("alice", &id, WAIT).await.unwrap();
+    assert_eq!(view.status, SessionStatus::Idle);
+    let calls = h.model.calls();
+    let turn2 = &calls[turn1_calls..];
+    assert_eq!(turn2.len(), 8);
+
+    let first = FakeModel::all_text(&turn2[0].1);
+    assert!(first.contains("TURN1-REQUEST"), "{first}");
+    assert!(
+        first.contains("TURN1-REPLY North 2,100,750") && first.contains("END-OF-REPLY"),
+        "the long reply is clipped, not dropped: {first}"
+    );
+    assert!(
+        first.contains("from an earlier turn omitted; files they created are still in /workspace"),
+        "{first}"
+    );
+    assert!(
+        !first.contains("noise-t1-01"),
+        "the oldest steps of the earlier turn went first"
+    );
+    for (n, (_, messages)) in turn2.iter().enumerate() {
+        let text = FakeModel::all_text(messages);
+        assert!(
+            text.contains("TURN1-REQUEST") && text.contains("TURN1-REPLY"),
+            "call {n} lost turn 1"
+        );
+        assert!(text.contains("TURN2-REQUEST"), "call {n}");
+        // Earlier-turn steps are dropped before any step of this turn.
+        let current = (1..=n)
+            .filter(|i| text.contains(&format!("noise-t2-{i:02}")))
+            .count();
+        let earlier = (1..=12)
+            .filter(|i| text.contains(&format!("noise-t1-{i:02}")))
+            .count();
+        if earlier > 0 {
+            assert_eq!(
+                current, n,
+                "call {n} kept an earlier turn's steps over this one's"
+            );
+            // The ones that survive are the newest.
+            assert!(
+                (13 - earlier..=12).all(|i| text.contains(&format!("noise-t1-{i:02}"))),
+                "call {n}"
+            );
+        }
+        if n > 0 {
+            assert!(
+                text.contains(&format!("noise-t2-{n:02}")),
+                "call {n} lost the newest step"
+            );
+        }
+    }
+    // By the last call this turn's oldest steps had to go too, after every earlier one.
+    let last = FakeModel::all_text(&turn2[7].1);
+    assert!((1..=12).all(|i| !last.contains(&format!("noise-t1-{i:02}"))));
+    assert!(!last.contains("noise-t2-01"), "{last}");
+    assert!(
+        last.contains("from earlier in this turn omitted to fit the context"),
+        "{last}"
+    );
+    assert!(
+        h.model.calls()[0]
+            .0
+            .contains("Files from earlier turns persist in /workspace")
+    );
+    assert_within_budget(&h.model);
+}
+
+#[tokio::test]
+async fn a_long_conversation_keeps_its_newest_turns_within_the_budget() {
+    let h = harness(vec![], SessionLimits::default());
+    let id = h.sessions.create("alice", None).unwrap().id;
+    for turn in 1..=10 {
+        h.model
+            .push(reply(&format!("REPLY-{turn:02} {}", "r".repeat(3000))));
+        h.sessions
+            .send(
+                "alice",
+                &id,
+                &format!("REQUEST-{turn:02} {}", "q".repeat(3000)),
+            )
+            .unwrap();
+        let view = h.sessions.wait_idle("alice", &id, WAIT).await.unwrap();
+        assert_eq!(view.status, SessionStatus::Idle);
+    }
+    assert_within_budget(&h.model);
+    let last = FakeModel::all_text(&h.model.calls().last().unwrap().1);
+    for kept in [
+        "REQUEST-10",
+        "REQUEST-09",
+        "REPLY-09",
+        "REQUEST-08",
+        "REPLY-08",
+    ] {
+        assert!(last.contains(kept), "{kept} missing");
+    }
+    assert!(!last.contains("REQUEST-01") && !last.contains("REPLY-01"));
+    assert!(last.contains("earlier messages"), "{last}");
 }

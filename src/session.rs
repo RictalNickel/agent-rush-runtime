@@ -209,6 +209,20 @@ struct TimeLimit;
 #[derive(Debug, thiserror::Error)]
 #[error("spend limit reached: {0}")]
 struct SpendLimit(String);
+#[derive(Debug, thiserror::Error)]
+#[error(
+    "the agent made the same {tool} call {count} times in a row with the same result, so the turn was stopped"
+)]
+struct Repeating {
+    tool: String,
+    count: usize,
+}
+
+/// Consecutive identical tool calls (same tool and arguments, each run giving the same
+/// result as the one before) at which the call is refused with a warning instead of run,
+/// and at which the turn is stopped.
+const REPEAT_WARN: usize = 3;
+const REPEAT_STOP: usize = 6;
 
 const INTERJECTION_PREFIX: &str = "[Message from the user, sent while you were working]\n";
 /// Events read back to rebuild the model's history at the start of a turn.
@@ -536,6 +550,135 @@ fn message(role: &str, content: impl Into<String>) -> Value {
     json!({"role": role, "content": content.into()})
 }
 
+/// What a history message is, which decides what is kept when the context is full.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Part {
+    /// A user message: a request or an interjection.
+    User,
+    /// A tool call (or an invalid model answer) or a tool result.
+    Step,
+    /// The reply that ended a turn.
+    Reply,
+}
+
+/// One message of a session's model history.
+#[derive(Debug, Clone)]
+pub(crate) struct Entry {
+    pub(crate) part: Part,
+    pub(crate) message: Value,
+}
+impl Entry {
+    pub(crate) fn user(content: impl Into<String>) -> Self {
+        Self {
+            part: Part::User,
+            message: message("user", content),
+        }
+    }
+    pub(crate) fn call(content: impl Into<String>) -> Self {
+        Self {
+            part: Part::Step,
+            message: message("assistant", content),
+        }
+    }
+    pub(crate) fn result(content: impl Into<String>) -> Self {
+        Self {
+            part: Part::Step,
+            message: message("user", content),
+        }
+    }
+    pub(crate) fn reply(content: impl Into<String>) -> Self {
+        Self {
+            part: Part::Reply,
+            message: message("assistant", content),
+        }
+    }
+}
+
+/// Watches for a model that repeats one tool call without making progress. A call counts
+/// as a repeat when its tool and arguments match the previous call and every run of it so
+/// far gave the same result, so polling whose output changes is never caught.
+#[derive(Debug, Default)]
+struct RepeatGuard {
+    call: Option<u64>,
+    result: Option<u64>,
+    count: usize,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Repeat {
+    Run,
+    /// Refuse this call with a warning; it is the n-th identical call in a row.
+    Warn(usize),
+    /// Stop the turn: the model ignored the warning.
+    Stop(usize),
+}
+impl RepeatGuard {
+    /// Counts a call before it runs and says what to do with it.
+    fn check(&mut self, key: u64) -> Repeat {
+        if self.call == Some(key) {
+            self.count += 1;
+        } else {
+            *self = Self {
+                call: Some(key),
+                result: None,
+                count: 1,
+            };
+        }
+        match self.count {
+            n if n >= REPEAT_STOP => Repeat::Stop(n),
+            n if n >= REPEAT_WARN => Repeat::Warn(n),
+            _ => Repeat::Run,
+        }
+    }
+    /// Records the result of a call that ran. A result that differs from the previous
+    /// run's means the call made progress, so the count starts again from this call.
+    fn record(&mut self, ok: bool, text: &str) {
+        let result = hash_of(&(ok, text));
+        if self.result.is_some_and(|previous| previous != result) {
+            self.count = 1;
+        }
+        self.result = Some(result);
+    }
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+fn hash_of(value: &impl std::hash::Hash) -> u64 {
+    use std::hash::{DefaultHasher, Hasher};
+    let mut hasher = DefaultHasher::new();
+    value.hash(&mut hasher);
+    hasher.finish()
+}
+/// Identifies a tool call by its tool and normalized arguments: object keys sorted and
+/// surrounding whitespace trimmed from strings.
+fn call_key(name: &str, raw: &str) -> u64 {
+    fn normalize(value: &Value) -> Value {
+        match value {
+            Value::String(s) => Value::String(s.trim().to_string()),
+            Value::Array(items) => Value::Array(items.iter().map(normalize).collect()),
+            Value::Object(map) => {
+                let mut keys: Vec<&String> = map.keys().collect();
+                keys.sort();
+                Value::Object(
+                    keys.into_iter()
+                        .map(|k| (k.clone(), normalize(&map[k])))
+                        .collect(),
+                )
+            }
+            other => other.clone(),
+        }
+    }
+    let call = match serde_json::from_str::<Value>(json_span(raw)) {
+        Ok(value) => normalize(&value).to_string(),
+        Err(_) => raw.trim().to_string(),
+    };
+    hash_of(&(name, call))
+}
+fn repeat_warning(count: usize) -> String {
+    format!(
+        "error: You have made this exact call {count} times in a row with the same result. Change approach: inspect the error, try a different command, or reply to the user explaining what is blocking you."
+    )
+}
+
 impl Inner {
     fn emit(&self, id: &str, kind: &str, payload: Value) -> Result<SessionEvent> {
         let event = self.ledger.append_event(id, kind, payload)?;
@@ -613,6 +756,8 @@ impl Inner {
                         "time_limit"
                     } else if e.is::<SpendLimit>() {
                         "spend_limit"
+                    } else if e.is::<Repeating>() {
+                        "repeating"
                     } else {
                         "error"
                     };
@@ -661,46 +806,39 @@ impl Inner {
     /// during a turn's final model call therefore follows that reply and ends the history.
     /// Interjections dropped by cancel (`dropped_interjections` on a status event; always
     /// the newest undelivered ones) are left out.
-    fn rebuild_history(&self, id: &str) -> Result<Vec<Value>> {
+    fn rebuild_history(&self, id: &str) -> Result<Vec<Entry>> {
         let mut history = Vec::new();
-        let mut undelivered: Vec<Value> = Vec::new();
+        let mut undelivered: Vec<Entry> = Vec::new();
         for event in self.ledger.recent_session_events(id, HISTORY_EVENTS)? {
             let p = &event.payload;
             match event.kind.as_str() {
                 "user" => {
                     history.append(&mut undelivered);
-                    history.push(message("user", p["text"].as_str().unwrap_or("")));
+                    history.push(Entry::user(p["text"].as_str().unwrap_or("")));
                 }
-                "interjection" => undelivered.push(message(
-                    "user",
-                    format!("{INTERJECTION_PREFIX}{}", p["text"].as_str().unwrap_or("")),
-                )),
+                "interjection" => undelivered.push(Entry::user(format!(
+                    "{INTERJECTION_PREFIX}{}",
+                    p["text"].as_str().unwrap_or("")
+                ))),
                 "status" => {
                     let dropped = p["dropped_interjections"].as_u64().unwrap_or(0) as usize;
                     undelivered.truncate(undelivered.len().saturating_sub(dropped));
                 }
-                "tool_call" => history.push(message(
-                    "assistant",
-                    if p["invalid"] == true {
-                        p["raw"].as_str().unwrap_or("").to_string()
-                    } else {
-                        p["call"].to_string()
-                    },
-                )),
+                "tool_call" => history.push(Entry::call(if p["invalid"] == true {
+                    p["raw"].as_str().unwrap_or("").to_string()
+                } else {
+                    p["call"].to_string()
+                })),
                 "tool_result" => {
-                    history.push(message(
-                        "user",
-                        tool_result_message(
-                            p["tool"].as_str().unwrap_or("tool call"),
-                            p["ok"] == true,
-                            p["output"].as_str().unwrap_or(""),
-                        ),
-                    ));
+                    history.push(Entry::result(tool_result_message(
+                        p["tool"].as_str().unwrap_or("tool call"),
+                        p["ok"] == true,
+                        p["output"].as_str().unwrap_or(""),
+                    )));
                     history.append(&mut undelivered);
                 }
                 "assistant" => {
-                    history.push(message(
-                        "assistant",
+                    history.push(Entry::reply(
                         json!({"tool":"reply","text":p["text"],"attachments":p["attachments"]})
                             .to_string(),
                     ));
@@ -748,17 +886,20 @@ impl Inner {
             self.rebuild_history(id)?
         };
         if history.is_empty() {
-            history.push(message("user", "Continue."));
+            history.push(Entry::user("Continue."));
         }
         let pinned = history.len() - 1;
         let mut turn_usd = 0.0;
+        let mut repeats = RepeatGuard::default();
         loop {
             if *cancel.borrow() {
                 return Err(Cancelled.into());
             }
             self.check_spend(owner, id, turn_usd)?;
             for text in self.ledger.take_pending(id)? {
-                history.push(message("user", format!("{INTERJECTION_PREFIX}{text}")));
+                history.push(Entry::user(format!("{INTERJECTION_PREFIX}{text}")));
+                // New input from the user may change what the same call does.
+                repeats.reset();
             }
             let (version, config) = self.ledger.agent_config(owner)?;
             let system = self.prompt(owner, &config, version)?;
@@ -779,7 +920,7 @@ impl Inner {
                 self.ledger.add_session_spend(id, reply.cost_usd)?;
                 turn_usd += reply.cost_usd;
             }
-            history.push(message("assistant", reply.text.clone()));
+            history.push(Entry::call(reply.text.clone()));
             let call = match parse_call(&reply.text, &config) {
                 Ok(call) => call,
                 Err(error) => {
@@ -797,10 +938,11 @@ impl Inner {
                         "tool_result",
                         json!({"tool": null, "ok": false, "output": text, "truncated": false}),
                     )?;
-                    history.push(message(
-                        "user",
-                        tool_result_message("tool call", false, &text),
-                    ));
+                    history.push(Entry::result(tool_result_message(
+                        "tool call",
+                        false,
+                        &text,
+                    )));
                     continue;
                 }
             };
@@ -815,7 +957,21 @@ impl Inner {
             let name = call.name().to_string();
             let recorded = record_call(&name, &reply.text);
             self.emit(id, "tool_call", recorded.event)?;
-            let output = if !recorded.fits {
+            let repeat = repeats.check(call_key(&name, &reply.text));
+            if let Repeat::Stop(count) = repeat {
+                self.emit(
+                    id,
+                    "tool_result",
+                    json!({"tool": name, "ok": false, "output": format!("not run: this was the same call {count} times in a row, so the turn was stopped"), "truncated": false}),
+                )?;
+                return Err(Repeating { tool: name, count }.into());
+            }
+            let output = if let Repeat::Warn(count) = repeat {
+                ToolOutput {
+                    ok: false,
+                    text: repeat_warning(count),
+                }
+            } else if !recorded.fits {
                 ToolOutput {
                     ok: false,
                     text: format!(
@@ -854,16 +1010,16 @@ impl Inner {
                     },
                 }
             };
+            if repeat == Repeat::Run {
+                repeats.record(output.ok, &output.text);
+            }
             let (text, truncated) = truncate_text(&output.text, output_cap);
             self.emit(
                 id,
                 "tool_result",
                 json!({"tool": name, "ok": output.ok, "output": text, "truncated": truncated}),
             )?;
-            history.push(message(
-                "user",
-                tool_result_message(&name, output.ok, &text),
-            ));
+            history.push(Entry::result(tool_result_message(&name, output.ok, &text)));
         }
     }
 
@@ -1645,72 +1801,235 @@ fn clip_message(item: &Value, max_bytes: usize) -> Value {
     }
 }
 
+/// Earlier turns' requests, interjections and replies are clipped to this size (or a
+/// tenth of the window, up to 16 KB, when that is larger)...
+const SPINE_BYTES: usize = 2048;
+/// ...and to this size, oldest first, when the clipped conversation still does not fit.
+const SPINE_MIN_BYTES: usize = 512;
+/// Room kept beside the request and the newest message for notes about omitted messages.
+const NOTE_RESERVE: usize = 512;
+
+/// A history message clipped to `max_bytes`. A reply keeps its JSON form, with the start
+/// and end of its text.
+fn clip_entry(entry: &Entry, max_bytes: usize) -> Value {
+    if json_len(&entry.message) <= max_bytes {
+        return entry.message.clone();
+    }
+    if entry.part == Part::Reply
+        && let Ok(mut reply) =
+            serde_json::from_str::<Value>(entry.message["content"].as_str().unwrap_or(""))
+        && let Some(text) = reply["text"].as_str().map(String::from)
+    {
+        let mut keep = max_bytes.saturating_sub(300);
+        while keep >= 256 {
+            reply["text"] = json!(truncate_text(&text, keep).0);
+            let clipped = message("assistant", reply.to_string());
+            if json_len(&clipped) <= max_bytes {
+                return clipped;
+            }
+            keep = keep * 3 / 4;
+        }
+    }
+    clip_message(&entry.message, max_bytes)
+}
+
+/// One way to make the selected history smaller; they are applied in order until it fits.
+#[derive(Debug, Clone, Copy)]
+enum Shrink {
+    Drop(usize),
+    Clip(usize),
+}
+
+/// A message sent to the model: a kept history entry, or a note for an omitted run.
+enum Piece {
+    Kept(usize),
+    Note(String),
+}
+
+/// The note that stands in for the omitted history entries in `run`.
+fn omitted_note(history: &[Entry], run: std::ops::Range<usize>, earlier: bool) -> String {
+    let entries = &history[run];
+    let messages = entries.iter().filter(|e| e.part != Part::Step).count();
+    let steps = entries.iter().filter(|e| e.part == Part::Step).count();
+    let calls = entries
+        .iter()
+        .filter(|e| e.part == Part::Step && e.message["role"] == "assistant")
+        .count();
+    let steps = if steps == 0 { 0 } else { calls.max(1) };
+    let counted = |n: usize, what: &str| format!("{n} {what}{}", if n == 1 { "" } else { "s" });
+    let mut what = Vec::new();
+    if messages > 0 {
+        what.push(counted(messages, "earlier message"));
+    }
+    if steps > 0 {
+        what.push(counted(steps, "tool step"));
+    }
+    let what = what.join(" and ");
+    if !earlier {
+        format!("[{what} from earlier in this turn omitted to fit the context]")
+    } else if messages == 0 {
+        format!("[{what} from an earlier turn omitted; files they created are still in /workspace]")
+    } else {
+        format!(
+            "[{what} omitted to fit the context; files from earlier turns are still in /workspace]"
+        )
+    }
+}
+
+/// The messages in order: kept entries, with one note per run of omitted ones.
+fn layout(history: &[Entry], kept: &[Option<(Value, usize)>], pinned: usize) -> Vec<Piece> {
+    let mut pieces = Vec::new();
+    let mut run_start = None;
+    // A kept sentinel past the end closes the last run.
+    let flags = kept
+        .iter()
+        .map(Option::is_some)
+        .chain(std::iter::once(true));
+    for (index, is_kept) in flags.enumerate() {
+        if !is_kept {
+            run_start.get_or_insert(index);
+            continue;
+        }
+        if let Some(start) = run_start.take() {
+            pieces.push(Piece::Note(omitted_note(
+                history,
+                start..index,
+                start < pinned,
+            )));
+        }
+        if index < history.len() {
+            pieces.push(Piece::Kept(index));
+        }
+    }
+    pieces
+}
+
+/// Bytes (an upper bound: merging same-role neighbours only saves bytes) and messages,
+/// after merging, of a layout.
+fn measure(pieces: &[Piece], kept: &[Option<(Value, usize)>]) -> (usize, usize) {
+    let (mut bytes, mut count) = (0, 0);
+    let mut last_role: Option<&str> = None;
+    for piece in pieces {
+        let (role, len) = match piece {
+            Piece::Kept(index) => {
+                let (kept_message, len) = kept[*index].as_ref().expect("kept");
+                (kept_message["role"].as_str().unwrap_or(""), *len)
+            }
+            Piece::Note(text) => ("user", json_len(&message("user", text.as_str()))),
+        };
+        if last_role.is_none() && role != "user" {
+            continue; // leading non-user messages are dropped
+        }
+        bytes += len;
+        if last_role != Some(role) {
+            count += 1;
+            last_role = Some(role);
+        }
+    }
+    (bytes, count)
+}
+
 /// Selects the messages sent to the model so the system prompt plus messages fit the
-/// budget: the turn's request (`pinned`) and the newest steps first, then older history.
-/// The result starts with a user message and alternates roles.
+/// budget.
+///
+/// The conversation spine always stays: every earlier request, interjection and reply
+/// (each clipped to a few KB) and this turn's request (`pinned`), so a later turn still
+/// sees what earlier turns asked and answered. Tool steps make room first: those of
+/// earlier turns, oldest first, then the oldest steps of this turn; the newest message is
+/// kept. Only if that is not enough are the oldest spine messages clipped harder, then
+/// dropped. Each omitted run becomes a one-line note. The result starts with a user
+/// message and alternates roles.
 pub(crate) fn fit_messages(
     system: &str,
-    history: &[Value],
+    history: &[Entry],
     pinned: usize,
     budget: ContextBudget,
 ) -> Vec<Value> {
     if history.is_empty() {
         return Vec::new();
     }
-    let (history, pinned) = merge_roles(history, pinned.min(history.len() - 1));
+    let pinned = pinned.min(history.len() - 1);
+    let newest = history.len() - 1;
     let system_len = json_len(&json!({"role":"system","content":system}));
     let max_bytes = budget.max_bytes.saturating_sub(system_len + 16).max(2048);
     let max_count = budget.max_messages.saturating_sub(1).max(2);
-    let request = if json_len(&history[pinned]) > max_bytes / 3 {
-        clip_message(&history[pinned], max_bytes / 3)
-    } else {
-        history[pinned].clone()
+    let spine_bytes = (max_bytes / 10).clamp(SPINE_BYTES, 16 * 1024);
+    let sized = |message: Value| {
+        let len = json_len(&message);
+        Some((message, len))
     };
-    let mut used = json_len(&request);
-    let mut count = 1;
-    let mut suffix: Vec<Value> = Vec::new();
-    for item in history[pinned + 1..].iter().rev() {
-        if count >= max_count {
-            break;
-        }
-        let item = if suffix.is_empty() && used + json_len(item) > max_bytes {
-            // The newest message alone is too large: clip it rather than drop it.
-            clip_message(item, max_bytes.saturating_sub(used))
-        } else {
-            item.clone()
-        };
-        if used + json_len(&item) > max_bytes {
-            break;
-        }
-        used += json_len(&item);
-        count += 1;
-        suffix.push(item);
+
+    // Each entry as it would be sent, with its size, or None once it is left out.
+    let mut kept: Vec<Option<(Value, usize)>> = vec![None; history.len()];
+    kept[pinned] = sized(clip_entry(&history[pinned], max_bytes / 3));
+    let request_len = kept[pinned].as_ref().map_or(0, |(_, len)| *len);
+    for (index, entry) in history[..pinned].iter().enumerate() {
+        kept[index] = sized(match entry.part {
+            Part::Step => entry.message.clone(),
+            Part::User | Part::Reply => clip_entry(entry, spine_bytes),
+        });
     }
-    suffix.reverse();
-    let gap = pinned + 1 + suffix.len() < history.len();
-    let mut prefix: Vec<Value> = Vec::new();
-    if !gap {
-        for item in history[..pinned].iter().rev() {
-            if count >= max_count || used + json_len(item) > max_bytes {
-                break;
+    // This turn, newest first. Steps beyond a full window could never be sent, so they
+    // are left out without being measured (a turn has no step limit).
+    let (mut steps_len, mut steps_count) = (0, 0);
+    for index in (pinned + 1..=newest).rev() {
+        let entry = &history[index];
+        if index == newest {
+            let room = max_bytes.saturating_sub(request_len + NOTE_RESERVE);
+            kept[index] = sized(clip_entry(entry, room));
+        } else if entry.part != Part::Step {
+            kept[index] = sized(clip_entry(entry, spine_bytes.max(max_bytes / 4)));
+        } else if steps_len <= max_bytes && steps_count <= max_count {
+            let item = sized(entry.message.clone());
+            steps_len += item.as_ref().map_or(0, |(_, len)| *len);
+            steps_count += 1;
+            kept[index] = item;
+        }
+    }
+
+    let earlier = 0..pinned;
+    let current = pinned + 1..newest;
+    let is_step = |index: &usize| history[*index].part == Part::Step;
+    let plan = earlier
+        .clone()
+        .filter(is_step)
+        .chain(current.clone().filter(is_step))
+        .map(Shrink::Drop)
+        .chain(earlier.clone().map(Shrink::Clip))
+        .chain(earlier.map(Shrink::Drop))
+        .chain(current.clone().map(Shrink::Clip))
+        .chain(current.map(Shrink::Drop))
+        .chain((newest != pinned).then_some(Shrink::Drop(newest)));
+    let mut pieces = layout(history, &kept, pinned);
+    for shrink in plan {
+        let (bytes, count) = measure(&pieces, &kept);
+        if bytes <= max_bytes && count <= max_count {
+            break;
+        }
+        match shrink {
+            Shrink::Drop(index) => {
+                if kept[index].take().is_none() {
+                    continue;
+                }
             }
-            used += json_len(item);
-            count += 1;
-            prefix.push(item.clone());
+            // Clipping does not help when only the message count is over.
+            Shrink::Clip(index) => match &kept[index] {
+                Some((_, len)) if bytes > max_bytes && *len > SPINE_MIN_BYTES => {
+                    kept[index] = sized(clip_entry(&history[index], SPINE_MIN_BYTES));
+                }
+                _ => continue,
+            },
         }
-        prefix.reverse();
+        pieces = layout(history, &kept, pinned);
     }
-    let mut out = prefix;
-    let mut request = request;
-    if gap {
-        let note = format!(
-            "{}\n\n[Earlier steps of this turn were omitted to fit the context.]",
-            request["content"].as_str().unwrap_or("")
-        );
-        request["content"] = json!(note);
-    }
-    out.push(request);
-    out.extend(suffix);
+
+    let mut out: Vec<Value> = pieces
+        .into_iter()
+        .filter_map(|piece| match piece {
+            Piece::Kept(index) => kept[index].take().map(|(message, _)| message),
+            Piece::Note(text) => Some(message("user", text)),
+        })
+        .collect();
     while out.first().is_some_and(|m| m["role"] != "user") {
         out.remove(0);
     }
