@@ -1,4 +1,101 @@
-# Chosen configuration
+# Configuration
+
+Agent Rush reads its settings from environment variables. The defaults below come from the code: `src/config.rs`, `src/main.rs`, `src/boxes.rs`, `src/session.rs`, `src/worker.rs`, `src/mcp_client.rs` and `voice/server.py`. The installers write values into `/etc/agent-rush/control.env` and `/etc/agent-rush/worker.env` (mode 0600). Templates are in `deploy/control.env.example` and `deploy/worker.env.example`. Installers never print secrets.
+
+A variable marked "none" has no default and is unset unless you set it.
+
+## Control plane
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `AR_BIND` | `127.0.0.1:8080` | Address the web and API server listens on |
+| `AR_DATA_DIR` | `runtime` | State directory, with the SQLite ledger `control.db` |
+| `AR_OPERATOR_PASSWORD` | none | Operator sign-in password. Sign-in is refused below 16 characters |
+| `AR_SECURE_COOKIES` | `true` | Adds the `Secure` flag to session cookies. Only the exact value `false` turns it off, for loopback development |
+| `AR_CAPACITY_MB` | `2048` | Memory the control plane may admit for one-shot jobs. Leave headroom for the host |
+| `AR_INFERENCE_PROVIDER` | `vultr` | `vultr` (Vultr Serverless Inference) or `anthropic` (development). Any other value stops startup |
+| `VULTR_INFERENCE_API_KEY` | none | Vultr inference key, used by the control plane's inference gateway. Keep it out of `worker.env` |
+| `AR_INFERENCE_MODEL` | none | Vultr catalog model ID. The public instance uses `glm-5.3-flash`. Vultr inference stays disabled until this, both tariffs and `AR_PRICING_VERIFIED=true` are set |
+| `AR_INPUT_USD_PER_MILLION`, `AR_OUTPUT_USD_PER_MILLION` | none | Model tariffs in USD per million tokens. Blank means unknown, never zero |
+| `AR_PRICING_VERIFIED` | `false` | Set to `true` only after the tariffs are checked against the provider |
+| `AR_INFERENCE_BUDGET_USD` | `5` | Total model spend the ledger allows. Must be between 0 and 25 |
+| `ANTHROPIC_API_KEY` | none | Key for `AR_INFERENCE_PROVIDER=anthropic`. Calls are priced from Anthropic's list prices |
+| `AR_WORKER_URL` | none | Worker address: `https://...`, or `http://` on loopback only. Without it, session routes return 503 |
+| `AR_WORKER_TOKEN` | none | Worker bearer token, at least 32 characters. Must match the worker's token |
+| `AR_WORKER_CA_PATH` | none | CA certificate that signs the worker's TLS certificate |
+| `AR_WORKER_IDENTITY_PATH` | none | Client certificate and private key, as one PEM file, that the control plane presents to the worker |
+| `AR_MCP_SERVERS_FILE` | none | JSON file of remote MCP servers the agent may use. See [MCP servers file](#mcp-servers-file) |
+| `AR_VOICE_URL` | none | Voice service base URL, `http` or `https`, with no credentials. Without it, `/v1/voice/*` returns 404 |
+| `RUST_LOG` | `agent_rush=info` | Log filter for the tracing subscriber |
+
+Fixed in code and not settable: per-turn limits (60 model steps, 30 minutes, $0.50 spend) and per-session spend ($5). See [SECURITY.md](SECURITY.md#known-limits).
+
+## Worker
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `AR_DATA_DIR` | `runtime` | State directory for the worker. The installer uses `/var/lib/agent-rush/worker` |
+| `AR_WORKER_TOKEN` | none | Bearer token every worker route requires, at least 32 characters |
+| `AR_CAPACITY_MB` | `2048` | Memory the worker may admit. It is clamped to the memory the host has. The example file sets `6144` |
+| `AR_QUALIFICATION_REPORT` | none | Job qualification report. The worker refuses to start without it and refuses work once it is more than two hours old |
+| `AR_SANDBOX_IMAGE` | `rust:1.90.0-bookworm@sha256:3914072c…` (the `IMAGE` constant in `src/worker.rs`) | Pinned image for one-shot runs |
+| `AR_BOX_IMAGE` | none | Workspace image reference for session boxes. Without it the worker serves one-shot runs only. `deploy/install-worker.sh` sets it to the image it builds. `scripts/install.sh` does not set it, so set it yourself before box qualification runs |
+| `AR_BOX_NETWORK` | `ar-box` | Docker network for boxes. Its egress rules come from `deploy/box-network.sh` |
+| `AR_BOX_QUALIFICATION_REPORT` | `/var/lib/agent-rush/box-qualification.json` | Box qualification report. Box creation is refused unless it is fresh and passing |
+| `AR_BOX_IDLE_SECONDS` | `1800` | Idle seconds before a box and its `/workspace` volume are destroyed. The files go with it |
+| `AR_BOX_CEILING_MB` | `4096` | Largest memory a box may grow to. Must be between 1024 and 65536 |
+
+The worker's `--bind` default is `127.0.0.1:8090`. It is a command-line flag, not an environment variable.
+
+## Installers and setup
+
+These are read by `scripts/install.sh` and `scripts/setup.sh`, not by the Rust binary.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `AGENT_RUSH_BINARY` | none | Prebuilt `agent-rush` binary to install instead of building one |
+| `AR_SKIP_TESTS` | `0` | Set to `1` to skip `cargo test` after a source build |
+| `AR_PUBLIC_IP` | detected | Public IPv4 for the `sslip.io` name with `tls` |
+| `AR_WORKER_PRIVATE_IP` | none | Role `control`: the worker's private address |
+| `AR_SETUP_PROVIDER` | `vultr` | Written by `setup.sh`: inference provider |
+| `AR_SETUP_INFERENCE_KEY` | none | Written by `setup.sh`: inference key, stored in the 0600 env file |
+| `AR_SETUP_ADMIN_PASSWORD` | none | Written by `setup.sh`: operator password |
+
+## Voice service
+
+Read by `voice/server.py`. The service listens on `127.0.0.1:8790` and has no authentication. See [VOICE.md](VOICE.md).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `VOICE_REF_WAV` | `voice/ref.wav` beside `server.py` | Reference clip for speech output |
+| `VOICE_DEVICE` | `cpu` | `cpu` or `cuda` for LuxTTS |
+| `VOICE_THREADS` | `4` | CPU threads for LuxTTS |
+| `VOICE_STT_MODEL` | `moonshine/base` | Moonshine model name |
+
+## MCP servers file
+
+`AR_MCP_SERVERS_FILE` points to a JSON file. It is either an array of servers or an object with a `servers` array. Each server has:
+
+- `name`: `^[a-z0-9][a-z0-9_-]{0,39}$`, unique in the file.
+- `url`: a streamable HTTP MCP endpoint.
+- `headers` (optional): a map of header names to values. Values are credentials. They stay on the control plane and never appear in prompts, the box or error messages.
+- `allowed_tools` (optional): when set, only these tool names are listed and callable.
+
+At most 32 servers. Responses are capped at 4 MiB. Keep the file readable only by the service user.
+
+```json
+{"servers": [
+  {"name": "docs", "url": "https://mcp.example.com/mcp",
+   "headers": {"Authorization": "Bearer <token>"},
+   "allowed_tools": ["search"]}
+]}
+```
+
+`GET /v1/agent-config` reports the server names the operator allows, as `mcp_servers_available`. The agent's `mcp_servers` setting can only name those.
+
+## Deployment decisions (2026-11-05)
+
+Historical record. The selections below were made on 2026-11-05. Later checks changed some of them: the model is now verified as `glm-5.3-flash`, and its tariffs came from Vultr's catalog (see [VERIFICATION.md](VERIFICATION.md)). The tables above give the current values.
 
 The user selected **GLM 5.3 Flash** and delegated remaining configuration and credential choices. Machine-readable decisions are in deploy/decisions.json. These are configuration selections, not a claim that cloud deployment or inference has been activated.
 
