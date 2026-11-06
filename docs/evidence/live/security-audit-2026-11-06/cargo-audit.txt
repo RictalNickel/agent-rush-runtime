@@ -1,0 +1,6 @@
+# cargo audit 0.22.2 --file /root/build-S/Cargo.lock (worker VM, 2026-11-06; lockfile of 7c18f6c, unchanged by the fixes)
+# exit code 0: no vulnerabilities, no unmaintained, unsound or yanked warnings
+    Fetching advisory database from `https://github.com/RustSec/advisory-db.git`
+      Loaded 1422 security advisories (from /root/.cargo/advisory-db)
+    Updating crates.io index
+    Scanning /root/build-S/Cargo.lock for vulnerabilities (228 crate dependencies)
