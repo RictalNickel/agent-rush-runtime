@@ -1,0 +1,11 @@
+# Python 3.12. Tested 2026-11-05 on CachyOS with system cairo, pango and ffmpeg.
+# manim 0.22 breaks manim-slides 5.7 (config.write_to_movie was removed), and
+# Pillow 12+ breaks manim 0.21's image rendering, so both are held back.
+manim==0.21.0
+manim-slides==5.7.0
+manimpango==0.7.1
+pillow==11.3.0
+numpy==2.5.4
+pycairo==1.29.2
+av==19.0.2
+python-pptx==1.0.2
