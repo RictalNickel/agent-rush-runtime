@@ -188,6 +188,34 @@ async fn each_session_model_is_sent_and_charged_at_its_own_tariff() {
 }
 
 #[tokio::test]
+async fn without_a_model_list_every_call_runs_the_default_model() {
+    let (url, seen) = fake_vultr().await;
+    let mut settings = Settings::local();
+    settings.inference_key = "fixture-provider-key".into();
+    settings.inference_model = "glm-5.3-flash".into();
+    settings.inference_input_per_million = Some(0.10);
+    settings.inference_output_per_million = Some(0.35);
+    settings.pricing_verified = true;
+    let ledger = Arc::new(Ledger::memory(1024).unwrap());
+    let gateway = InferenceGateway::new(Arc::new(settings), ledger)
+        .unwrap()
+        .with_vultr_endpoint(&url);
+    let model = GatewayModel { gateway };
+    // A session recorded under an earlier default still runs, on today's default.
+    let reply = model
+        .complete_with_model(
+            "glm-4.6",
+            "system",
+            &[json!({"role":"user","content":"hi"})],
+            None,
+        )
+        .await
+        .unwrap();
+    assert!((reply.cost_usd - (10000.0 * 0.10 + 2000.0 * 0.35) / 1e6).abs() < 1e-12);
+    assert_eq!(seen.lock().unwrap()[0]["model"], "glm-5.3-flash");
+}
+
+#[tokio::test]
 async fn the_budget_reservation_uses_the_session_models_tariff() {
     let (url, seen) = fake_vultr().await;
     // A worst-case full GLM 5.3 call reserves about $0.097, a Flash call about $0.012.

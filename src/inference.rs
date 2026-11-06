@@ -490,7 +490,10 @@ impl InferenceGateway {
         );
         // The model and its tariff come from the operator's configuration, never from
         // model output: an ID outside the list is refused before anything is reserved.
-        let (model, input, output) = match model.filter(|m| !m.is_empty()) {
+        // Without a list every call runs the default model, as before models were chosen,
+        // even for a session recorded under an earlier default.
+        let chosen = model.filter(|m| !m.is_empty() && !self.settings.inference_models.is_empty());
+        let (model, input, output) = match chosen {
             None => (
                 self.settings.inference_model.as_str(),
                 self.settings
