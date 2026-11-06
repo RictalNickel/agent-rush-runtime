@@ -48,7 +48,7 @@ client app / web chat / MCP client
         │                    ── skills, agent config, ledger (SQLite)
         │  mTLS + bearer (existing private link)
   worker VM: box manager ── docker + runsc, network "ar-box" (egress filter)
-                          └ one container per session, volume /workspace
+                          └ one container per session, workspace image at /workspace
 ```
 
 The existing one-shot job path (`/api/jobs`, 10 qualification checks) stays as is.
@@ -73,18 +73,19 @@ How the commands behave:
 Container settings:
 - `--runtime=runsc`, non-root, `--cap-drop=ALL`, `no-new-privileges`, `--pids-limit 512`, and the memory and CPU limits.
 - The root filesystem is read-only, apart from tmpfs mounts for `/tmp` and `/home/agent`.
-- The named volume `arbox-<id>` is mounted at `/workspace`.
+- The box's workspace, a sparse ext4 image of `AR_BOX_DISK_MB` (default 4096 MiB) on a loop device, is mounted at `/workspace`. Writes past its size fail.
 - The container attaches to network `ar-box`, and the image is the pinned workspace image.
 
 Limits and cleanup:
 - The live scaler is reused: start at 1024 MiB and grow toward the operator box ceiling (default 4096 MiB, 2 vCPU).
-- An idle reaper destroys a box after `AR_BOX_IDLE_SECONDS` (default 1800) with no exec.
+- A box with no exec for `AR_BOX_IDLE_SECONDS` (default 1800) is parked: its container is removed and its workspace kept. The next exec or file call restarts it. A parked workspace is deleted when its session closes, or after `AR_BOX_RETENTION_SECONDS` (default 7 days) with no call.
 - Worker capacity admission counts the boxes alongside jobs.
 
 ### Egress filter (`deploy/box-network.sh`, run by the worker install)
 
 A Docker bridge network `ar-box` with inter-container traffic disabled. `DOCKER-USER` iptables rules apply to traffic from its subnet:
-- **Drop** 10/8, 172.16/12, 192.168/16, 169.254/16, 100.64/10, 127/8, 224/4 and the host's own addresses.
+- **Drop** 10/8, 172.16/12, 192.0.0.0/24, 192.168/16, 169.254/16, 100.64/10, 127/8, 198.18/15, 224/4, 240/4 and the host's own addresses.
+- **Host input guard:** an INPUT rule refuses all box traffic to the host's own addresses, so SSH and other host services are unreachable from a box. It is installed at every boot.
 - **Drop** TCP 25, 465 and 587.
 - **Rate-limit** new connections with hashlimit.
 - **Allow** everything else, plus established traffic.
@@ -93,17 +94,18 @@ A Docker bridge network `ar-box` with inter-container traffic disabled. `DOCKER-
 
 ### Box qualification
 
-`agent-rush qualify-box` starts a box and proves eight things:
+`agent-rush qualify-box` starts a box and proves nine things:
 - metadata (169.254.169.254) is unreachable
-- the private VPC and the worker's own listener are unreachable
+- private, CGNAT and other-bridge addresses are unreachable
+- every probed port on the host's own addresses is refused by the host input guard
 - SMTP is unreachable
 - a public HTTPS site is reachable
 - there are no credentials in the environment or files
-- it runs as a non-root uid
-- the root filesystem is read-only
-- the volume is gone after destroy
+- it runs as a non-root uid with no capabilities, and its root filesystem is read-only
+- writing past the workspace size limit fails
+- the container and workspace are gone after destroy
 
-The worker refuses `POST /v1/boxes` without a fresh passing box report. This mirrors the job qualification and fails closed.
+The worker refuses `POST /v1/boxes` without a fresh passing box report and the guard marker for this boot. This mirrors the job qualification and fails closed.
 
 ### Workspace image (`deploy/workspace.Dockerfile`)
 
@@ -229,7 +231,7 @@ Both are idempotent and print what they changed.
 - Everything runs on Vultr VMs.
 - The containment proofs are live and public:
   - the 10 job checks
-  - the 8 box checks
+  - the 9 box checks
   - receipts
   - a published egress policy
   - an "agent tried to reach metadata, blocked" event visible in the stream
@@ -241,5 +243,5 @@ Each of these is a judgment call by the builder; the user can overrule any of th
 - The JSON one-tool-per-turn protocol is kept instead of native function calling.
 - MCP stdio servers are not run on control.
 - Voice stays off the Vultr VMs by default.
-- Default limits: 60 turns, a 30-minute idle reaper, and a 4 GiB box ceiling.
+- Default limits: 60 model steps per turn, idle boxes parked after 30 minutes, and a 4 GiB box ceiling.
 - The product name is unchanged until the user picks Cofferdam or Glovebox.

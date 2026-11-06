@@ -28,10 +28,10 @@ The control VM runs sessions, the inference gateway and the API. It never runs a
 
 ## Why it's safe
 
-- **One box per session.** Each session has its own gVisor container. It runs as uid 1000 with a read-only root filesystem, no Linux capabilities and no-new-privileges, with limits on processes, memory and CPU. It is destroyed when the session closes or after 30 idle minutes.
+- **One box per session.** Each session has its own gVisor container. It runs as uid 1000 with a read-only root filesystem, no Linux capabilities and no-new-privileges, with limits on processes, memory, CPU and workspace size (4 GiB by default). An idle box is parked: its container is removed and its workspace kept, and it starts again on the next call. The workspace is deleted when the session closes or after seven days without a call.
 - **No credentials in the box.** API keys, the worker token, the inference key and remote MCP credentials stay on the control or worker side. The box qualification checks the box's environment and mounts for them.
-- **Egress filter.** Boxes can reach the public internet. They cannot reach cloud metadata (169.254.169.254), private and CGNAT ranges, loopback, the host's own addresses, or SMTP ports 25, 465 and 587. Boxes cannot reach each other. Details are in [SECURITY.md](docs/SECURITY.md#egress-policy).
-- **Fail-closed qualification.** A worker runs one-shot jobs only with a passing report of its 10 containment checks, and creates boxes only with a passing report of 8 box checks. Reports expire after two hours.
+- **Egress filter.** Boxes can reach the public internet. They cannot reach cloud metadata (169.254.169.254), private and CGNAT ranges, loopback, SMTP ports 25, 465 and 587, or any service on the host itself, SSH included. A host input guard enforces the last part at every boot. Boxes cannot reach each other. Details are in [SECURITY.md](docs/SECURITY.md#egress-policy).
+- **Fail-closed qualification.** A worker runs one-shot jobs only with a passing report of its 10 containment checks. It starts boxes only with a passing report of 9 box checks made on this host, this boot and this box network. Reports expire after two hours, and the box report is rerun every 45 minutes.
 - **Owner isolation.** Keys, sessions, files and skills belong to one owner. Another owner's session returns 404, the same as a session that does not exist.
 - **Spend caps.** Each model call reserves its worst-case cost before it is sent. The operator budget defaults to $5 (maximum $25). A turn stops before its next model call at $0.50, and a session at $5. A turn also ends after 60 steps or 30 minutes.
 - **The agent cannot widen its own limits.** It can change its prompt addendum, tool choices, custom tools and skills. Trusted code still enforces the limits, the egress rules and the operator's list of MCP servers. See [what the agent can edit](docs/SECURITY.md#what-the-agent-can-and-cannot-edit).
@@ -47,7 +47,7 @@ sudo scripts/install.sh --role all --yes
 - `--role all` runs control and worker on one host. That is a weaker separation than two VMs, because the control plane and the boxes share a kernel and a disk. For public use, install `--role control` on one VM and `--role worker` on a private one.
 - Preview first, which changes nothing: `scripts/install.sh --dry-run --role all --with browser,voice-stt`.
 - Guided setup asks for the role, features, inference provider, key and admin password: `sudo scripts/setup.sh`.
-- Session boxes need a workspace image. `--with browser` builds it on the worker. `scripts/build-images.sh --workspace` prints its reference. The installer does not write `AR_BOX_IMAGE` into `worker.env`, so set that variable to the printed reference before the worker's box qualification runs. See [INSTALL.md](docs/INSTALL.md).
+- Session boxes need a workspace image. The worker role builds it from `deploy/workspace.Dockerfile`, writes its digest to `AR_BOX_IMAGE` in `worker.env`, and then runs box qualification. `scripts/build-images.sh --workspace` builds the same image and prints its reference. See [INSTALL.md](docs/INSTALL.md).
 
 Local development, without a worker. Sessions return 503 until a worker is connected:
 
@@ -63,7 +63,7 @@ cargo test --locked
 
 The REST API is documented in full in [docs/API.md](docs/API.md). A typical integration:
 
-1. **Create an API key.** Sign in once with the operator password, then create a key. The key is shown once.
+1. **Create an API key.** Sign in once with the operator password, then create a key with that browser login (the cookie and its CSRF token). The key is shown once. An API key cannot create or revoke keys or register webhooks, which need the operator login.
 
    ```sh
    HOST=https://agent.example.com
@@ -103,9 +103,11 @@ The REST API is documented in full in [docs/API.md](docs/API.md). A typical inte
      "$HOST/v1/sessions/$SID/files?path=report.pdf"
    ```
 
-   Files live in the box. A box is destroyed after 30 idle minutes, and its `/workspace` files go with it. Download results before a session goes quiet.
+   Files live in the session's workspace. An idle box is parked after 30 minutes, and its files stay put. They are deleted when the session closes, or after seven days without a call. Download results before you close the session.
 
-6. **Get notified.** Each turn end is POSTed to your webhooks, signed with HMAC-SHA256 in `X-Agent-Signature`. Create one with `POST /v1/webhooks`. The URL must be a public `https` address. See [API.md](docs/API.md#webhooks).
+6. **Get notified.** Each turn end is POSTed to your webhooks, signed with HMAC-SHA256 in `X-Agent-Signature`. Register one with `POST /v1/webhooks` using the operator login, as in step 1. The URL must be a public `https` address. See [API.md](docs/API.md#webhooks).
+
+Each owner has caps on open sessions (20), live event streams (8) and long requests such as exec and file calls (8). Over a cap the API returns 429 and says which one was reached. The limits are listed in [API.md](docs/API.md#limits).
 
 ## Use it from an MCP client
 
@@ -147,7 +149,7 @@ Each model call makes one tool call, and the result goes back to the model. The 
 
 | Feature | Install with | What it adds |
 | --- | --- | --- |
-| Workspace image | `--with browser` | Builds the box image: shell, Chromium, converters. Boxes need it. |
+| Workspace image | Worker role (built by default) | Builds the box image: shell, Chromium, converters. Boxes need it. |
 | Voice input | `--with voice-stt` | Speech to text with Moonshine on CPU. A short clip took about 0.6 s on a 4 vCPU VM. |
 | Voice output | `--with voice-tts` | Speech output with LuxTTS on CPU. Needs one reference clip. About 1 s of compute per second of speech. |
 | HTTPS | `--with tls` | Caddy with an `sslip.io` name on ports 80 and 443. |
@@ -167,8 +169,10 @@ Settings are environment variables. The most important are below. The full list,
 | `AR_INFERENCE_BUDGET_USD` | `5` | Total model spend the ledger allows. Range 0 to 25. |
 | `AR_WORKER_URL`, `AR_WORKER_TOKEN` | none | Private worker link. The token is at least 32 characters. |
 | `AR_BOX_IMAGE` | none | Workspace image reference the worker runs boxes from. |
-| `AR_BOX_IDLE_SECONDS` | `1800` | Idle seconds before a box and its `/workspace` are destroyed. |
+| `AR_BOX_IDLE_SECONDS` | `1800` | Idle seconds before a box is parked: its container goes, its `/workspace` stays. |
 | `AR_BOX_CEILING_MB` | `4096` | Largest memory a box may grow to. |
+| `AR_BOX_DISK_MB` | `4096` | Hard size of each box's `/workspace`, in MiB. |
+| `AR_BOX_RETENTION_SECONDS` | `604800` | Seconds a parked workspace is kept without a call, then deleted (7 days). |
 | `AR_MCP_SERVERS_FILE` | none | JSON file of remote MCP servers the agent may use. |
 | `AR_VOICE_URL` | none | Local voice service, for example `http://127.0.0.1:8790`. |
 
@@ -177,7 +181,7 @@ Settings are environment variables. The most important are below. The full list,
 - **Public instance:** https://144-202-59-108.sslip.io (Let's Encrypt certificate through Caddy).
 - **Where it runs:** two Vultr VMs in Chicago (`ord`): a control VM (2 vCPU, 4 GB) and a private worker VM (4 vCPU, 8 GB), about $0.082 per hour in total. See [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md).
 - **Inference:** the public instance sends every agent call to Vultr Serverless Inference, using GLM 5.3 Flash.
-- **Evidence:** [VERIFICATION.md](docs/VERIFICATION.md) lists what was observed and when. Raw receipts are in [docs/evidence/live/](docs/evidence/live/), including the box qualification (`box-qualification/`), the workspace image build (`workspace-image/`), a box round trip (`boxes/`) and the voice service run (`voice/`).
+- **Evidence:** [VERIFICATION.md](docs/VERIFICATION.md) lists what was observed and when. Raw receipts are in [docs/evidence/live/](docs/evidence/live/), including the box qualification ([box-qualification-v2/](docs/evidence/live/box-qualification-v2/) and the earlier [box-qualification/](docs/evidence/live/box-qualification/)), the workspace image build ([workspace-image/](docs/evidence/live/workspace-image/)), a box round trip ([boxes/](docs/evidence/live/boxes/)), the session demo ([session-demo/](docs/evidence/live/session-demo/)), the MCP run ([mcp/](docs/evidence/live/mcp/)) and the voice service run ([voice/](docs/evidence/live/voice/)).
 
 What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) and [VERIFICATION.md](docs/VERIFICATION.md).
 
@@ -186,11 +190,11 @@ What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) 
 - **Every agent LLM call goes to Vultr.** Job `7d466fa9` on the public instance made 5 model calls, all to `glm-5.3-flash`. It finished in 58 s for $0.0058, and its reviewer approved the result. Receipt: [docs/evidence/live/vultr-public/](docs/evidence/live/vultr-public/).
 - **Everything runs on Vultr.** The control and worker VMs are both Vultr instances in Chicago.
 - **Containment evidence:**
-  - 8 of 8 box checks pass: [box-qualification.json](docs/evidence/live/box-qualification/box-qualification.json).
-  - The egress rules as applied: [egress-policy.txt](docs/evidence/live/box-qualification/egress-policy.txt).
+  - 9 of 9 box checks pass on a scratch box network, which left the live `ar-box` network untouched: [box-qualification-v2/](docs/evidence/live/box-qualification-v2/). The earlier 8-check report, [box-qualification.json](docs/evidence/live/box-qualification/box-qualification.json), predates the host guard and the disk quota, and the worker no longer accepts it.
+  - An earlier dump of the applied egress rules: [egress-policy.txt](docs/evidence/live/box-qualification/egress-policy.txt). The current rules are in [deploy/box-network.sh](deploy/box-network.sh).
   - The 10 job containment checks: [worker-qualification-2026-11-05.json](docs/evidence/live/worker-qualification-2026-11-05.json) (nine at first deploy) and [VERIFICATION.md](docs/VERIFICATION.md) (10 of 10 after the scaling check was added).
   - A containment probe receipt, runaway runs killed on timeout, and an overlapping run refused with HTTP 429: [containment/](docs/evidence/live/containment/) and [load/](docs/evidence/live/load/).
-- **Limits, stated plainly.** One operator per deployment. No independent security audit. No multi-tenant claim. The box checks prove eight specific things, not escape resistance in general. See [SECURITY.md](docs/SECURITY.md).
+- **Limits, stated plainly.** One operator per deployment. No independent security audit. No multi-tenant claim. The box checks prove nine specific things, not escape resistance in general. See [SECURITY.md](docs/SECURITY.md).
 
 ## Documentation
 

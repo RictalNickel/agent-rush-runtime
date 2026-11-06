@@ -1,6 +1,6 @@
 # Configuration
 
-Agent Rush reads its settings from environment variables. The defaults below come from the code: `src/config.rs`, `src/main.rs`, `src/boxes.rs`, `src/session.rs`, `src/worker.rs`, `src/mcp_client.rs` and `voice/server.py`. The installers write values into `/etc/agent-rush/control.env` and `/etc/agent-rush/worker.env` (mode 0600). Templates are in `deploy/control.env.example` and `deploy/worker.env.example`. Installers never print secrets.
+Agent Rush reads its settings from environment variables. The defaults below come from the code: `src/config.rs`, `src/main.rs`, `src/boxes.rs`, `src/session.rs`, `src/worker.rs`, `src/mcp_client.rs` and `voice/server.py`, and from the deploy scripts where a variable is read there. The installers write values into `/etc/agent-rush/control.env` and `/etc/agent-rush/worker.env` (mode 0600). Templates are in `deploy/control.env.example` and `deploy/worker.env.example`. Installers never print secrets.
 
 A variable marked "none" has no default and is unset unless you set it.
 
@@ -28,7 +28,7 @@ A variable marked "none" has no default and is unset unless you set it.
 | `AR_VOICE_URL` | none | Voice service base URL, `http` or `https`, with no credentials. Without it, `/v1/voice/*` returns 404 |
 | `RUST_LOG` | `agent_rush=info` | Log filter for the tracing subscriber |
 
-Fixed in code and not settable: per-turn limits (60 model steps, 30 minutes, $0.50 spend) and per-session spend ($5). See [SECURITY.md](SECURITY.md#known-limits).
+Fixed in code and not settable: per-turn limits (60 model steps, 30 minutes, $0.50 spend), per-session spend ($5), and the per-owner and box call caps listed in [API.md](API.md#limits). See [SECURITY.md](SECURITY.md#known-limits).
 
 ## Worker
 
@@ -39,13 +39,30 @@ Fixed in code and not settable: per-turn limits (60 model steps, 30 minutes, $0.
 | `AR_CAPACITY_MB` | `2048` | Memory the worker may admit. It is clamped to the memory the host has. The example file sets `6144` |
 | `AR_QUALIFICATION_REPORT` | none | Job qualification report. The worker refuses to start without it and refuses work once it is more than two hours old |
 | `AR_SANDBOX_IMAGE` | `rust:1.90.0-bookworm@sha256:3914072c…` (the `IMAGE` constant in `src/worker.rs`) | Pinned image for one-shot runs |
-| `AR_BOX_IMAGE` | none | Workspace image reference for session boxes. Without it the worker serves one-shot runs only. `deploy/install-worker.sh` sets it to the image it builds. `scripts/install.sh` does not set it, so set it yourself before box qualification runs |
-| `AR_BOX_NETWORK` | `ar-box` | Docker network for boxes. Its egress rules come from `deploy/box-network.sh` |
-| `AR_BOX_QUALIFICATION_REPORT` | `/var/lib/agent-rush/box-qualification.json` | Box qualification report. Box creation is refused unless it is fresh and passing |
-| `AR_BOX_IDLE_SECONDS` | `1800` | Idle seconds before a box and its `/workspace` volume are destroyed. The files go with it |
+| `AR_BOX_IMAGE` | none | Workspace image reference for session boxes. Without it the worker serves one-shot runs only. Both `deploy/install-worker.sh` and `scripts/install.sh` (worker role) set it to the digest of the image they build |
+| `AR_BOX_NETWORK` | `ar-box` | Docker network for boxes. Its egress rules and host input guard come from `deploy/box-network.sh` |
+| `AR_BOX_QUALIFICATION_REPORT` | `/var/lib/agent-rush/box-qualification.json` | Box qualification report. Box creation and restarts are refused unless it is fresh and passing for this host, boot, image and network |
+| `AR_BOX_IDLE_SECONDS` | `1800` | Idle seconds before a box is parked: its container is removed and its `/workspace` kept. The next call restarts it |
+| `AR_BOX_RETENTION_SECONDS` | `604800` (7 days) | Seconds a parked workspace is kept without a call. Its files are deleted then, or when the session closes. Must be at least `AR_BOX_IDLE_SECONDS` |
 | `AR_BOX_CEILING_MB` | `4096` | Largest memory a box may grow to. Must be between 1024 and 65536 |
+| `AR_BOX_DISK_MB` | `4096` | Hard size of each box's `/workspace`, in MiB. Must be between 256 and 262144. Creating a box needs twice this plus 2 GiB free, after the headroom existing workspaces may still grow into |
+| `AR_BOX_GUARD_MARKER` | `/run/agent-rush/box-network.env` | Marker that `deploy/box-network.sh` writes once the egress rules and host input guard are verified, recording the boot ID. Box starts are refused without a marker for the current boot. It lives in `/run`, so a reboot clears it until the root unit reruns |
+| `AR_BOX_PRIVATE_PROBES` | empty in the example; `deploy/install-worker.sh` sets the control VM's `ip:22` | Comma-separated private `ip:port` endpoints that the host reaches and boxes must not. Read by `deploy/requalify-box.sh`, which passes each one as `--private-probe`, not by the binary |
 
 The worker's `--bind` default is `127.0.0.1:8090`. It is a command-line flag, not an environment variable.
+
+### Box network overrides
+
+`deploy/box-network.sh` reads these to build a separate, scratch box network, which the qualification run used. Leave them unset on a live worker.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `AR_BOX_NET` | `ar-box` | Docker network name. Set `AR_BOX_NETWORK` to the same value on the worker |
+| `AR_BOX_SUBNET` | `172.30.0.0/24` | Subnet of the box network. The script's rules match this subnet only |
+| `AR_BOX_GATEWAY` | `172.30.0.1` | Gateway address of the box network, which is an address on the host |
+| `AR_BOX_BRIDGE` | `ar-box0` | Linux bridge name |
+| `AR_BOX_TAG` | `ar-box-egress` | Comment on every rule, so the script changes only its own rules |
+| `AR_BOX_MARKER` | `/run/agent-rush/box-network.env` | Marker file. Set `AR_BOX_GUARD_MARKER` to the same path on the worker |
 
 ## Installers and setup
 

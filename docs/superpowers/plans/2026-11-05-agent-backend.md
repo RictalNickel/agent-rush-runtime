@@ -109,6 +109,7 @@
 
   It must not touch other rules.
 - **The box report** has 8 named checks: `metadata_blocked`, `private_blocked`, `worker_listener_blocked`, `smtp_blocked`, `public_https_allowed`, `no_credentials`, `non_root_readonly`, `volume_destroyed`. It also carries `host`, `image`, `created_at` and `expires_at` (+2 h). `BoxManager::create` returns an error when the report is missing, stale or failing.
+  - Dated note (2026-11-05): this step describes the first build, and the 8 in this item and the next checkbox refer to it. The report now has nine checks: `host_services_blocked` replaces `worker_listener_blocked`, and `disk_quota_enforced` is new. It is also bound to the host's machine and boot IDs and to the box network, and every box start needs the guard marker. Workspaces are now per-box disk images, and idle boxes are parked instead of destroyed. The current behavior is in [SECURITY.md](../../SECURITY.md#session-boxes).
 - [ ] Write the tests: report assessment (all pass, one failing, stale, wrong image), each rejected.
 - [ ] Run it live on the worker; all 8 must pass. Save the report to `docs/evidence/live/box-qualification/`.
 - [ ] Commit.
