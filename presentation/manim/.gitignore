@@ -1,0 +1,5 @@
+# Render intermediates; out/ holds the deliverables and is committed.
+.venv/
+media/
+slides/
+__pycache__/
