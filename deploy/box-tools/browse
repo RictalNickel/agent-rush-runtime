@@ -131,8 +131,17 @@ SNAPSHOT_JS = r"""
     lines.push(line);
   };
   const walk = (node, depth) => {
-    for (const el of node.children) {
+    for (const child of node.childNodes) {
       if (full) return;
+      if (child.nodeType === 3) {
+        // Text directly inside a container (a footer's sentence, plain nav text) is page content too.
+        // Its parent was already checked for visibility before we walked into it.
+        const text = clean(child.nodeValue);
+        if (text) emit(depth, text.slice(0, 1000));
+        continue;
+      }
+      if (child.nodeType !== 1) continue;
+      const el = child;
       if (SKIP.has(el.tagName) || !visible(el)) continue;
       if (el.matches(INTERACTIVE)) {
         n += 1; el.setAttribute('data-ar-ref', String(n));
