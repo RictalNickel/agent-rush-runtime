@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="Agent Rush runs AI-written code in a sealed sandbox that grows only as it needs and is destroyed after every run.">
+<meta name="description" content="Agent Rush gives an AI agent its own sealed Linux workspace. It researches, writes and tests code, drives a browser and converts files, and you can steer it while it works.">
 <title>Agent Rush</title>
 <link rel="icon" href="data:,">
 <link rel="preload" href="/assets/archivo.woff2" as="font" type="font/woff2" crossorigin>
@@ -15,6 +15,9 @@
 <a class="skip" href="#prompt">Skip to the message box</a>
 
 <header class="bar">
+  <button class="icon-button drawer-toggle" id="drawer-button" type="button" aria-controls="drawer" aria-expanded="false" aria-label="Show sessions">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
   <a class="wordmark" href="/">Agent Rush</a>
   <p class="system" aria-live="polite">
     <span class="signal" id="worker-signal" aria-hidden="true"></span>
@@ -28,40 +31,84 @@
   </nav>
 </header>
 
-<main id="thread" class="thread" aria-live="polite" aria-label="Conversation">
-  <section class="welcome" id="welcome">
-    <h1 id="welcome-title">Run AI-written code in a sealed box that is destroyed after every run.</h1>
-    <p id="welcome-text">An agent writes Rust for your task and runs it with no network. The box starts small, grows only as the code needs, and is checked clean afterwards.</p>
-    <div class="examples" id="examples" role="group" aria-label="Example tasks">
-      <button type="button" class="chip" data-example="revenue">Revenue by quarter</button>
-      <button type="button" class="chip" data-example="primes">Primes two ways</button>
-      <button type="button" class="chip" data-example="memory">Sort 20 million numbers</button>
-      <button type="button" class="chip" data-example="runaway">A program that never stops</button>
-    </div>
-    <button class="button primary" id="welcome-login" type="button">Sign in to start</button>
-  </section>
-  <div id="turns"></div>
-</main>
-
-<footer class="composer-wrap">
-  <form id="task-form" class="composer" novalidate>
-    <label class="sr-only" for="prompt">Message the agent</label>
-    <textarea id="prompt" rows="1" minlength="3" maxlength="8000" placeholder="Describe a computation, a data task or a program to test" disabled></textarea>
-    <button class="send" id="run-button" type="submit" aria-label="Send" disabled>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+<div class="layout">
+  <aside class="drawer" id="drawer" aria-label="Sessions">
+    <button class="button small new-session" id="new-session" type="button">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      New session
     </button>
-  </form>
-  <p class="composer-note" id="readiness">Sign in as the operator to run tasks.</p>
-</footer>
+    <h2 class="drawer-title">Sessions</h2>
+    <ul class="sessions" id="session-list"></ul>
+    <p class="drawer-note" id="drawer-note">Sign in to see your sessions.</p>
+  </aside>
+
+  <section class="chat" aria-label="Chat">
+    <div class="chat-head" id="chat-head" hidden>
+      <h2 id="session-title">New session</h2>
+      <span class="state" id="session-state"></span>
+      <div class="head-actions">
+        <button class="icon-button" id="speaker-button" type="button" aria-pressed="false" aria-label="Read replies aloud" hidden>
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zM16.5 9a4 4 0 0 1 0 6M19.5 6a8 8 0 0 1 0 12"/></svg>
+        </button>
+        <button class="button small" id="files-button" type="button">Files</button>
+      </div>
+    </div>
+
+    <main id="thread" class="thread" tabindex="-1">
+      <section class="welcome" id="welcome">
+        <h1 id="welcome-title">Give an agent its own sealed Linux workspace.</h1>
+        <p id="welcome-text">It researches the web, writes and tests code, drives a browser and converts files inside a gVisor box that holds no keys and cannot reach private networks. Message it while it works to steer it.</p>
+        <div class="examples" id="examples" role="group" aria-label="Example tasks">
+          <button type="button" class="chip" data-example="webapp">Build and test a web app</button>
+          <button type="button" class="chip" data-example="report">Research and write a PDF</button>
+          <button type="button" class="chip" data-example="csv">Chart a CSV</button>
+          <button type="button" class="chip" data-example="bug">Fix a failing test</button>
+        </div>
+        <button class="button primary" id="welcome-login" type="button">Sign in to start</button>
+      </section>
+      <ol class="log" id="log" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversation"></ol>
+      <p class="working" id="working" role="status" hidden><span class="pulse" aria-hidden="true"></span>Working in the workspace</p>
+    </main>
+
+    <footer class="composer-wrap">
+      <form id="task-form" class="composer" novalidate>
+        <label class="sr-only" for="prompt">Message the agent</label>
+        <button class="icon-button mic" id="mic-button" type="button" aria-pressed="false" aria-label="Record a message" hidden>
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+        </button>
+        <textarea id="prompt" rows="1" maxlength="60000" placeholder="Give the agent a task" disabled></textarea>
+        <button class="stop" id="stop-button" type="button" aria-label="Stop the agent" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg>
+        </button>
+        <button class="send" id="run-button" type="submit" aria-label="Send" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
+      <p class="composer-note" id="readiness">Sign in as the operator to start a session.</p>
+    </footer>
+  </section>
+</div>
 
 <div id="toast" role="status" aria-live="polite" popover="manual"></div>
+
+<dialog id="files-dialog" class="sheet" aria-labelledby="files-title">
+  <div class="sheet-head">
+    <h2 id="files-title">Workspace files</h2>
+    <button data-close="files-dialog" class="close" type="button" aria-label="Close files">×</button>
+  </div>
+  <div class="files-bar">
+    <button class="button small" id="files-up" type="button">Up one folder</button>
+    <code id="files-path">/workspace</code>
+  </div>
+  <ul class="files" id="files-list"></ul>
+</dialog>
 
 <dialog id="login-dialog" class="sheet narrow" aria-labelledby="login-title">
   <div class="sheet-head">
     <h2 id="login-title">Operator sign in</h2>
     <button data-close="login-dialog" class="close" type="button" aria-label="Close sign in">×</button>
   </div>
-  <p>Only the operator can start tasks and read their receipts.</p>
+  <p>Only the operator can start sessions and read their workspaces.</p>
   <form id="login-form">
     <label for="password">Operator password</label>
     <input type="password" id="password" autocomplete="current-password" minlength="16" required>
@@ -75,15 +122,14 @@
     <h2 id="safety-title">Safety and limits</h2>
     <button data-close="safety-dialog" class="close" type="button" aria-label="Close safety information">×</button>
   </div>
-  <p>Authority stays outside the agent. Only the trusted worker creates, resizes and destroys sandboxes; the agent can only ask.</p>
+  <p>Authority stays outside the agent. The control plane holds every key, and the model's tools run only inside the session's box on the worker.</p>
   <dl class="rules">
-    <div><dt>Isolation</dt><dd>gVisor, a non-root user and a read-only system. No host folders and no Docker socket inside.</dd></div>
-    <div><dt>Network</dt><dd>Off. Cloud and inference keys never enter a sandbox.</dd></div>
-    <div><dt>Growth</dt><dd>Each run starts at 256 MiB and half a CPU. The worker raises them live when the code needs more, up to the ceiling the agent set for the task.</dd></div>
-    <div><dt>Hard limits</dt><dd>No ceiling can pass 1 GiB of memory, 1 CPU or 2 minutes per run. 64 processes, 64 MiB of scratch space and 64 KiB of output.</dd></div>
-    <div><dt>Files out</dt><dd>Regular files only: 1 MiB each, 4 MiB in total, eight at most.</dd></div>
-    <div><dt>Cleanup</dt><dd>Every sandbox is destroyed, and its memory stays reserved until the cleanup is confirmed.</dd></div>
-    <div><dt>Evidence</dt><dd>Records collected by the worker. They are not an independent attestation or a security audit.</dd></div>
+    <div><dt>Isolation</dt><dd>Each session gets its own gVisor box: a non-root user, a read-only system, no host folders and no Docker socket.</dd></div>
+    <div><dt>Network</dt><dd>Public internet only. The box cannot reach cloud metadata, private networks, the worker itself or mail ports. No keys enter a box.</dd></div>
+    <div><dt>Workspace</dt><dd>Files in /workspace stay between messages. An idle box is removed after 30 minutes by default, and closing a session deletes its workspace.</dd></div>
+    <div><dt>Steering</dt><dd>A message sent while the agent works reaches it before its next step. Stop ends the turn after the current step.</dd></div>
+    <div><dt>Turn limits</dt><dd>By default 60 model steps and 30 minutes per turn.</dd></div>
+    <div><dt>Record</dt><dd>Every step is stored as an event, so the whole session can be replayed through the API.</dd></div>
   </dl>
 </dialog>
 </body>

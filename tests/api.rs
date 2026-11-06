@@ -203,21 +203,25 @@ async fn web_has_security_headers_and_server_rendered_workspace() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
-    assert!(
-        response
-            .headers()
-            .get("content-security-policy")
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .contains("default-src 'self'")
+    let csp = response.headers()["content-security-policy"]
+        .to_str()
+        .unwrap();
+    assert!(csp.contains("default-src 'self'"));
+    assert!(csp.contains("script-src 'self'") && csp.contains("style-src 'self'"));
+    // Screenshots and spoken replies are fetched with the cookie and shown as blob: URLs.
+    assert!(csp.contains("img-src 'self' data: blob:"));
+    assert!(csp.contains("media-src 'self' blob:"));
+    // The web chat's mic button records on this origin only.
+    assert_eq!(
+        response.headers()["permissions-policy"],
+        "camera=(), microphone=(self), geolocation=()"
     );
     assert_eq!(response.headers()["cache-control"], "no-store");
     let body = response.into_body().collect().await.unwrap().to_bytes();
     assert!(
         String::from_utf8(body.to_vec())
             .unwrap()
-            .contains("Run AI-written code in a sealed box")
+            .contains("Give an agent its own sealed Linux workspace.")
     );
 }
 
