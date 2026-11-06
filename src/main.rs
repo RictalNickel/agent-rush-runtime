@@ -237,12 +237,13 @@ async fn main() -> Result<()> {
                 let model = GatewayModel {
                     gateway: InferenceGateway::new(state.settings.clone(), state.ledger.clone())?,
                 };
-                let sessions = Sessions::new(
+                let sessions = Sessions::with_models(
                     state.ledger.clone(),
                     Arc::new(model),
                     Arc::new(boxes),
                     state.mcp.clone(),
                     SessionLimits::default(),
+                    state.settings.model_catalog(),
                 );
                 webhooks::spawn(sessions.clone(), state.ledger.clone(), state.webhook_guard);
                 state.sessions = Some(sessions);

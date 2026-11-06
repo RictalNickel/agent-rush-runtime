@@ -5,7 +5,10 @@
 //! A batch holds at most `SessionLimits::max_mcp_batch` messages.
 use crate::{
     api::{ApiError, AppState},
-    api_v1::{check_exec, check_path, engine, input_error, lookup_error, workspace_error},
+    api_v1::{
+        catalog, check_exec, check_path, engine, input_error, lookup_error, models_report,
+        usage_report, workspace_error,
+    },
     mcp_client::PROTOCOL_VERSION,
     sandbox_api::{ExecRequest, FileRead},
     session::{SessionLimits, Sessions},
@@ -163,7 +166,7 @@ async fn dispatch(s: &AppState, owner: &str, message: Value) -> Option<Value> {
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "vultr-placeholder-test123", "title": "Vultr-Placeholder-Test123", "version": env!("CARGO_PKG_VERSION")},
-                "instructions": "Agent sessions with a persistent Linux workspace. Call start_session (optionally with a first message), then wait_for_reply. Use send_message for follow-ups; messages sent while a turn runs are delivered to the agent as interjections. run_command, read_file, write_file and list_files act directly on the session's workspace.",
+                "instructions": "Agent sessions with a persistent Linux workspace. Call start_session (optionally with a first message and a model from list_models), then wait_for_reply. Use send_message for follow-ups; messages sent while a turn runs are delivered to the agent as interjections. run_command, read_file, write_file and list_files act directly on the session's workspace. get_usage reports spend and tokens per model.",
             }),
         ),
         "ping" => rpc_result(id, json!({})),
@@ -254,7 +257,7 @@ fn tool_definitions() -> Value {
         tool(
             "start_session",
             "Create an agent session with its own persistent Linux workspace. Optionally send the first message, which starts the agent working; then call wait_for_reply.",
-            json!({"title": {"type": "string"}, "message": {"type": "string", "description": "First message for the agent."}}),
+            json!({"title": {"type": "string"}, "message": {"type": "string", "description": "First message for the agent."}, "model": {"type": "string", "description": "A model ID from list_models; the default model otherwise."}}),
             &[]
         ),
         tool(
@@ -318,6 +321,18 @@ fn tool_definitions() -> Value {
             &[]
         ),
         tool(
+            "list_models",
+            "List the models a session can run on, with their prices in USD per million tokens and the default.",
+            json!({}),
+            &[]
+        ),
+        tool(
+            "get_usage",
+            "Your model spend and token totals, per model and per session.",
+            json!({}),
+            &[]
+        ),
+        tool(
             "manage_skills",
             "List, read, save or delete your skills (SKILL.md style instructions the agent loads on demand).",
             json!({"action": {"type": "string", "enum": ["list", "get", "save", "delete"]}, "name": {"type": "string"}, "description": {"type": "string"}, "body": {"type": "string"}, "markdown": {"type": "string", "description": "A whole SKILL.md, instead of name, description and body."}}),
@@ -338,6 +353,8 @@ const TOOL_NAMES: &[&str] = &[
     "cancel",
     "close_session",
     "list_sessions",
+    "list_models",
+    "get_usage",
     "manage_skills",
 ];
 
@@ -345,8 +362,15 @@ async fn call_tool(s: &AppState, owner: &str, name: &str, args: Args<'_>) -> Too
     if !TOOL_NAMES.contains(&name) {
         return Err(ToolError::Params(format!("Unknown tool: {name}")));
     }
-    if name == "manage_skills" {
-        return manage_skills(s, owner, &args);
+    match name {
+        "manage_skills" => return manage_skills(s, owner, &args),
+        "list_models" => return Ok(json_text(&models_report(&catalog(s)))),
+        "get_usage" => {
+            return Ok(json_text(
+                &usage_report(&s.ledger, owner).map_err(ApiError::internal)?,
+            ));
+        }
+        _ => {}
     }
     // Validate arguments before checking that sessions are configured.
     let session_id = match name {
@@ -476,7 +500,7 @@ async fn call_tool(s: &AppState, owner: &str, name: &str, args: Args<'_>) -> Too
             let list = sessions.list(owner).map_err(ApiError::internal)?;
             let list: Vec<Value> = list
                 .into_iter()
-                .map(|v| json!({"session_id": v.id, "title": v.title, "status": v.status, "updated_at": v.updated_at, "spend_usd": v.spend_usd, "last_seq": v.last_seq}))
+                .map(|v| json!({"session_id": v.id, "title": v.title, "status": v.status, "model": v.model, "updated_at": v.updated_at, "spend_usd": v.spend_usd, "last_seq": v.last_seq}))
                 .collect();
             Ok(json_text(&json!({"sessions": list})))
         }
@@ -490,7 +514,10 @@ fn start_session(sessions: &Sessions, owner: &str, args: &Args<'_>) -> ToolResul
     if message.is_some_and(|m| m.trim().is_empty()) {
         return Err(ToolError::Params("message must not be empty".into()));
     }
-    let session = sessions.create(owner, title).map_err(input_error)?;
+    let model = args.opt_str("model")?;
+    let session = sessions
+        .create_with_model(owner, title, model)
+        .map_err(input_error)?;
     let sent = match message {
         Some(text) => Some(
             sessions
@@ -502,6 +529,7 @@ fn start_session(sessions: &Sessions, owner: &str, args: &Args<'_>) -> ToolResul
     Ok(json_text(&json!({
         "session_id": session.id,
         "title": session.title,
+        "model": session.model,
         "status": if sent.is_some() { "running" } else { "idle" },
         "sent_seq": sent.map(|o| o.seq),
         "next": if sent.is_some() { "Call wait_for_reply with this session_id." } else { "Call send_message to give the agent a task." },

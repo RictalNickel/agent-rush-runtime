@@ -7,9 +7,11 @@
 use crate::{
     agent_config::{AgentConfig, BUILTIN_TOOLS},
     api::{ApiError, AppState},
+    config::ModelCatalog,
+    ledger::Ledger,
     sandbox_api::{ExecRequest, FileRead, MAX_EXEC_TIMEOUT_SECONDS, MAX_FILE_BYTES},
     session::{OwnerSlot, SessionError, Sessions},
-    session_store::{MAX_EVENT_PAGE, MAX_MESSAGE_BYTES, SessionEvent, SessionStatus},
+    session_store::{MAX_EVENT_PAGE, MAX_MESSAGE_BYTES, ModelUsage, SessionEvent, SessionStatus},
     skills::{builtin_skills, parse_skill_md},
 };
 use axum::{
@@ -43,6 +45,8 @@ const SSE_KEEPALIVE: Duration = Duration::from_secs(15);
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/v1/status", get(status))
+        .route("/v1/models", get(list_models))
+        .route("/v1/usage", get(usage))
         .route("/v1/keys", get(list_keys).post(create_key))
         .route("/v1/keys/{id}", delete(revoke_key))
         .route("/v1/sessions", get(list_sessions).post(create_session))
@@ -197,6 +201,7 @@ fn session_status(e: &SessionError) -> ApiError {
         SessionError::TooManySessions
         | SessionError::TooManyStreams
         | SessionError::TooManyRequests => ApiError(StatusCode::TOO_MANY_REQUESTS, e.to_string()),
+        SessionError::InvalidModel(message) => ApiError(StatusCode::BAD_REQUEST, message.clone()),
     }
 }
 /// For calls whose other failures are caused by the request (validation): 400.
@@ -275,7 +280,84 @@ pub(crate) fn check_exec(req: &ExecRequest) -> Result<(), ApiError> {
     Ok(())
 }
 
-// Status.
+// Status, models and usage.
+
+/// The models sessions run on: the engine's list, or the configured one without a worker.
+pub(crate) fn catalog(s: &AppState) -> ModelCatalog {
+    match &s.sessions {
+        Some(sessions) => sessions.models().clone(),
+        None => s.settings.model_catalog(),
+    }
+}
+/// `GET /v1/models` and the MCP `list_models` tool.
+pub(crate) fn models_report(catalog: &ModelCatalog) -> Value {
+    let models: Vec<Value> = catalog
+        .models
+        .iter()
+        .map(|m| {
+            json!({
+                "id": m.id,
+                "input_usd_per_million": m.input_usd_per_million,
+                "output_usd_per_million": m.output_usd_per_million,
+                "default": m.id == catalog.default,
+            })
+        })
+        .collect();
+    json!({
+        "provider": catalog.provider,
+        "default": catalog.default,
+        "per_session": catalog.per_session,
+        "models": models,
+    })
+}
+/// `GET /v1/usage` and the MCP `get_usage` tool: the owner's spend and tokens in total,
+/// per model and per session (the 200 most recently active), from what each session
+/// recorded. Deleted sessions no longer count; closed ones do.
+pub(crate) fn usage_report(ledger: &Ledger, owner: &str) -> anyhow::Result<Value> {
+    let by_model = ledger.usage_by_model(owner)?;
+    let mut total = ModelUsage::default();
+    for m in &by_model {
+        total.sessions += m.sessions;
+        total.spend_usd += m.spend_usd;
+        total.input_tokens += m.input_tokens;
+        total.output_tokens += m.output_tokens;
+        total.model_calls += m.model_calls;
+    }
+    let total = json!({
+        "sessions": total.sessions,
+        "spend_usd": total.spend_usd,
+        "input_tokens": total.input_tokens,
+        "output_tokens": total.output_tokens,
+        "model_calls": total.model_calls,
+    });
+    let sessions: Vec<Value> = ledger
+        .agent_sessions(owner)?
+        .into_iter()
+        .map(|v| {
+            json!({
+                "id": v.id,
+                "title": v.title,
+                "status": v.status,
+                "model": v.model,
+                "forked_from": v.forked_from,
+                "spend_usd": v.spend_usd,
+                "input_tokens": v.input_tokens,
+                "output_tokens": v.output_tokens,
+                "model_calls": v.model_calls,
+                "created_at": v.created_at,
+            })
+        })
+        .collect();
+    Ok(json!({"total": total, "by_model": by_model, "sessions": sessions}))
+}
+async fn list_models(State(s): State<AppState>, Owner(_): Owner) -> Json<Value> {
+    Json(models_report(&catalog(&s)))
+}
+async fn usage(State(s): State<AppState>, Owner(owner): Owner) -> Result<Json<Value>, ApiError> {
+    Ok(Json(
+        usage_report(&s.ledger, &owner).map_err(ApiError::internal)?,
+    ))
+}
 
 async fn status(State(s): State<AppState>, Owner(_): Owner) -> Json<Value> {
     let worker = s.worker_connected().await;
@@ -288,6 +370,7 @@ async fn status(State(s): State<AppState>, Owner(_): Owner) -> Json<Value> {
         "sessions_available": s.sessions.is_some(),
         "voice_available": s.settings.voice_url.is_some(),
         "mcp_servers": s.mcp.names(),
+        "models": models_report(&catalog(&s)),
         "limits": {
             "max_turn_seconds": limits.max_turn_seconds,
             "box_memory_mb": limits.box_memory_mb,
@@ -358,6 +441,20 @@ struct NewSession {
     /// Optional first message; starts the first turn.
     #[serde(default)]
     message: Option<String>,
+    /// Optional model from `GET /v1/models`; the default model otherwise.
+    #[serde(default)]
+    model: Option<String>,
+}
+fn check_message(message: Option<&str>) -> Result<(), ApiError> {
+    if let Some(text) = message
+        && (text.trim().is_empty() || text.len() > MAX_MESSAGE_BYTES)
+    {
+        return Err(ApiError(
+            StatusCode::BAD_REQUEST,
+            "message must be 1-65536 bytes".into(),
+        ));
+    }
+    Ok(())
 }
 async fn create_session(
     State(s): State<AppState>,
@@ -366,16 +463,9 @@ async fn create_session(
 ) -> Result<impl IntoResponse, ApiError> {
     let engine = engine(&s)?;
     let input: NewSession = optional_json(&body)?;
-    if let Some(text) = &input.message
-        && (text.trim().is_empty() || text.len() > MAX_MESSAGE_BYTES)
-    {
-        return Err(ApiError(
-            StatusCode::BAD_REQUEST,
-            "message must be 1-65536 bytes".into(),
-        ));
-    }
+    check_message(input.message.as_deref())?;
     let session = engine
-        .create(&owner, input.title.as_deref())
+        .create_with_model(&owner, input.title.as_deref(), input.model.as_deref())
         .map_err(input_error)?;
     let sent = match &input.message {
         Some(text) => Some(

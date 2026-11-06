@@ -4,6 +4,7 @@
 use crate::{
     agent::{COMPACT_BUDGET, ContextBudget, clip},
     agent_config::{AgentConfig, BUILTIN_TOOLS},
+    config::{ModelCatalog, Settings},
     ledger::Ledger,
     mcp_client::McpRegistry,
     sandbox_api::{
@@ -34,9 +35,13 @@ use tokio::{
     time::Instant,
 };
 
+#[derive(Debug, Default)]
 pub struct ModelReply {
     pub text: String,
     pub cost_usd: f64,
+    /// Billed prompt and completion tokens, when the provider reported them.
+    pub input_tokens: u64,
+    pub output_tokens: u64,
 }
 
 /// The model behind a session. `GatewayModel` adapts the inference gateway; tests script it.
@@ -55,6 +60,18 @@ pub trait SessionModel: Send + Sync {
     ) -> BoxFuture<'a, Result<ModelReply>> {
         let _ = effort;
         self.complete(system, messages)
+    }
+    /// The same call on the session's model, an operator-allowed ID (empty for the
+    /// default). Models that are not chosen per session ignore it.
+    fn complete_with_model<'a>(
+        &'a self,
+        model: &'a str,
+        system: &'a str,
+        messages: &'a [Value],
+        effort: Option<&'a str>,
+    ) -> BoxFuture<'a, Result<ModelReply>> {
+        let _ = model;
+        self.complete_with_effort(system, messages, effort)
     }
     /// The context budget the system prompt plus messages must fit.
     fn budget(&self) -> ContextBudget {
@@ -161,6 +178,10 @@ pub enum SessionError {
     /// The owner is at `max_long_requests_per_owner` (429).
     #[error("too many requests in flight; wait for one to finish")]
     TooManyRequests,
+    /// A model that is not on the operator's list, or a provider that cannot honour a
+    /// chosen model (400).
+    #[error("{0}")]
+    InvalidModel(String),
 }
 
 type OwnerCounts = Arc<Mutex<HashMap<String, usize>>>;
@@ -244,6 +265,8 @@ struct Inner {
     boxes: Arc<dyn BoxClient>,
     mcp: Arc<McpRegistry>,
     limits: SessionLimits,
+    /// The models a session may run on; trusted configuration, never model output.
+    models: ModelCatalog,
     events: broadcast::Sender<SessionEvent>,
     /// Sessions with a running turn task, and the cancel signal of the current turn.
     /// This lock also orders "queue an interjection" against "end the turn".
@@ -297,6 +320,7 @@ impl ToolOutput {
 }
 
 impl Sessions {
+    /// Sessions on the unconfigured default model (development and tests).
     pub fn new(
         ledger: Arc<Ledger>,
         model: Arc<dyn SessionModel>,
@@ -304,6 +328,30 @@ impl Sessions {
         mcp: Arc<McpRegistry>,
         limits: SessionLimits,
     ) -> Self {
+        Self::with_models(
+            ledger,
+            model,
+            boxes,
+            mcp,
+            limits,
+            Settings::local().model_catalog(),
+        )
+    }
+    /// Sessions that may run on the models in `models`. Sessions stored before models
+    /// were recorded get the default model.
+    pub fn with_models(
+        ledger: Arc<Ledger>,
+        model: Arc<dyn SessionModel>,
+        boxes: Arc<dyn BoxClient>,
+        mcp: Arc<McpRegistry>,
+        limits: SessionLimits,
+        models: ModelCatalog,
+    ) -> Self {
+        if !models.default.is_empty()
+            && let Err(e) = ledger.fill_session_models(&models.default)
+        {
+            tracing::warn!("recording the default model on older sessions failed: {e:#}");
+        }
         let (events, _) = broadcast::channel(1024);
         let inner = Arc::new(Inner {
             ledger,
@@ -311,6 +359,7 @@ impl Sessions {
             boxes,
             mcp,
             limits,
+            models,
             events,
             turns: Mutex::new(HashMap::new()),
             box_locks: Mutex::new(HashMap::new()),
@@ -340,17 +389,27 @@ impl Sessions {
     pub fn limits(&self) -> SessionLimits {
         self.inner.limits
     }
-    /// Creates a session. Refused with `SessionError::TooManySessions` while the owner
-    /// already has `max_open_sessions_per_owner` sessions that are not closed.
+    /// The models sessions may run on.
+    pub fn models(&self) -> &ModelCatalog {
+        &self.inner.models
+    }
+    /// Creates a session on the default model. Refused with
+    /// `SessionError::TooManySessions` while the owner already has
+    /// `max_open_sessions_per_owner` sessions that are not closed.
     pub fn create(&self, owner: &str, title: Option<&str>) -> Result<SessionView> {
+        self.create_with_model(owner, title, None)
+    }
+    /// Creates a session on `model`, which must be on the operator's list (else
+    /// `SessionError::InvalidModel`), or on the default model.
+    pub fn create_with_model(
+        &self,
+        owner: &str,
+        title: Option<&str>,
+        model: Option<&str>,
+    ) -> Result<SessionView> {
+        let model = self.inner.choose_model(model)?;
         self.inner
-            .ledger
-            .create_agent_session_within(
-                owner,
-                title.unwrap_or(""),
-                self.inner.limits.max_open_sessions_per_owner,
-            )?
-            .ok_or_else(|| SessionError::TooManySessions.into())
+            .create_session(owner, title.unwrap_or(""), &model, None)
     }
     /// A slot for one live event stream, held until the stream ends.
     pub fn stream_slot(&self, owner: &str) -> Result<OwnerSlot> {
@@ -711,6 +770,28 @@ fn repeat_warning(count: usize) -> String {
 }
 
 impl Inner {
+    fn choose_model(&self, requested: Option<&str>) -> Result<String> {
+        self.models
+            .choose(requested)
+            .map_err(|e| SessionError::InvalidModel(e.to_string()).into())
+    }
+    fn create_session(
+        &self,
+        owner: &str,
+        title: &str,
+        model: &str,
+        forked_from: Option<&str>,
+    ) -> Result<SessionView> {
+        self.ledger
+            .create_agent_session_within(
+                owner,
+                title,
+                model,
+                forked_from,
+                self.limits.max_open_sessions_per_owner,
+            )?
+            .ok_or_else(|| SessionError::TooManySessions.into())
+    }
     fn emit(&self, id: &str, kind: &str, payload: Value) -> Result<SessionEvent> {
         let event = self.ledger.append_event(id, kind, payload)?;
         let _ = self.events.send(event.clone());
@@ -920,6 +1001,7 @@ impl Inner {
             history.push(Entry::user("Continue."));
         }
         let pinned = history.len() - 1;
+        let model = self.owned(owner, id)?.model;
         let mut turn_usd = 0.0;
         let mut repeats = RepeatGuard::default();
         loop {
@@ -936,7 +1018,15 @@ impl Inner {
             let system = self.prompt(owner, &config, version)?;
             let messages = fit_messages(&system, &history, pinned, budget);
             let reply = match self
-                .call_model(id, cancel, deadline, system, messages, effort(&config))
+                .call_model(
+                    id,
+                    cancel,
+                    deadline,
+                    &model,
+                    system,
+                    messages,
+                    effort(&config),
+                )
                 .await
             {
                 Ok(reply) => reply,
@@ -947,10 +1037,14 @@ impl Inner {
                     return Err(error);
                 }
             };
-            if reply.cost_usd.is_finite() && reply.cost_usd > 0.0 {
-                self.ledger.add_session_spend(id, reply.cost_usd)?;
-                turn_usd += reply.cost_usd;
-            }
+            let cost = Some(reply.cost_usd).filter(|usd| usd.is_finite() && *usd > 0.0);
+            self.ledger.add_session_usage(
+                id,
+                cost.unwrap_or(0.0),
+                reply.input_tokens,
+                reply.output_tokens,
+            )?;
+            turn_usd += cost.unwrap_or(0.0);
             history.push(Entry::call(reply.text.clone()));
             let call = match parse_call(&reply.text, &config) {
                 Ok(call) => call,
@@ -981,7 +1075,7 @@ impl Inner {
                 self.emit(
                     id,
                     "assistant",
-                    json!({"text": text, "attachments": attachments}),
+                    json!({"text": text, "attachments": attachments, "model": model}),
                 )?;
                 return Ok(());
             }
@@ -1078,20 +1172,23 @@ impl Inner {
     /// One model call, raced against cancel and the turn deadline. The call runs as its
     /// own task: when the turn stops waiting for it, it still completes in the background
     /// and its cost (or the amount a failed call was charged) is added to the session.
+    #[allow(clippy::too_many_arguments)]
     async fn call_model(
         &self,
         id: &str,
         cancel: &mut watch::Receiver<bool>,
         deadline: Instant,
+        model_id: &str,
         system: String,
         messages: Vec<Value>,
         effort: Option<&str>,
     ) -> Result<ModelReply> {
         let model = self.model.clone();
+        let model_id = model_id.to_string();
         let effort = effort.map(String::from);
         let mut call = tokio::spawn(async move {
             model
-                .complete_with_effort(&system, &messages, effort.as_deref())
+                .complete_with_model(&model_id, &system, &messages, effort.as_deref())
                 .await
         });
         fn joined(
@@ -1110,12 +1207,21 @@ impl Inner {
             let ledger = self.ledger.clone();
             let id = id.to_string();
             tokio::spawn(async move {
-                let usd = match joined(call.await) {
-                    Ok(reply) => Some(reply.cost_usd),
-                    Err(error) => charged_usd(&error),
-                };
-                if let Some(usd) = usd.filter(|usd| usd.is_finite() && *usd > 0.0) {
-                    let _ = ledger.add_session_spend(&id, usd);
+                match joined(call.await) {
+                    Ok(reply) => {
+                        let usd = Some(reply.cost_usd).filter(|usd| usd.is_finite() && *usd > 0.0);
+                        let _ = ledger.add_session_usage(
+                            &id,
+                            usd.unwrap_or(0.0),
+                            reply.input_tokens,
+                            reply.output_tokens,
+                        );
+                    }
+                    Err(error) => {
+                        if let Some(usd) = charged_usd(&error) {
+                            let _ = ledger.add_session_spend(&id, usd);
+                        }
+                    }
                 }
             });
         }

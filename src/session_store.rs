@@ -37,6 +37,25 @@ pub(crate) fn migrate(db: &Connection) -> Result<()> {
         CREATE TABLE IF NOT EXISTS pending_messages(id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL REFERENCES agent_sessions(id), text TEXT NOT NULL, at INTEGER NOT NULL);
         CREATE INDEX IF NOT EXISTS pending_messages_session ON pending_messages(session_id);",
     )?;
+    // Columns added later. Existing sessions get an empty model, which `Sessions` fills
+    // with the operator's default model when it starts, and no recorded tokens.
+    let columns: Vec<String> = db
+        .prepare("SELECT name FROM pragma_table_info('agent_sessions')")?
+        .query_map([], |r| r.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    for (column, definition) in [
+        ("model", "TEXT NOT NULL DEFAULT ''"),
+        ("forked_from", "TEXT"),
+        ("input_tokens", "INTEGER NOT NULL DEFAULT 0"),
+        ("output_tokens", "INTEGER NOT NULL DEFAULT 0"),
+        ("model_calls", "INTEGER NOT NULL DEFAULT 0"),
+    ] {
+        if !columns.iter().any(|c| c == column) {
+            db.execute_batch(&format!(
+                "ALTER TABLE agent_sessions ADD COLUMN {column} {definition};"
+            ))?;
+        }
+    }
     Ok(())
 }
 
@@ -82,6 +101,25 @@ pub struct SessionView {
     pub updated_at: i64,
     pub spend_usd: f64,
     pub last_seq: i64,
+    /// The model every call of this session runs on (an operator-allowed ID).
+    pub model: String,
+    /// The session this one was forked from, if any.
+    pub forked_from: Option<String>,
+    /// Tokens and model calls recorded for this session (counted since they were added).
+    pub input_tokens: i64,
+    pub output_tokens: i64,
+    pub model_calls: i64,
+}
+
+/// Spend and tokens of an owner's sessions on one model.
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+pub struct ModelUsage {
+    pub model: String,
+    pub sessions: i64,
+    pub spend_usd: f64,
+    pub input_tokens: i64,
+    pub output_tokens: i64,
+    pub model_calls: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -93,7 +131,7 @@ pub struct SessionEvent {
     pub at: i64,
 }
 
-const VIEW_COLUMNS: &str = "id,owner,title,status,box_id,created_at,updated_at,spend_usd,last_seq";
+const VIEW_COLUMNS: &str = "id,owner,title,status,box_id,created_at,updated_at,spend_usd,last_seq,model,forked_from,input_tokens,output_tokens,model_calls";
 
 fn view(row: &Row) -> rusqlite::Result<SessionView> {
     Ok(SessionView {
@@ -106,6 +144,11 @@ fn view(row: &Row) -> rusqlite::Result<SessionView> {
         updated_at: row.get(6)?,
         spend_usd: row.get(7)?,
         last_seq: row.get(8)?,
+        model: row.get(9)?,
+        forked_from: row.get(10)?,
+        input_tokens: row.get(11)?,
+        output_tokens: row.get(12)?,
+        model_calls: row.get(13)?,
     })
 }
 
@@ -122,21 +165,25 @@ fn clean_title(title: &str) -> String {
 impl Ledger {
     pub fn create_agent_session(&self, owner: &str, title: &str) -> Result<SessionView> {
         Ok(self
-            .create_agent_session_within(owner, title, usize::MAX)?
+            .create_agent_session_within(owner, title, "", None, usize::MAX)?
             .expect("no cap"))
     }
-    /// Creates a session unless the owner already has `max_open` sessions that are not
-    /// closed (then `None`). The count and the insert happen under one database lock.
+    /// Creates a session on `model` (already checked against the operator's list),
+    /// unless the owner already has `max_open` sessions that are not closed (then
+    /// `None`). The count and the insert happen under one database lock.
     pub fn create_agent_session_within(
         &self,
         owner: &str,
         title: &str,
+        model: &str,
+        forked_from: Option<&str>,
         max_open: usize,
     ) -> Result<Option<SessionView>> {
         ensure!(
             !owner.is_empty() && owner.len() <= 128,
             "invalid session owner"
         );
+        ensure!(model.len() <= 200, "invalid model");
         let at = now_ms();
         let session = SessionView {
             id: uuid::Uuid::new_v4().to_string(),
@@ -148,6 +195,11 @@ impl Ledger {
             updated_at: at,
             spend_usd: 0.0,
             last_seq: 0,
+            model: model.into(),
+            forked_from: forked_from.map(String::from),
+            input_tokens: 0,
+            output_tokens: 0,
+            model_calls: 0,
         };
         let db = self.db.lock().unwrap();
         if max_open < usize::MAX {
@@ -161,8 +213,8 @@ impl Ledger {
             }
         }
         db.execute(
-            "INSERT INTO agent_sessions(id,owner,title,status,created_at,updated_at) VALUES(?1,?2,?3,'idle',?4,?4)",
-            params![session.id, owner, session.title, at],
+            "INSERT INTO agent_sessions(id,owner,title,status,created_at,updated_at,model,forked_from) VALUES(?1,?2,?3,'idle',?4,?4,?5,?6)",
+            params![session.id, owner, session.title, at, model, forked_from],
         )?;
         Ok(Some(session))
     }
@@ -261,6 +313,49 @@ impl Ledger {
         )?;
         ensure!(changed == 1, "session not found");
         Ok(())
+    }
+    /// Gives sessions stored without a model (before models were recorded) `model`.
+    pub fn fill_session_models(&self, model: &str) -> Result<usize> {
+        Ok(self
+            .db
+            .lock()
+            .unwrap()
+            .execute("UPDATE agent_sessions SET model=?1 WHERE model=''", [model])?)
+    }
+    /// Records one model call: its cost and tokens.
+    pub fn add_session_usage(
+        &self,
+        id: &str,
+        usd: f64,
+        input_tokens: u64,
+        output_tokens: u64,
+    ) -> Result<()> {
+        ensure!(usd.is_finite() && usd >= 0.0, "invalid cost");
+        let tokens = |n: u64| i64::try_from(n).unwrap_or(i64::MAX);
+        self.db.lock().unwrap().execute(
+            "UPDATE agent_sessions SET spend_usd=spend_usd+?1, input_tokens=input_tokens+?2, output_tokens=output_tokens+?3, model_calls=model_calls+1, updated_at=?4 WHERE id=?5",
+            params![usd, tokens(input_tokens), tokens(output_tokens), now_ms(), id],
+        )?;
+        Ok(())
+    }
+    /// The owner's spend and tokens per model, most spent first, over every session that
+    /// is not deleted (closed ones included).
+    pub fn usage_by_model(&self, owner: &str) -> Result<Vec<ModelUsage>> {
+        let db = self.db.lock().unwrap();
+        let mut statement = db.prepare(
+            "SELECT model,COUNT(*),COALESCE(SUM(spend_usd),0),COALESCE(SUM(input_tokens),0),COALESCE(SUM(output_tokens),0),COALESCE(SUM(model_calls),0) FROM agent_sessions WHERE owner=?1 GROUP BY model ORDER BY 3 DESC, model",
+        )?;
+        let rows = statement.query_map([owner], |r| {
+            Ok(ModelUsage {
+                model: r.get(0)?,
+                sessions: r.get(1)?,
+                spend_usd: r.get(2)?,
+                input_tokens: r.get(3)?,
+                output_tokens: r.get(4)?,
+                model_calls: r.get(5)?,
+            })
+        })?;
+        rows.map(|row| Ok(row?)).collect()
     }
     pub fn add_session_spend(&self, id: &str, usd: f64) -> Result<()> {
         ensure!(usd.is_finite() && usd >= 0.0, "invalid cost");
