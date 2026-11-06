@@ -1,0 +1,4 @@
+{
+  "title": "Build and use: kanban board app",
+  "message": "Build a small kanban board web app in /workspace/kanban with three columns (To do, Doing, Done), add/move cards, and a tiny backend that saves cards to a JSON file. Run it in the background on port 8000. Then use the browser to: add three cards, move one to Done, reload the page and confirm the cards persisted. Take a screenshot after each step. Fix anything that doesn't work."
+}
