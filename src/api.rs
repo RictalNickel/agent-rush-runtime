@@ -168,14 +168,14 @@ async fn security_headers(req: axum::extract::Request, next: Next) -> Response {
     for (name, value) in [
         (
             "content-security-policy",
-            "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+            "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
         ),
         ("x-content-type-options", "nosniff"),
         ("referrer-policy", "no-referrer"),
         ("cache-control", "no-store"),
         (
             "permissions-policy",
-            "camera=(), microphone=(), geolocation=()",
+            "camera=(), microphone=(self), geolocation=()",
         ),
         ("x-frame-options", "DENY"),
     ] {
