@@ -1,0 +1,85 @@
+Vultr-Placeholder-Test123 install: role=all features=none
+
+== Preflight
+   host: Ubuntu 24.04, 8 CPU, 31.3 GiB RAM
+   cgroup v2: yes
+
+== System packages
+   unchanged: all packages present
+
+== Docker and gVisor (runsc)
+   present: docker
+   present: runsc
+   unchanged: /etc/docker/daemon.json already has the runsc runtime and systemd cgroup driver
+
+== agent-rush binary
+    Finished `release` profile [optimized] target(s) in 58.51s
+   changed: built target/release/agent-rush
+   changed: installed /opt/agent-rush/agent-rush
+
+== Service user and directories
+   exists: user agent-rush
+   exists: agent-rush is in the docker group
+   exists: agent-rush is in the disk group
+
+== Configuration files (mode 0600; secrets generated once)
+   exists: /etc/agent-rush/worker.env (its values are kept)
+   exists: /etc/agent-rush/control.env (its values are kept)
+   changed: removed AR_WORKER_CA_PATH from /etc/agent-rush/control.env
+   changed: removed AR_WORKER_IDENTITY_PATH from /etc/agent-rush/control.env
+
+== Worker: box network, sandbox image and workspace image
+   unchanged: /opt/agent-rush/box-network.sh
+   unchanged: /etc/systemd/system/agent-rush-box-network.service
+network ar-box present
+host input guard present
+egress rules present (17)
+marker written: /run/agent-rush/box-network.env
+   box network, egress filter and host input guard in place
+   present: sandbox image (pinned digest)
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+   workspace image: agent-rush-workspace@sha256:d82937ac0e956f4236418d5f33bbd99d1bb9dad46fd0c90bda982cf9fb76f5e7
+
+== Worker: qualification (real containment checks)
+{"checks":10,"output":"/var/lib/agent-rush/qualification.next.json","qualified":true}
+   changed: wrote the worker qualification report
+[2m2026-11-06T16:46:24.538488Z[0m [32m INFO[0m [2magent_rush::boxes[0m[2m:[0m box created [3mbox_id[0m[2m=[0md9366af75ab649d88f5429498622ffb8 [3msession[0m[2m=[0mqualify-6612e703332a42858d6bec3895b30972 [3mdisk_mb[0m[2m=[0m512
+[2m2026-11-06T16:46:46.665148Z[0m [32m INFO[0m [2magent_rush::boxes[0m[2m:[0m box scaled up [3mbox_id[0m[2m=[0md9366af75ab649d88f5429498622ffb8 [3mmemory_mb[0m[2m=[0m1024 [3mcpu_millis[0m[2m=[0m2000
+[2m2026-11-06T16:46:48.711994Z[0m [32m INFO[0m [2magent_rush::boxes[0m[2m:[0m box scaled up [3mbox_id[0m[2m=[0md9366af75ab649d88f5429498622ffb8 [3mmemory_mb[0m[2m=[0m2048 [3mcpu_millis[0m[2m=[0m2000
+[2m2026-11-06T16:46:49.263861Z[0m [32m INFO[0m [2magent_rush::boxes[0m[2m:[0m box destroyed [3mbox_id[0m[2m=[0md9366af75ab649d88f5429498622ffb8 [3mcontainer_removed[0m[2m=[0mtrue [3mworkspace_removed[0m[2m=[0mtrue
+{"checks":[{"name":"metadata_blocked","passed":true},{"name":"private_blocked","passed":true},{"name":"host_services_blocked","passed":true},{"name":"smtp_blocked","passed":true},{"name":"public_https_allowed","passed":true},{"name":"no_credentials","passed":true},{"name":"non_root_readonly","passed":true},{"name":"disk_quota_enforced","passed":true},{"name":"volume_destroyed","passed":true}],"output":"/var/lib/agent-rush/box-qualification.next.json","qualified":true}
+   changed: wrote the box qualification report
+
+== Worker: systemd units and requalification timer
+   unchanged: /etc/systemd/system/agent-rush-worker.service
+   unchanged: /opt/agent-rush/requalify.sh
+   unchanged: /etc/systemd/system/agent-rush-requalify.service
+   unchanged: /etc/systemd/system/agent-rush-requalify.timer
+   unchanged: /opt/agent-rush/requalify-box.sh
+   unchanged: /etc/systemd/system/agent-rush-requalify-box.service
+   unchanged: /etc/systemd/system/agent-rush-requalify-box.timer
+   restarting agent-rush-worker: in-flight sandbox runs stop
+   changed: worker service enabled and running
+
+== Control: systemd unit
+   unchanged: /etc/systemd/system/agent-rush-control.service
+   restarting agent-rush-control
+   healthz on 127.0.0.1:8080: ok
+
+== Summary
+Changes:
+  - built target/release/agent-rush
+  - installed /opt/agent-rush/agent-rush
+  - removed AR_WORKER_CA_PATH from /etc/agent-rush/control.env
+  - removed AR_WORKER_IDENTITY_PATH from /etc/agent-rush/control.env
+  - wrote the worker qualification report
+  - wrote the box qualification report
+  - worker service enabled and running
+
+Open the control plane through an SSH tunnel: ssh -L 8080:127.0.0.1:8080 <this-host>
+Admin password (keep it private): sudo grep '^AR_OPERATOR_PASSWORD=' /etc/agent-rush/control.env
+Worker status: systemctl status agent-rush-worker
+Uninstall: see docs/INSTALL.md.

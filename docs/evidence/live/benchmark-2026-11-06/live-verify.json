@@ -1,0 +1,70 @@
+{
+ "models": {
+  "default": "glm-5.3-flash",
+  "models": [
+   {
+    "default": true,
+    "id": "glm-5.3-flash",
+    "input_usd_per_million": 0.1,
+    "output_usd_per_million": 0.35
+   },
+   {
+    "default": false,
+    "id": "glm-5.3",
+    "input_usd_per_million": 0.75,
+    "output_usd_per_million": 3.0
+   }
+  ],
+  "per_session": true,
+  "provider": "vultr"
+ },
+ "memories_noauth": 401,
+ "bad_model": [
+  400,
+  "{\"error\":\"unknown model \\\"gpt-9\\\"; allowed models: glm-5.3-flash, glm-5.3\"}"
+ ],
+ "demo_archive": [
+  200,
+  121065,
+  14
+ ],
+ "full_glm_session": {
+  "model": "glm-5.3",
+  "status": "idle",
+  "spend_usd": 0.0018345,
+  "model_calls": 2,
+  "reply": "The sum of the integers 1 to 1000 is 500500 (computed with Python: sum(range(1,1001)))."
+ },
+ "crash": [
+  502,
+  "{\"error\":\"Workspace: the box stopped unexpectedly (for example too many processes or too much memory); it restarts on the next call and the files in /workspace are kept\"}"
+ ],
+ "after_crash": [
+  200,
+  {
+   "exit_code": 0,
+   "stderr": "",
+   "stdout": "alive\n",
+   "timed_out": false,
+   "truncated": false
+  }
+ ],
+ "usage_by_model": [
+  {
+   "input_tokens": 0,
+   "model": "glm-5.3-flash",
+   "model_calls": 0,
+   "output_tokens": 0,
+   "sessions": 3,
+   "spend_usd": 0.03323639999999999
+  },
+  {
+   "input_tokens": 2194,
+   "model": "glm-5.3",
+   "model_calls": 2,
+   "output_tokens": 63,
+   "sessions": 1,
+   "spend_usd": 0.0018345
+  }
+ ]
+}

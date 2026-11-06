@@ -1,0 +1,73 @@
+{
+ "archive": {
+  "status": 200,
+  "bytes": 2000927,
+  "files": [
+   ".",
+   "./notes",
+   "./notes/plan.md",
+   "./data",
+   "./data/blob.bin"
+  ]
+ },
+ "fork_status": 201,
+ "fork_files_identical": true,
+ "fork_session": {
+  "model": "glm-5.3",
+  "forked_from": "42ff2bb4-5fca-4749-a563-d4f97c45cb7d",
+  "status": "idle",
+  "spend_usd": 0.0023835
+ },
+ "fork_events": [
+  [
+   "user",
+   "{\"forked_from\": \"42ff2bb4-5fca-4749-a563-d4f97c45cb7d\", \"text\": \"Create /workspace/notes/plan.md with a 3-item plan for a picnic, then reply with the plan.\"}"
+  ],
+  [
+   "assistant",
+   "{\"attachments\": [], \"forked_from\": \"42ff2bb4-5fca-4749-a563-d4f97c45cb7d\", \"text\": \"Created /workspace/notes/plan.md with a 3-item picnic plan:\\n\\n1. **Food & drinks** \\u2014 Prepare sandwiches, fruit, snacks, and plenty"
+  ],
+  [
+   "user",
+   "{\"text\": \"What was in the plan you wrote earlier? Read the file and list the items, and say which model you are.\"}"
+  ],
+  [
+   "status",
+   "{\"status\": \"running\"}"
+  ],
+  [
+   "tool_call",
+   "{\"call\": {\"path\": \"/workspace/notes/plan.md\", \"tool\": \"read_file\"}, \"tool\": \"read_file\"}"
+  ],
+  [
+   "tool_result",
+   "{\"ok\": true, \"output\": \"# Picnic Plan\\n\\n1. **Food & drinks** \\u2014 Prepare sandwiches, fruit, snacks, and plenty of water/lemonade.\\n2. **Gear** \\u2014 Pack a blanket, cooler, utensils, napkins, trash bags, and sunscre"
+  ],
+  [
+   "assistant",
+   "{\"attachments\": [], \"model\": \"glm-5.3\", \"text\": \"The file /workspace/notes/plan.md contains a 3-item picnic plan:\\n\\n1. **Food & drinks** \\u2014 Prepare sandwiches, fruit, snacks, and plenty of water/lemonade.\\n2. **Gear"
+  ],
+  [
+   "status",
+   "{\"reason\": \"replied\", \"status\": \"idle\"}"
+  ]
+ ],
+ "usage": [
+  {
+   "input_tokens": 2526,
+   "model": "glm-5.3",
+   "model_calls": 2,
+   "output_tokens": 163,
+   "sessions": 1,
+   "spend_usd": 0.0023835
+  },
+  {
+   "input_tokens": 2274,
+   "model": "glm-5.3-flash",
+   "model_calls": 2,
+   "output_tokens": 208,
+   "sessions": 1,
+   "spend_usd": 0.00030020000000000003
+  }
+ ]
+}

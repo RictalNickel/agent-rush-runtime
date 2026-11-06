@@ -1,0 +1,75 @@
+{
+ "mode": "agent",
+ "label": "live, new tasks check",
+ "host": "https://144-202-59-108.sslip.io",
+ "model": null,
+ "started_at": 1793982655,
+ "seconds": 12.0,
+ "status": {
+  "inference_configured": true,
+  "limits": {
+   "box_cpu_millis": 1000,
+   "box_memory_mb": 1024,
+   "max_audio_bytes": 26214400,
+   "max_box_calls_per_session": 4,
+   "max_event_page": 1000,
+   "max_exec_timeout_seconds": 600,
+   "max_file_bytes": 26214400,
+   "max_long_requests_per_owner": 8,
+   "max_mcp_batch": 16,
+   "max_message_bytes": 65536,
+   "max_open_sessions_per_owner": 20,
+   "max_streams_per_owner": 8,
+   "max_turn_seconds": 1800
+  },
+  "provider": "vultr",
+  "sessions_available": true,
+  "version": "0.1.0",
+  "voice_available": false,
+  "worker_connected": true
+ },
+ "results": [
+  {
+   "task": "sqlite",
+   "model": "default",
+   "rep": 0,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": false,
+   "check": {
+    "ok": false,
+    "seconds": 0.49,
+    "status": 200,
+    "detail": {
+     "exit_code": 1,
+     "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 12, in <module>\nAssertionError: {'orders_over_200': (400, 88)}\n",
+     "timed_out": false
+    }
+   },
+   "reply_ok": true,
+   "seconds": 6.3,
+   "tool_calls": 3,
+   "spend_usd": 0.00093155,
+   "reply": "Loaded orders.csv into /workspace/shop.db (table orders) and computed the answers via SQL, saved to /workspace/answers.json:\n- top_customer: bo\n- top_customer_total: 8509.43\n- busiest_month: 2026-09\n- average_order: 132.25\n- orders_over_200: 400"
+  },
+  {
+   "task": "jsfix",
+   "model": "default",
+   "rep": 0,
+   "status": "idle",
+   "end_reason": "replied",
+   "passed": true,
+   "check": {
+    "ok": true,
+    "seconds": 0.54,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 9.3,
+   "tool_calls": 4,
+   "spend_usd": 0.0012422499999999999,
+   "reply": "Wrote /workspace/cart/cart.test.mjs with 12 node:test cases covering all four exported functions (subtotal, applyDiscount, slug, chunk) \u2014 all pass.\n\nBugs fixed in cart.mjs:\n1. subtotal: reduce started with initial value 1 instead of 0, inflating every total by 1 (and returning 1 for an empty cart).\n2. applyDiscount: code \"TEN\" returned total * 0.1 (i.e. charged only 10% of the price) instead of 10% off \u2014 now returns total * 0.9. FIVEOFF was already correct (Math.max(0, total - 5)).\n3. slug: replace(\" \", \"-\") only replaced the first space and didn't handle multiple spaces; now uses /\\s+/g so wo"
+  }
+ ]
+}

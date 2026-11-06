@@ -1,0 +1,296 @@
+{
+ "mode": "agent",
+ "label": "8c32g, glm-5.3",
+ "host": "bench VM (64.177.114.70) through an SSH tunnel",
+ "model": "glm-5.3",
+ "started_at": 1793984012,
+ "seconds": 25.6,
+ "status": {
+  "inference_configured": true,
+  "limits": {
+   "box_cpu_millis": 1000,
+   "box_memory_mb": 1024,
+   "max_audio_bytes": 26214400,
+   "max_box_calls_per_session": 4,
+   "max_event_page": 1000,
+   "max_exec_timeout_seconds": 600,
+   "max_file_bytes": 26214400,
+   "max_long_requests_per_owner": 48,
+   "max_mcp_batch": 16,
+   "max_message_bytes": 65536,
+   "max_open_sessions_per_owner": 40,
+   "max_streams_per_owner": 16,
+   "max_turn_seconds": 1800
+  },
+  "models": {
+   "default": "glm-5.3-flash",
+   "models": [
+    {
+     "default": true,
+     "id": "glm-5.3-flash",
+     "input_usd_per_million": 0.1,
+     "output_usd_per_million": 0.35
+    },
+    {
+     "default": false,
+     "id": "glm-5.3",
+     "input_usd_per_million": 0.75,
+     "output_usd_per_million": 3.0
+    }
+   ],
+   "per_session": true,
+   "provider": "vultr"
+  },
+  "provider": "vultr",
+  "sessions_available": true,
+  "version": "0.1.0",
+  "voice_available": false,
+  "worker_connected": true
+ },
+ "results": [
+  {
+   "task": "code",
+   "model": "glm-5.3",
+   "rep": 0,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": true,
+    "seconds": 0.48,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 15.4,
+   "tool_calls": 3,
+   "spend_usd": 0.10258350000000001,
+   "reply": ""
+  },
+  {
+   "task": "webapp",
+   "model": "glm-5.3",
+   "rep": 0,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": true,
+    "seconds": 0.47,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": false,
+   "seconds": 15.5,
+   "tool_calls": 2,
+   "spend_usd": 0.10013025,
+   "reply": ""
+  },
+  {
+   "task": "data",
+   "model": "glm-5.3",
+   "rep": 0,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": false,
+    "seconds": 0.53,
+    "status": 200,
+    "detail": {
+     "exit_code": 1,
+     "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 3, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: 'sales.csv'\n",
+     "timed_out": false
+    }
+   },
+   "reply_ok": true,
+   "seconds": 15.5,
+   "tool_calls": 3,
+   "spend_usd": 0.10158825,
+   "reply": ""
+  },
+  {
+   "task": "code",
+   "model": "glm-5.3",
+   "rep": 1,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": true,
+    "seconds": 0.48,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 15.5,
+   "tool_calls": 3,
+   "spend_usd": 0.102558,
+   "reply": ""
+  },
+  {
+   "task": "sqlite",
+   "model": "glm-5.3",
+   "rep": 0,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": false,
+    "seconds": 0.55,
+    "status": 200,
+    "detail": {
+     "exit_code": 1,
+     "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 8, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: 'answers.json'\n",
+     "timed_out": false
+    }
+   },
+   "reply_ok": true,
+   "seconds": 15.4,
+   "tool_calls": 2,
+   "spend_usd": 0.10001025000000001,
+   "reply": ""
+  },
+  {
+   "task": "sqlite",
+   "model": "glm-5.3",
+   "rep": 1,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": true,
+    "seconds": 0.59,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 15.4,
+   "tool_calls": 2,
+   "spend_usd": 0.10019025000000001,
+   "reply": ""
+  },
+  {
+   "task": "bugfix",
+   "model": "glm-5.3",
+   "rep": 0,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": true,
+    "seconds": 0.66,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 15.4,
+   "tool_calls": 2,
+   "spend_usd": 0.09943575,
+   "reply": ""
+  },
+  {
+   "task": "jsfix",
+   "model": "glm-5.3",
+   "rep": 0,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": false,
+    "seconds": 0.68,
+    "status": 200,
+    "detail": {
+     "exit_code": 1,
+     "stderr": "node:internal/modules/run_main:111\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n10 !== 9\n\n    at file:///workspace/cart/_hidden.mjs:3:8\n    at ModuleJob.run (node:internal/modules/esm/module_job:569:25)\n    at async node:internal/modules/esm/loader:650:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:105:5) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 10,\n  expected: 9,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v26.13.0\n",
+     "timed_out": false
+    }
+   },
+   "reply_ok": true,
+   "seconds": 15.5,
+   "tool_calls": 2,
+   "spend_usd": 0.1002495,
+   "reply": ""
+  },
+  {
+   "task": "bugfix",
+   "model": "glm-5.3",
+   "rep": 1,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": true,
+    "seconds": 0.62,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 15.6,
+   "tool_calls": 2,
+   "spend_usd": 0.09943575,
+   "reply": ""
+  },
+  {
+   "task": "data",
+   "model": "glm-5.3",
+   "rep": 1,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": true,
+    "seconds": 0.42,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": true,
+   "seconds": 18.5,
+   "tool_calls": 3,
+   "spend_usd": 0.10191975,
+   "reply": ""
+  },
+  {
+   "task": "jsfix",
+   "model": "glm-5.3",
+   "rep": 1,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": false,
+    "seconds": 0.53,
+    "status": 200,
+    "detail": {
+     "exit_code": 1,
+     "stderr": "node:internal/modules/run_main:111\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n10 !== 9\n\n    at file:///workspace/cart/_hidden.mjs:3:8\n    at ModuleJob.run (node:internal/modules/esm/module_job:569:25)\n    at async node:internal/modules/esm/loader:650:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:105:5) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 10,\n  expected: 9,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v26.13.0\n",
+     "timed_out": false
+    }
+   },
+   "reply_ok": true,
+   "seconds": 18.7,
+   "tool_calls": 3,
+   "spend_usd": 0.10137975,
+   "reply": ""
+  },
+  {
+   "task": "webapp",
+   "model": "glm-5.3",
+   "rep": 1,
+   "status": "failed",
+   "end_reason": "error",
+   "passed": false,
+   "check": {
+    "ok": true,
+    "seconds": 0.28,
+    "status": 200,
+    "detail": null
+   },
+   "reply_ok": false,
+   "seconds": 24.7,
+   "tool_calls": 3,
+   "spend_usd": 0.10134375,
+   "reply": ""
+  }
+ ]
+}

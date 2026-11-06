@@ -1,0 +1,181 @@
+{
+ "mode": "infra",
+ "label": "live worker vc2-4c-8gb",
+ "host": "https://144-202-59-108.sslip.io",
+ "model": null,
+ "started_at": 1793981555,
+ "seconds": 181.3,
+ "status": {
+  "inference_configured": true,
+  "limits": {
+   "box_cpu_millis": 1000,
+   "box_memory_mb": 1024,
+   "max_audio_bytes": 26214400,
+   "max_box_calls_per_session": 4,
+   "max_event_page": 1000,
+   "max_exec_timeout_seconds": 600,
+   "max_file_bytes": 26214400,
+   "max_long_requests_per_owner": 8,
+   "max_mcp_batch": 16,
+   "max_message_bytes": 65536,
+   "max_open_sessions_per_owner": 20,
+   "max_streams_per_owner": 8,
+   "max_turn_seconds": 1800
+  },
+  "provider": "vultr",
+  "sessions_available": true,
+  "version": "0.1.0",
+  "voice_available": false,
+  "worker_connected": true
+ },
+ "results": [
+  {
+   "concurrency": 1,
+   "wall_seconds": 34.8,
+   "workloads": {
+    "cold_start": {
+     "ok": 1,
+     "failed": 0,
+     "median_s": 0.9,
+     "max_s": 0.9,
+     "first_failure": null
+    },
+    "cpu_python": {
+     "ok": 1,
+     "failed": 0,
+     "median_s": 3.92,
+     "max_s": 3.92,
+     "first_failure": null
+    },
+    "numpy_matmul": {
+     "ok": 1,
+     "failed": 0,
+     "median_s": 21.61,
+     "max_s": 21.61,
+     "first_failure": null
+    },
+    "disk_write_256mb": {
+     "ok": 1,
+     "failed": 0,
+     "median_s": 1.09,
+     "max_s": 1.09,
+     "first_failure": null
+    },
+    "npm_install": {
+     "ok": 1,
+     "failed": 0,
+     "median_s": 6.8,
+     "max_s": 6.8,
+     "first_failure": null
+    }
+   }
+  },
+  {
+   "concurrency": 4,
+   "wall_seconds": 71.7,
+   "workloads": {
+    "cold_start": {
+     "ok": 4,
+     "failed": 0,
+     "median_s": 1.85,
+     "max_s": 2.16,
+     "first_failure": null
+    },
+    "cpu_python": {
+     "ok": 4,
+     "failed": 0,
+     "median_s": 7.38,
+     "max_s": 8.22,
+     "first_failure": null
+    },
+    "numpy_matmul": {
+     "ok": 4,
+     "failed": 0,
+     "median_s": 37.02,
+     "max_s": 38.05,
+     "first_failure": null
+    },
+    "disk_write_256mb": {
+     "ok": 4,
+     "failed": 0,
+     "median_s": 2.19,
+     "max_s": 2.8,
+     "first_failure": null
+    },
+    "npm_install": {
+     "ok": 4,
+     "failed": 0,
+     "median_s": 21.4,
+     "max_s": 22.74,
+     "first_failure": null
+    }
+   }
+  },
+  {
+   "concurrency": 8,
+   "wall_seconds": 74.8,
+   "workloads": {
+    "cold_start": {
+     "ok": 5,
+     "failed": 3,
+     "median_s": 3.3,
+     "max_s": 3.53,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.27,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "cpu_python": {
+     "ok": 5,
+     "failed": 3,
+     "median_s": 9.99,
+     "max_s": 10.21,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.27,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "numpy_matmul": {
+     "ok": 5,
+     "failed": 3,
+     "median_s": 43.32,
+     "max_s": 44.98,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.42,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "disk_write_256mb": {
+     "ok": 5,
+     "failed": 3,
+     "median_s": 2.22,
+     "max_s": 2.52,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.16,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    },
+    "npm_install": {
+     "ok": 5,
+     "failed": 3,
+     "median_s": 15.53,
+     "max_s": 16.75,
+     "first_failure": {
+      "ok": false,
+      "seconds": 0.18,
+      "status": 503,
+      "detail": "{\"error\":\"Workspace: creating the workspace box: worker box capacity exhausted\"}"
+     }
+    }
+   }
+  }
+ ]
+}
