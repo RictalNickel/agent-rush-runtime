@@ -1,0 +1,4 @@
+2026-11-06T01:35:27.959502Z  INFO agent_rush::boxes: box created box_id=df8e00b40c734da9839cc581a69e0786 session=qualify-004095f252bf45dd8a51c0ce8af6f626
+2026-11-06T01:35:44.050879Z  INFO agent_rush::boxes: box scaled up box_id=df8e00b40c734da9839cc581a69e0786 memory_mb=1024 cpu_millis=2000
+2026-11-06T01:35:44.688567Z  INFO agent_rush::boxes: box destroyed box_id=df8e00b40c734da9839cc581a69e0786 container_removed=true volume_removed=true
+{"checks":[{"name":"metadata_blocked","passed":true},{"name":"private_blocked","passed":true},{"name":"worker_listener_blocked","passed":true},{"name":"smtp_blocked","passed":true},{"name":"public_https_allowed","passed":true},{"name":"no_credentials","passed":true},{"name":"non_root_readonly","passed":true},{"name":"volume_destroyed","passed":true}],"output":"tmp/evidence/box-qualification/box-qualification.json","qualified":true}
