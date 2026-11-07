@@ -33,7 +33,9 @@ The public instance moved to a 16 vCPU / 64 GB worker so a large demo works: man
 
 ## Boxoro release (2026-11-07)
 
-Binary `21017925` runs on control, the 16 vCPU worker and the idle fallback worker. It renames the product to Boxoro in the web UI, the MCP server (`serverInfo.name` is now `boxoro`) and the session agent's prompt, so the agent introduces itself as Boxoro instead of guessing. 238 tests pass and clippy is clean. Backups of the previous binary (`d6325823`) are `agent-rush.bak-20261107` on each VM.
+Binary `21017925` went to control, the 16 vCPU worker and the idle fallback worker. It renames the product to Boxoro in the web UI, the MCP server (`serverInfo.name` is now `boxoro`) and the session agent's prompt, so the agent introduces itself as Boxoro instead of guessing. 238 tests pass and clippy is clean. Backups of the previous binary (`d6325823`) are `agent-rush.bak-20261107` on each VM.
+
+Later that day `8f9d5b65` replaced it on all three VMs: a box that stops mid-command (for example at its memory limit) now answers 503 instead of 502, and a busy box 429. 239 tests pass. Checked live: a crashed box answered 503, the next call ran, and `qa/containment_demo.py` blocked 8 of 8. Backups are `agent-rush.bak-20261107c`.
 
 After the deploy, the three demo sessions were intact, a real agent turn answered as Boxoro on GLM 5.3 Flash, and `qa/containment_demo.py` blocked 8 of 8 escape attempts. Evidence for the plug-in and containment runs: [plugin-and-containment-2026-11-07/](evidence/live/plugin-and-containment-2026-11-07/).
 
@@ -219,7 +221,7 @@ Most of a job's time is model time. Sandbox execution took 0.8–0.9 s, or about
 ## Not yet done
 
 - The demo video (`presentation/video/out/demo.mp4`) is built from the deck and replays of real live runs, with captions. It has no voice-over.
-- Security-flavoured tasks can be declined by the Opus classifier. Anthropic's server-side `fallbacks` option would reroute those calls to another model; it is off because it substitutes models outside the configured role table.
+- With the Anthropic provider (development only; the public instance uses Vultr), security-flavoured tasks can be declined by the Opus classifier. Anthropic's server-side `fallbacks` option would reroute those calls; it is off because it substitutes models outside the configured role table.
 - The private mTLS certificates were renewed on 2026-11-06. The worker server and control client certificates now expire 2026-12-16 03:55 UTC, and the private CA 2027-01-05 03:55 UTC. The CA certificate was reissued with the same key and subject, so certificates issued before the renewal still verify against it.
 
 ## Teardown

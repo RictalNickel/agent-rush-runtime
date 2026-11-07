@@ -34,4 +34,4 @@ The subagent read the file, ran nothing from it, and replied that the block was 
 
 A killed box restarts on the next call with `/workspace` kept: a file written before the attempts read back unchanged afterwards. The box still reached the public internet (`https://example.com`, HTTP 200). The worker's load average stayed at 0.04.
 
-Found: when a box dies in the middle of a command, the API answers HTTP 502 with the message "the box stopped unexpectedly (for example too many processes or too much memory); it restarts on the next call and the files in /workspace are kept". The message is right; 503 would be a better status. Not changed before the deadline.
+Found: when a box dies in the middle of a command, the API answers HTTP 502 with the message "the box stopped unexpectedly (for example too many processes or too much memory); it restarts on the next call and the files in /workspace are kept". The message was right but the status was wrong. Fixed later the same day: a stopped box now answers 503, and a busy box 429.

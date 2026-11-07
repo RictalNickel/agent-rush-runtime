@@ -213,8 +213,9 @@ pub(crate) fn input_error(e: anyhow::Error) -> ApiError {
         None => ApiError(StatusCode::BAD_REQUEST, format!("{e:#}")),
     }
 }
-/// For calls into the workspace box: 404 for a missing path, 502 otherwise.
-pub(crate) fn workspace_error(e: anyhow::Error) -> ApiError {
+/// For calls into the workspace box: 404 for a missing path, 503 for a box that stopped (it
+/// restarts on the next call), 429 for a busy one, 502 otherwise.
+pub fn workspace_error(e: anyhow::Error) -> ApiError {
     if let Some(se) = find_session_error(&e) {
         return session_status(se);
     }
@@ -227,7 +228,10 @@ pub(crate) fn workspace_error(e: anyhow::Error) -> ApiError {
             crate::boxes::BoxError::NoSuchPath(_) => StatusCode::NOT_FOUND,
             crate::boxes::BoxError::Invalid(_) => StatusCode::BAD_REQUEST,
             crate::boxes::BoxError::TooLarge(_) => StatusCode::PAYLOAD_TOO_LARGE,
-            crate::boxes::BoxError::Capacity => StatusCode::SERVICE_UNAVAILABLE,
+            crate::boxes::BoxError::Capacity | crate::boxes::BoxError::Unavailable(_) => {
+                StatusCode::SERVICE_UNAVAILABLE
+            }
+            crate::boxes::BoxError::Busy(_) => StatusCode::TOO_MANY_REQUESTS,
             _ => StatusCode::BAD_GATEWAY,
         };
         return ApiError(status, format!("Workspace: {message}"));

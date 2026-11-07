@@ -1,4 +1,5 @@
 use agent_rush::{
+    api_v1::workspace_error,
     boxes::{
         BoxConfig, BoxError, docker_create_args, error_status, exec_invocation, killed_shell_exit,
         resolve_path, truncate_utf8,
@@ -12,6 +13,26 @@ use axum::{
     http::{Request, StatusCode},
 };
 use tower::ServiceExt;
+
+/// A box that died at its limits, or one already running its maximum calls, is
+/// worth retrying: the API says 503 and 429, not 502 as for a broken worker.
+#[test]
+fn a_crashed_or_busy_box_answers_with_a_retryable_status() {
+    let status = |e: BoxError| workspace_error(anyhow::Error::new(e)).0;
+    assert_eq!(
+        status(BoxError::Unavailable("the box stopped unexpectedly".into())),
+        StatusCode::SERVICE_UNAVAILABLE
+    );
+    assert_eq!(
+        status(BoxError::Busy("too many calls".into())),
+        StatusCode::TOO_MANY_REQUESTS
+    );
+    assert_eq!(
+        status(BoxError::NoSuchPath("x".into())),
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(status(BoxError::NotFound), StatusCode::BAD_GATEWAY);
+}
 
 #[test]
 fn paths_stay_under_workspace_or_tmp() {

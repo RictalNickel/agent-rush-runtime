@@ -30,6 +30,7 @@ Vultr, Vultr Serverless Inference, GLM, gVisor, Docker, Rust, MCP (Model Context
 
 ## Other fields
 
+- **Cover image (optional, 16:9):** `presentation/manim/out/previews/slide-01.png`, the title slide at 1920x1080
 - **Demo application platform:** Vultr (two VMs in Chicago)
 - **Demo application URL:** https://144-202-59-108.sslip.io
 - **GitHub repository:** https://github.com/RictalNickel/agent-rush-runtime (public)

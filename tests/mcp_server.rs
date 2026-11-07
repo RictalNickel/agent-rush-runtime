@@ -98,10 +98,7 @@ async fn initialize_list_start_send_and_wait_for_reply() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(init["result"]["protocolVersion"], "2025-06-18");
     assert_eq!(init["result"]["capabilities"], json!({"tools":{}}));
-    assert_eq!(
-        init["result"]["serverInfo"]["name"],
-        "boxoro"
-    );
+    assert_eq!(init["result"]["serverInfo"]["name"], "boxoro");
 
     let (status, _) = rpc(
         &a,

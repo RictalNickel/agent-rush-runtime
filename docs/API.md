@@ -44,9 +44,9 @@ Errors are JSON: `{"error": "Session not found"}`.
 | 409 | The session is closed |
 | 413 | The body is too large, or the workspace packs to more than 25 MiB (archive, fork) |
 | 422 | The JSON does not match the expected shape |
-| 429 | A per-owner cap is reached: open sessions, live streams or long requests (see Limits) |
+| 429 | A per-owner cap is reached: open sessions, live streams or long requests (see Limits), or the session's box is already running its maximum calls |
 | 502 | The workspace (worker) or the voice service failed |
-| 503 | Sessions are not configured: no worker is connected (`AR_WORKER_URL`) |
+| 503 | Sessions are not configured (no worker is connected, `AR_WORKER_URL`), the worker is full, or the session's box stopped, for example at its process or memory limit. A stopped box restarts on the next call with its files kept |
 
 ## Endpoints
 

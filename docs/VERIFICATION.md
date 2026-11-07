@@ -1,6 +1,21 @@
 # Observed verification
 
-## Current status (2026-11-05, live Vultr deployment)
+## Current status (2026-11-07, live Vultr deployment)
+
+| Check | Observed result |
+| --- | --- |
+| Rust suites | 239 passed, 9 real-host tests ignored by default. Clippy `-D warnings` and rustfmt clean. Run on the Vultr build host for binary `8f9d5b65`, which runs on all three VMs |
+| Worker qualification | After that deploy the live 16 vCPU worker requalified on its 45-minute timer: 10/10 job checks and 9/9 box checks |
+| Plug-in over MCP | Claude Code handed a coding task to the live instance over MCP; the subagent wrote and ran its tests (4 passed) in 19 s for $0.0011 ([evidence](evidence/live/plugin-and-containment-2026-11-07/)) |
+| Containment from inside a box | `qa/containment_demo.py`: 8 of 8 escape attempts blocked, before and after each deploy. A killed box answers 503 and restarts on the next call with its files |
+| Prompt injection | A planted credential-theft instruction was refused; no command from it ran |
+| Security test (2026-11-06) | Source review, clean `cargo audit`, 21 live probes held; two low findings fixed ([evidence](evidence/live/security-audit-2026-11-06/)) |
+| Scale (2026-11-06) | Through the public URL: 64 box sessions and 72 agent sessions at once ([BENCHMARKS.md](BENCHMARKS.md#live-large-demo)) |
+| Inference | Every agent call goes to Vultr Serverless Inference, GLM 5.3 Flash by default |
+| Repository | Public since 2026-11-07 |
+| Cloud spending | Three VMs at about $0.74/h (control, the 16 vCPU worker, and the idle fallback worker), plus measured model usage |
+
+## Status on 2026-11-05 (first live deployment)
 
 | Check | Observed result |
 | --- | --- |
@@ -63,8 +78,8 @@ Raw earlier local receipts and the complete failing resource-suite log are in do
 | Infrastructure provisioning/independent teardown | Provisioning disabled; native tracked-resource watchdog and manual teardown implemented | Fixture tests and denial-path CLI smoke pass; real provider deletion/runner uptime unverified |
 | Nested Docker, browser/desktop profiles | Not enabled | Not qualified |
 | Repository publication | Done | Public since 2026-11-07; commit emails replaced with the owner's GitHub no-reply address first |
-| Presentation | Slide deck built from live evidence (`presentation/deck/`) | PDF export pending |
-| Real live demo video/submission | Not recorded/submitted | Outstanding |
+| Presentation | 8-slide deck built from live evidence (`presentation/manim/`), with a PDF | Done |
+| Demo video | `presentation/video/out/demo.mp4`, built from the deck and replays of real live runs | Done; the lablab entry is submitted by the owner |
 
 ## Measurement limits
 
