@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark a Vultr-Placeholder-Test123 instance through its /v1 API (stdlib only).
+"""Benchmark a Boxoro instance through its /v1 API (stdlib only).
 
   infra   box throughput without the model: N sessions at once, each runs fixed workloads
           through POST /v1/sessions/{id}/exec (cold start, CPU, numpy, disk, npm install).

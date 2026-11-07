@@ -1,6 +1,6 @@
 # Voice (optional)
 
-The voice service adds two things to an Vultr-Placeholder-Test123 control plane: speech to text, so a spoken message can become a chat message, and speech output, so an agent's reply can be played back. It is a small Python service on localhost. It is off by default and is not part of the Vultr deployment.
+The voice service adds two things to a Boxoro control plane: speech to text, so a spoken message can become a chat message, and speech output, so an agent's reply can be played back. It is a small Python service on localhost. It is off by default and is not part of the Vultr deployment.
 
 - **Speech to text:** [Moonshine](https://github.com/moonshine-ai/moonshine) base model (MIT), run on CPU through ONNX.
 - **Speech output:** [LuxTTS](https://github.com/ysharma3501/LuxTTS) (Apache-2.0), which copies one reference voice you provide.

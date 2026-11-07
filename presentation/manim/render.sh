@@ -25,11 +25,11 @@ fi
 .venv/bin/manim-slides render deck.py "$SCENE" --quality "$QUALITY"
 
 mkdir -p out
-rm -rf out/vultr-placeholder-test123-deck_assets out/previews  # drop videos of earlier renders
+rm -rf out/boxoro-deck_assets out/previews  # drop videos of earlier renders
 # --offline copies reveal.js next to the deck, so it presents without a network.
-.venv/bin/manim-slides convert "$SCENE" out/vultr-placeholder-test123-deck.html --offline \
+.venv/bin/manim-slides convert "$SCENE" out/boxoro-deck.html --offline \
   -ctitle="$TITLE" -cbackground_color='#12161b' -chash=true -ccontrols=false
-.venv/bin/manim-slides convert "$SCENE" out/vultr-placeholder-test123-deck.pdf
+.venv/bin/manim-slides convert "$SCENE" out/boxoro-deck.pdf
 .venv/bin/python previews.py "$SCENE"
 
-du -sh out/vultr-placeholder-test123-deck.html out/vultr-placeholder-test123-deck_assets out/vultr-placeholder-test123-deck.pdf
+du -sh out/boxoro-deck.html out/boxoro-deck_assets out/boxoro-deck.pdf

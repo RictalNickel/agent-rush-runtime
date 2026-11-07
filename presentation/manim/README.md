@@ -11,8 +11,8 @@ An 8-slide deck for the Vultr hackathon pitch (Blast Radius Zero track): one ide
 | `previews.py` | Saves the last frame of each slide to `out/previews/slide-NN.png` and prints each slide's length |
 | `requirements.txt` | Pinned Python packages (Python 3.12) |
 | `fonts/` | Archivo variable TTF from google/fonts, under the SIL OFL (`fonts/OFL.txt`) |
-| `out/vultr-placeholder-test123-deck.html` | The deck, with its videos and an offline copy of reveal.js in `out/vultr-placeholder-test123-deck_assets/` |
-| `out/vultr-placeholder-test123-deck.pdf` | One page per slide, showing each slide's finished state |
+| `out/boxoro-deck.html` | The deck, with its videos and an offline copy of reveal.js in `out/boxoro-deck_assets/` |
+| `out/boxoro-deck.pdf` | One page per slide, showing each slide's finished state |
 
 The product name is the `PRODUCT` constant at the top of `deck.py`. The HTML title comes from it too.
 
@@ -31,7 +31,7 @@ On the first run it creates `.venv` with `uv` (Python 3.12) and installs `requir
 
 ## Present
 
-Open `out/vultr-placeholder-test123-deck.html` in Chrome or Firefox. It works offline. Keep `out/vultr-placeholder-test123-deck_assets/` next to it. Some browsers block video on `file://` pages. If that happens, serve the folder: `python3 -m http.server -d out 8000`, then open http://localhost:8000/vultr-placeholder-test123-deck.html.
+Open `out/boxoro-deck.html` in Chrome or Firefox. It works offline. Keep `out/boxoro-deck_assets/` next to it. Some browsers block video on `file://` pages. If that happens, serve the folder: `python3 -m http.server -d out 8000`, then open http://localhost:8000/boxoro-deck.html.
 
 | Key | Action |
 | --- | --- |
@@ -49,8 +49,8 @@ You can also present with the native player: `.venv/bin/manim-slides present Pit
 
 ## Export
 
-- PDF: `render.sh` writes `out/vultr-placeholder-test123-deck.pdf`. Or run `.venv/bin/manim-slides convert PitchDeck out/vultr-placeholder-test123-deck.pdf`.
-- PowerPoint, with each slide's video embedded: `.venv/bin/manim-slides convert PitchDeck out/vultr-placeholder-test123-deck.pptx`. This file is not committed.
+- PDF: `render.sh` writes `out/boxoro-deck.pdf`. Or run `.venv/bin/manim-slides convert PitchDeck out/boxoro-deck.pdf`.
+- PowerPoint, with each slide's video embedded: `.venv/bin/manim-slides convert PitchDeck out/boxoro-deck.pptx`. This file is not committed.
 - One self-contained HTML file: add `--one-file` to the HTML convert line in `render.sh`. The file is larger.
 
 ## Style

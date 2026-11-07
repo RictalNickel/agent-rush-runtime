@@ -1,4 +1,4 @@
-// Vultr-Placeholder-Test123: native Rust control plane, agent engine and sandbox worker.
+// Boxoro: native Rust control plane, agent engine and sandbox worker.
 pub mod agent;
 pub mod agent_config;
 pub mod api;

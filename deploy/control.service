@@ -1,5 +1,5 @@
 [Unit]
-Description=Vultr-Placeholder-Test123 Rust control plane
+Description=Boxoro Rust control plane
 After=network-online.target
 Wants=network-online.target
 

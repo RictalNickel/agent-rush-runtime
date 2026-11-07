@@ -1,6 +1,6 @@
 # Design
 
-Vultr-Placeholder-Test123 is an original Rust system. Its core rule: authority stays in trusted code. Models choose only a validated tool call from an allowlist. They never hold credentials, Docker access or the power to exceed a limit.
+Boxoro is an original Rust system. Its core rule: authority stays in trusted code. Models choose only a validated tool call from an allowlist. They never hold credentials, Docker access or the power to exceed a limit.
 
 The system has two paths that share one control plane and one worker:
 

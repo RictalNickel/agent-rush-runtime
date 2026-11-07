@@ -1,6 +1,6 @@
 # Configuration
 
-Vultr-Placeholder-Test123 reads its settings from environment variables. The defaults below come from the code: `src/config.rs`, `src/main.rs`, `src/boxes.rs`, `src/session.rs`, `src/worker.rs`, `src/mcp_client.rs` and `voice/server.py`, and from the deploy scripts where a variable is read there. The installers write values into `/etc/agent-rush/control.env` and `/etc/agent-rush/worker.env` (mode 0600). Templates are in `deploy/control.env.example` and `deploy/worker.env.example`. Installers never print secrets.
+Boxoro reads its settings from environment variables. The defaults below come from the code: `src/config.rs`, `src/main.rs`, `src/boxes.rs`, `src/session.rs`, `src/worker.rs`, `src/mcp_client.rs` and `voice/server.py`, and from the deploy scripts where a variable is read there. The installers write values into `/etc/agent-rush/control.env` and `/etc/agent-rush/worker.env` (mode 0600). Templates are in `deploy/control.env.example` and `deploy/worker.env.example`. Installers never print secrets.
 
 A variable marked "none" has no default and is unset unless you set it.
 

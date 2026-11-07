@@ -1,6 +1,6 @@
 # Install
 
-Vultr-Placeholder-Test123 runs on Ubuntu 24.04 (x86-64) with cgroup v2 and root access. The installer is tested on that system only.
+Boxoro runs on Ubuntu 24.04 (x86-64) with cgroup v2 and root access. The installer is tested on that system only.
 
 ## Quick install
 

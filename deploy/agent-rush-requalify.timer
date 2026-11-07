@@ -1,5 +1,5 @@
 [Unit]
-Description=Requalify the Vultr-Placeholder-Test123 worker every 45 minutes (reports last two hours)
+Description=Requalify the Boxoro worker every 45 minutes (reports last two hours)
 
 [Timer]
 OnBootSec=2min

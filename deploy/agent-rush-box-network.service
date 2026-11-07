@@ -1,5 +1,5 @@
 [Unit]
-Description=Vultr-Placeholder-Test123 session box network, egress filter and host input guard
+Description=Boxoro session box network, egress filter and host input guard
 Documentation=file:///opt/agent-rush/box-network.sh
 # iptables rules do not survive a reboot: reinstall them at every boot, after Docker and
 # before the worker, and again whenever Docker restarts (PartOf). The worker requires this

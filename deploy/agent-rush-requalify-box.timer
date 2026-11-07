@@ -1,5 +1,5 @@
 [Unit]
-Description=Requalify Vultr-Placeholder-Test123 session boxes every 45 minutes (reports last two hours, and one boot)
+Description=Requalify Boxoro session boxes every 45 minutes (reports last two hours, and one boot)
 
 [Timer]
 OnBootSec=3min

@@ -165,7 +165,7 @@ async fn dispatch(s: &AppState, owner: &str, message: Value) -> Option<Value> {
             json!({
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "vultr-placeholder-test123", "title": "Vultr-Placeholder-Test123", "version": env!("CARGO_PKG_VERSION")},
+                "serverInfo": {"name": "boxoro", "title": "Boxoro", "version": env!("CARGO_PKG_VERSION")},
                 "instructions": "Agent sessions with a persistent Linux workspace. Call start_session (optionally with a first message and a model from list_models), then wait_for_reply. Use send_message for follow-ups; messages sent while a turn runs are delivered to the agent as interjections. run_command, read_file, write_file and list_files act directly on the session's workspace. fork_session copies a session's workspace and conversation into a new session, for example to run the same task on another model; get_usage reports spend and tokens per model.",
             }),
         ),

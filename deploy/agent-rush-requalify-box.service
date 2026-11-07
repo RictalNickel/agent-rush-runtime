@@ -1,5 +1,5 @@
 [Unit]
-Description=Vultr-Placeholder-Test123 session box containment requalification
+Description=Boxoro session box containment requalification
 After=docker.service agent-rush-box-network.service
 Requires=docker.service
 

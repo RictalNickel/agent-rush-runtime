@@ -2,13 +2,11 @@
 
 Draft text for the Vultr hackathon entry, Blast Radius Zero track. The form's limits come from lablab's submission guidelines: title 5 to 50 characters, short description 50 to 255, long description 600 to 2000. The lead feature is the plug-in subagent: any app or agent hands work to a contained, offsite subagent over MCP or REST.
 
-Not submitted. The repository is still private, and the product name is still a placeholder.
+Not submitted. The repository is still private.
 
 ## Title
 
-Vultr-Placeholder-Test123
-
-(The product name is a placeholder. Swap it here, in `README.md` and in `PRODUCT` at the top of `presentation/manim/deck.py`.)
+Boxoro
 
 ## Short description
 
@@ -18,7 +16,7 @@ A contained, offsite subagent for the app or agent you already have. Plug it in 
 
 Teams want agents that do real work: run code, test a web app in a browser, research with sources, turn data into a report. Running that agent on your own servers puts your keys, your network and your host one prompt injection away.
 
-Vultr-Placeholder-Test123 lets the app or agent you already have hand that work to a contained subagent that runs offsite. Add it to Claude Code, Cursor or any MCP client as one remote server, or start a session from any app with one POST. Your app sends the task, can steer it mid-task, watches it over a live event stream, gets a signed webhook when it finishes, and downloads the files.
+Boxoro lets the app or agent you already have hand that work to a contained subagent that runs offsite. Add it to Claude Code, Cursor or any MCP client as one remote server, or start a session from any app with one POST. Your app sends the task, can steer it mid-task, watches it over a live event stream, gets a signed webhook when it finishes, and downloads the files.
 
 Each subagent session gets its own gVisor box on a private Vultr worker: a shell, headless Chromium, web search, language runtimes and file converters. The box holds no credentials, cannot reach cloud metadata, private networks, the host or other boxes, and has caps on memory, disk, time and spend. A subagent that goes wrong damages one box. On the live instance, 8 of 8 escape attempts from inside a box were blocked, a planted prompt injection was refused, and 21 earlier security probes all held.
 
@@ -35,6 +33,6 @@ Vultr, Vultr Serverless Inference, GLM, gVisor, Docker, Rust, MCP (Model Context
 - **Demo application platform:** Vultr (two VMs in Chicago)
 - **Demo application URL:** https://144-202-59-108.sslip.io
 - **GitHub repository:** https://github.com/RictalNickel/agent-rush-runtime (private until the owner approves making it public)
-- **Slide presentation:** `presentation/manim/out/vultr-placeholder-test123-deck.pdf` (8 slides)
+- **Slide presentation:** `presentation/manim/out/boxoro-deck.pdf` (8 slides)
 - **Video presentation:** `presentation/video/out/demo.mp4` (3:05, 1080p, about 8 MB, captioned). Its containment moments are the refused prompt injection and 8 of 8 escape attempts blocked, both run live on 2026-11-07. Script: `docs/VIDEO_SCRIPT.md`.
 - **Participation:** online or onsite, to be chosen by the team.

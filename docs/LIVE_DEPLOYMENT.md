@@ -31,6 +31,12 @@ The public instance moved to a 16 vCPU / 64 GB worker so a large demo works: man
   - Vultr rate-limited Flash once at that load, so the gateway now retries 429s for about 2.5 minutes instead of 45 s.
   - Details: [BENCHMARKS.md](BENCHMARKS.md#live-large-demo).
 
+## Boxoro release (2026-11-07)
+
+Binary `21017925` runs on control, the 16 vCPU worker and the idle fallback worker. It renames the product to Boxoro in the web UI, the MCP server (`serverInfo.name` is now `boxoro`) and the session agent's prompt, so the agent introduces itself as Boxoro instead of guessing. 238 tests pass and clippy is clean. Backups of the previous binary (`d6325823`) are `agent-rush.bak-20261107` on each VM.
+
+After the deploy, the three demo sessions were intact, a real agent turn answered as Boxoro on GLM 5.3 Flash, and `qa/containment_demo.py` blocked 8 of 8 escape attempts. Evidence for the plug-in and containment runs: [plugin-and-containment-2026-11-07/](evidence/live/plugin-and-containment-2026-11-07/).
+
 ## Worker host
 
 - Ubuntu 24.04, kernel 6.8, cgroup v2 with the systemd driver. Docker 29.1.3 reports `MemoryLimit`, `CpuCfsQuota` and `PidsLimit` true.
@@ -212,7 +218,7 @@ Most of a job's time is model time. Sandbox execution took 0.8–0.9 s, or about
 
 ## Not yet done
 
-- No recorded demo video yet. The slide deck is in `presentation/deck/`; a PDF export is pending.
+- The demo video (`presentation/video/out/demo.mp4`) is built from the deck and replays of real live runs, with captions. It has no voice-over.
 - Security-flavoured tasks can be declined by the Opus classifier. Anthropic's server-side `fallbacks` option would reroute those calls to another model; it is off because it substitutes models outside the configured role table.
 - The private mTLS certificates were renewed on 2026-11-06. The worker server and control client certificates now expire 2026-12-16 03:55 UTC, and the private CA 2027-01-05 03:55 UTC. The CA certificate was reissued with the same key and subject, so certificates issued before the renewal still verify against it.
 

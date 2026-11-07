@@ -1,8 +1,8 @@
-# Vultr-Placeholder-Test123
+# Boxoro
 
 _Previously called Agent Rush. Older evidence, links and internal names (the `agent-rush` binary and services, `AR_*` settings) still use that name._
 
-**Give the app or agent you already have a contained, offsite subagent.** Plug Vultr-Placeholder-Test123 in over MCP or one REST call, hand it a task, and get back the result. The subagent writes and runs code, drives a real browser and converts files. It does all of that in its own sealed box on a Vultr worker, never on your servers.
+**Give the app or agent you already have a contained, offsite subagent.** Plug Boxoro in over MCP or one REST call, hand it a task, and get back the result. The subagent writes and runs code, drives a real browser and converts files. It does all of that in its own sealed box on a Vultr worker, never on your servers.
 
 Each session gets its own workspace box: a gVisor container on a private worker VM with a shell, a headless browser, language runtimes and file converters. Everything the model runs stays inside the box. The box holds no credentials, and an egress filter keeps it away from cloud metadata, private networks and mail ports.
 
@@ -11,7 +11,7 @@ Status: the public instance is live on Vultr. See [Live demo](#live-demo).
 ## Plug it into the app you already have
 
 ```
- your app, your agent             Vultr-Placeholder-Test123 (on Vultr)
+ your app, your agent             Boxoro (on Vultr)
  (Claude Code, Cursor,   MCP /    +--------------------------------------+
   a web app, a script)  -- REST ->| subagent session -> its own gVisor   |
         ^                         | box: shell, browser, files, runtimes |
@@ -143,7 +143,7 @@ Each owner has caps on open sessions (20), live event streams (8) and long reque
 
 ## Use it from an MCP client
 
-Vultr-Placeholder-Test123 is also an MCP server at `/mcp` (streamable HTTP, same API keys):
+Boxoro is also an MCP server at `/mcp` (streamable HTTP, same API keys):
 
 ```sh
 claude mcp add --transport http agent https://<host>/mcp --header "Authorization: Bearer ar_..."
@@ -239,7 +239,7 @@ What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) 
 - [Design](docs/DESIGN.md) and [security](docs/SECURITY.md)
 - [Configuration](docs/CONFIGURATION.md) and [deployment](docs/DEPLOYMENT.md)
 - [Live deployment](docs/LIVE_DEPLOYMENT.md), [verification](docs/VERIFICATION.md) and [benchmarks](docs/BENCHMARKS.md)
-- [Hackathon entry draft](docs/SUBMISSION.md), [demo video](presentation/video/out/demo.mp4) and its [script](docs/VIDEO_SCRIPT.md), [pitch deck PDF](presentation/manim/out/vultr-placeholder-test123-deck.pdf)
+- [Hackathon entry draft](docs/SUBMISSION.md), [demo video](presentation/video/out/demo.mp4) and its [script](docs/VIDEO_SCRIPT.md), [pitch deck PDF](presentation/manim/out/boxoro-deck.pdf)
 
 ## License
 

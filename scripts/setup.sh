@@ -60,7 +60,7 @@ choose_role() {
   ROLE=all
   [ "$INTERACTIVE" -eq 1 ] || return 0
   if [ "$HAVE_WHIPTAIL" -eq 1 ]; then
-    ROLE="$(whiptail --title 'Vultr-Placeholder-Test123 setup' --menu 'Where should this install run?' 16 74 3 \
+    ROLE="$(whiptail --title 'Boxoro setup' --menu 'Where should this install run?' 16 74 3 \
       all 'Both roles on this host (quick; weaker separation than two VMs)' \
       control 'Public control plane only' \
       worker 'Private execution node only' 3>&1 1>&2 2>&3)" || die "cancelled"

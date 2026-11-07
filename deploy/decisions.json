@@ -1,6 +1,6 @@
 {
   "status": "deployed_2026-11-05",
-  "project": "Vultr-Placeholder-Test123",
+  "project": "Boxoro",
   "timezone": "America/Chicago",
   "inference": {
     "provider": "Vultr Serverless Inference",

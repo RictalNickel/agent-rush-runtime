@@ -1,7 +1,7 @@
-"""Vultr-Placeholder-Test123 pitch deck, built with Manim Slides.
+"""Boxoro pitch deck, built with Manim Slides.
 
 Render:   ./render.sh            (or: manim-slides render -qh deck.py PitchDeck)
-Present:  open out/vultr-placeholder-test123-deck.html, or: manim-slides present PitchDeck
+Present:  open out/boxoro-deck.html, or: manim-slides present PitchDeck
 
 Every number on these slides comes from the repository's docs and live evidence
 (README.md, docs/DESIGN.md, docs/evidence/live/*/README.md). Do not add numbers
@@ -58,7 +58,7 @@ from PIL import Image, ImageDraw
 # Constants
 # --------------------------------------------------------------------------
 
-PRODUCT = "Vultr-Placeholder-Test123"  # the product name may change: edit it here only
+PRODUCT = "Boxoro"  # the product name may change: edit it here only
 LIVE_URL = "https://144-202-59-108.sslip.io"
 # Live result of qa/containment_demo.py on the public instance, 2026-11-07: (blocked, attempted).
 CONTAINMENT = (8, 8)

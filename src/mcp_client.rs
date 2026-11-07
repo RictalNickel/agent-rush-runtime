@@ -329,7 +329,7 @@ impl McpRegistry {
         let body = json!({"jsonrpc":"2.0","id":id,"method":"initialize","params":{
             "protocolVersion": PROTOCOL_VERSION,
             "capabilities": {},
-            "clientInfo": {"name":"vultr-placeholder-test123","version":env!("CARGO_PKG_VERSION")}
+            "clientInfo": {"name":"boxoro","version":env!("CARGO_PKG_VERSION")}
         }});
         let (result, session_id) = self.post(server, None, &body, Some(id)).await?;
         let result = result.context("initialize returned no result")?;

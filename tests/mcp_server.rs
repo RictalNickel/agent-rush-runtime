@@ -100,7 +100,7 @@ async fn initialize_list_start_send_and_wait_for_reply() {
     assert_eq!(init["result"]["capabilities"], json!({"tools":{}}));
     assert_eq!(
         init["result"]["serverInfo"]["name"],
-        "vultr-placeholder-test123"
+        "boxoro"
     );
 
     let (status, _) = rpc(

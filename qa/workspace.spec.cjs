@@ -140,7 +140,7 @@ async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false,m
 test('session chat: send, tool rows, screenshot, interjection, stop, reply, files',async({page})=>{
   const errors=watchErrors(page);
   const api=await fakeApi(page);
-  await page.goto('/');await expect(page).toHaveTitle('Vultr-Placeholder-Test123');
+  await page.goto('/');await expect(page).toHaveTitle('Boxoro');
   await expect(page.getByRole('heading',{level:1})).toHaveText('Give an agent its own sealed Linux workspace.');
   expect(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor)).toBe('rgb(18, 22, 27)');
   await expect(page.locator('#deploy-label')).toHaveText('Vultr Serverless Inference');

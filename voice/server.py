@@ -1,4 +1,4 @@
-"""Optional voice service for Vultr-Placeholder-Test123: speech to text and speech output.
+"""Optional voice service for Boxoro: speech to text and speech output.
 
 Speech to text uses Moonshine (MIT) through its ONNX package. Speech output uses
 LuxTTS (Apache-2.0) with one reference voice clip. Each engine is optional. A
@@ -145,7 +145,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Vultr-Placeholder-Test123 voice", version="1", lifespan=lifespan)
+app = FastAPI(title="Boxoro voice", version="1", lifespan=lifespan)
 
 
 # The only input containers ffmpeg may open, as its demuxer names. "matroska" covers WebM
