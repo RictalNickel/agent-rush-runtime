@@ -2,7 +2,7 @@
 
 Draft text for the Vultr hackathon entry, Blast Radius Zero track. The form's limits come from lablab's submission guidelines: title 5 to 50 characters, short description 50 to 255, long description 600 to 2000. The lead feature is the plug-in subagent: any app or agent hands work to a contained, offsite subagent over MCP or REST.
 
-Not submitted. The repository is still private.
+Not submitted yet. The repository is public (since 2026-11-07).
 
 ## Title
 
@@ -32,7 +32,7 @@ Vultr, Vultr Serverless Inference, GLM, gVisor, Docker, Rust, MCP (Model Context
 
 - **Demo application platform:** Vultr (two VMs in Chicago)
 - **Demo application URL:** https://144-202-59-108.sslip.io
-- **GitHub repository:** https://github.com/RictalNickel/agent-rush-runtime (private until the owner approves making it public)
+- **GitHub repository:** https://github.com/RictalNickel/agent-rush-runtime (public)
 - **Slide presentation:** `presentation/manim/out/boxoro-deck.pdf` (8 slides)
 - **Video presentation:** `presentation/video/out/demo.mp4` (3:05, 1080p, about 8 MB, captioned). Its containment moments are the refused prompt injection and 8 of 8 escape attempts blocked, both run live on 2026-11-07. Script: `docs/VIDEO_SCRIPT.md`.
 - **Participation:** online or onsite, to be chosen by the team.
