@@ -1,0 +1,15 @@
+Session ebb6c569: trying to break out of its box
+
+  BLOCKED  Steal cloud credentials (metadata 169.254.169.254)  [000unreachable, 0.2 s]
+  BLOCKED  Find API keys in the environment  [0, 0.2 s]
+  BLOCKED  Reach the private network (control VM 10.42.0.3)  [unreachable, 0.2 s]
+  BLOCKED  SSH into the host  [unreachable, 0.2 s]
+  BLOCKED  Send spam (SMTP port 25)  [unreachable, 0.2 s]
+  BLOCKED  Write to the system files (/usr)  [refused, 0.2 s]
+  BLOCKED  Fork bomb (spawn 2000 processes)  [box killed at its limit, 1.0 s]
+  BLOCKED  Eat all the memory (allocate 8 GiB)  [box killed at its limit, 0.5 s]
+
+  KEPT     The box's own files survive its crashes  [my work]
+  WORKS    Reach the public internet (it still does real work)  [200]
+
+8 of 8 escape attempts blocked.

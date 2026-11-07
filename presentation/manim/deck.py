@@ -34,6 +34,7 @@ from manim import (
     Dot,
     FadeIn,
     FadeOut,
+    GrowArrow,
     Group,
     ImageMobject,
     LaggedStart,
@@ -59,6 +60,8 @@ from PIL import Image, ImageDraw
 
 PRODUCT = "Vultr-Placeholder-Test123"  # the product name may change: edit it here only
 LIVE_URL = "https://144-202-59-108.sslip.io"
+# Live result of qa/containment_demo.py on the public instance, 2026-11-07: (blocked, attempted).
+CONTAINMENT = (8, 8)
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
@@ -212,44 +215,14 @@ def icon_file(s: float = 0.6, color: str = TEXT) -> VGroup:
     return VGroup(body, fold, lines).move_to(np.zeros(3))
 
 
-def icon_search(s: float = 0.6, color: str = TEXT) -> VGroup:
-    ring = Circle(radius=s * 0.27, stroke_color=color, stroke_width=3).shift(UL * s * 0.08)
-    handle = Line(ring.point_at_angle(-np.pi / 4), ring.point_at_angle(-np.pi / 4) + np.array([s * 0.22, -s * 0.22, 0]),
-                  stroke_color=color, stroke_width=4)
-    return VGroup(ring, handle).move_to(np.zeros(3))
 
 
-def icon_convert(s: float = 0.6, color: str = TEXT) -> VGroup:
-    a = Arrow(LEFT * s * 0.4 + UP * s * 0.14, RIGHT * s * 0.4 + UP * s * 0.14, buff=0, color=color,
-              stroke_width=3, tip_length=0.12 * s / 0.6, max_tip_length_to_length_ratio=0.4)
-    b = Arrow(RIGHT * s * 0.4 + DOWN * s * 0.14, LEFT * s * 0.4 + DOWN * s * 0.14, buff=0, color=color,
-              stroke_width=3, tip_length=0.12 * s / 0.6, max_tip_length_to_length_ratio=0.4)
-    return VGroup(a, b)
 
 
-def icon_skill(s: float = 0.6, color: str = TEXT) -> VGroup:
-    cards = VGroup(*[RoundedRectangle(corner_radius=0.05, width=s * 0.62, height=s * 0.42, stroke_color=color,
-                                      stroke_width=3, fill_color=SURFACE, fill_opacity=1)
-                     .shift(np.array([k * s * 0.1, -k * s * 0.1, 0])) for k in range(3)])
-    return cards.move_to(np.zeros(3))
 
 
-def icon_plug(s: float = 0.6, color: str = TEXT) -> VGroup:
-    body = RoundedRectangle(corner_radius=0.06, width=s * 0.5, height=s * 0.34, stroke_color=color, stroke_width=3)
-    prongs = VGroup(*[Line(body.get_top() + RIGHT * dx, body.get_top() + RIGHT * dx + UP * s * 0.2,
-                           stroke_color=color, stroke_width=3) for dx in (-s * 0.11, s * 0.11)])
-    cable = Line(body.get_bottom(), body.get_bottom() + DOWN * s * 0.24, stroke_color=color, stroke_width=3)
-    return VGroup(body, prongs, cable).move_to(np.zeros(3))
 
 
-def icon_sliders(s: float = 0.6, color: str = TEXT) -> VGroup:
-    g = VGroup()
-    for k, x in zip((0.3, -0.25, 0.1), (0.35, -0.25, 0.1)):
-        y = k * s
-        g.add(Line(LEFT * s * 0.4 + UP * y, RIGHT * s * 0.4 + UP * y, stroke_color=color, stroke_width=3))
-        g.add(Circle(radius=s * 0.07, stroke_color=color, stroke_width=3, fill_color=SURFACE, fill_opacity=1)
-              .move_to(RIGHT * x * s + UP * y))
-    return g
 
 
 def tick(size: float = 0.26, color: str = OK, width: float = 5) -> VMobject:
@@ -322,22 +295,18 @@ def title_in(title: Mobject, run_time: float = 0.75):
 
 
 class PitchDeck(Slide):
-    """Twelve slides; each method is one slide, and each slide is one step."""
+    """Eight slides; each method is one slide, and each slide is one step."""
 
     def construct(self) -> None:
         self.slides_in_order = [
-            self.s01_title,
-            self.s02_problem,
-            self.s03_idea,
-            self.s09_integrate,
-            self.s04_architecture,
-            self.s05_tools,
-            self.s06_demo_kanban,
-            self.s06b_demo_everyday,
-            self.s07_demo_research,
-            self.s08_containment,
-            self.s10_vultr,
-            self.s11_close,
+            self.s1_title,
+            self.s2_problem,
+            self.s3_plug_in,
+            self.s4_box,
+            self.s5_demo,
+            self.s6_containment,
+            self.s7_vultr,
+            self.s8_close,
         ]
         self.total = len(self.slides_in_order)
         self.chrome: list[Mobject] = []
@@ -419,16 +388,16 @@ class PitchDeck(Slide):
 
     # ---- 1. Title ---------------------------------------------------------
 
-    def s01_title(self) -> None:
-        self.next_slide(notes=f"{PRODUCT}: plug a contained subagent into the app or agent you already have. "
-                             "It does real work offsite, and the damage stays in one box.")
+    def s1_title(self) -> None:
+        self.next_slide(notes=f"{PRODUCT} gives the app or agent you already have a contained subagent. "
+                              "It does real work offsite, and anything that goes wrong stays in one box.")
         name = display(PRODUCT, 150, width=70)
         fit(name, 2.75 - 0.45 - X_LEFT)  # stop short of the mark on the right
         place(name, left=X_LEFT, top=1.85)
         bar = Rectangle(width=2.2, height=0.12, fill_color=AMBER, fill_opacity=1, stroke_width=0)
         place(bar, left=X_LEFT + 0.05, top=name.get_bottom()[1] - 0.35)
-        sub = stack(txt("A contained subagent for the app you already have:", 34),
-                    txt("a shell and a browser, sealed in one box.", 34), buff=0.14)
+        sub = stack(txt("A contained subagent", 44),
+                    txt("for the app you already have.", 44), buff=0.16)
         fit(sub, 2.75 - 0.45 - X_LEFT)
         place(sub, left=X_LEFT, top=bar.get_bottom()[1] - 0.45)
         meta = txt("Vultr hackathon, Blast Radius Zero track", 22, MUTED)
@@ -437,7 +406,6 @@ class PitchDeck(Slide):
         block = VGroup(name, bar, sub, meta)
         block.shift(UP * (0.35 - block.get_center()[1]))
 
-        # A box with an agent prompt inside: the whole idea in one mark.
         box, inner, glyph = prompt_mark(3.3)
         VGroup(box, inner, glyph).move_to([4.4, 0.35, 0])
         chevron, cursor = glyph
@@ -452,43 +420,34 @@ class PitchDeck(Slide):
 
     # ---- 2. The problem ---------------------------------------------------
 
-    def s02_problem(self) -> None:
-        self.enter("The problem", "Useful agents need a shell and a browser",
-                   notes="Agents that do real work need to run code and browse. "
-                         "On your own servers that is a huge blast radius: one prompt injection away from all of it.")
-        agent_card = card(3.0, 1.45, fill=RAISED)
-        icons = VGroup(icon_shell(0.55), icon_browser(0.55)).arrange(RIGHT, buff=0.25)
-        label = bold("Your agent", 26)
-        inner = VGroup(icons, label).arrange(DOWN, buff=0.18)
-        agent = VGroup(agent_card, inner.move_to(agent_card)).move_to([0, -0.1, 0])
+    def s2_problem(self) -> None:
+        self.enter("The problem", "Agents that run code are risky",
+                   notes="Useful agents run code and drive a browser. Run that on your own servers and "
+                         "one prompt injection can reach your keys, your network and your host.")
+        agent_card = card(3.2, 1.7, fill=RAISED)
+        icons = VGroup(icon_shell(0.7), icon_browser(0.7)).arrange(RIGHT, buff=0.3)
+        label = bold("Your agent", 30)
+        inner = VGroup(icons, label).arrange(DOWN, buff=0.22)
+        agent = VGroup(agent_card, inner.move_to(agent_card)).move_to([0, 0.15, 0])
 
-        targets_text = [
-            ("API keys and tokens", (-4.65, 1.25)),
-            ("Cloud metadata", (-4.65, -0.1)),
-            ("Your private network", (-4.65, -1.45)),
-            ("The host and its SSH", (4.65, 1.25)),
-            ("Mail servers", (4.65, -0.1)),
-            ("Other users' files", (4.65, -1.45)),
-        ]
+        targets_text = [("Your API keys", (-4.5, 1.05)), ("Your network", (-4.5, -0.75)),
+                        ("Your host", (4.5, 1.05)), ("Your users' data", (4.5, -0.75))]
         targets, lines = [], []
         for s, (x, y) in targets_text:
-            dot = Dot(radius=0.07, color=BAD)
-            lab = txt(s, 22, TEXT)
-            row = VGroup(dot, lab).arrange(RIGHT, buff=0.18)
-            box = card(row.width + 0.5, 0.62)
-            t = VGroup(box, row.move_to(box)).move_to([x, y, 0])
-            fit(t, 3.4)
-            targets.append(t)
+            dot = Dot(radius=0.09, color=BAD)
+            row = VGroup(dot, txt(s, 30, TEXT)).arrange(RIGHT, buff=0.22)
+            box = card(3.6, 0.95)
+            targets.append(VGroup(box, row.move_to(box)).move_to([x, y, 0]))
             start = agent_card.get_left() if x < 0 else agent_card.get_right()
-            start = start + UP * (y + 0.1) * 0.35
-            end = t.get_right() if x < 0 else t.get_left()
-            lines.append(Line(start, end, stroke_color=BAD, stroke_width=2.5, stroke_opacity=0.75))
+            start = start + UP * y * 0.35
+            end = targets[-1].get_right() if x < 0 else targets[-1].get_left()
+            lines.append(Line(start, end, stroke_color=BAD, stroke_width=3, stroke_opacity=0.75))
 
         punch = MarkupText(
             f'<span font_family="{SANS}">One prompt injection away from </span>'
             f'<span font_family="{SANS}" foreground="{BAD}" font_weight="bold">all of it</span>'
-            f'<span font_family="{SANS}">.</span>', font_size=30, color=TEXT)
-        place(punch, left=X_LEFT, top=-2.4)
+            f'<span font_family="{SANS}">.</span>', font_size=40, color=TEXT)
+        place(punch, left=X_LEFT, top=-2.2)
 
         self.play(pop_in(agent))
         self.play(LaggedStart(*[Create(l, rate_func=EASE) for l in lines], lag_ratio=0.12, run_time=1.0),
@@ -496,528 +455,178 @@ class PitchDeck(Slide):
                                 for t in targets], lag_ratio=0.12, run_time=1.2))
         self.play(rise_in(punch))
 
-    # ---- 3. The idea ------------------------------------------------------
+    # ---- 3. Plug it in ----------------------------------------------------
 
-    def s03_idea(self) -> None:
-        self.enter("The idea", "Give every session its own sealed box",
-                   notes="Each session gets one gVisor container on a private worker VM. "
-                         "No credentials ever enter it, and an egress filter keeps it on the public internet.")
-        box = RoundedRectangle(corner_radius=0.28, width=5.5, height=4.2, stroke_color=AMBER, stroke_width=5)
-        place(box, left=X_LEFT, top=1.95)
-        tab_text = txt("gVisor box, one per session", 20, GROUND, weight="BOLD")
+    def s3_plug_in(self) -> None:
+        self.enter("The fix", "Hand the risky work to a subagent",
+                   notes="Plug it into the app or agent you already have, over MCP or one REST call. "
+                         "The subagent does the work in its own box on Vultr and hands back the result.")
+        y = 0.55
+        app_card = card(3.4, 2.0, fill=RAISED)
+        app_text = stack(bold("Your app", 32), txt("or Claude Code,\nCursor, any agent", 22, MUTED, line_spacing=0.9),
+                         buff=0.14)
+        app = VGroup(app_card, app_text.move_to(app_card)).move_to([X_LEFT + 1.7, y, 0])
+
+        box = RoundedRectangle(corner_radius=0.25, width=4.0, height=2.5, stroke_color=AMBER, stroke_width=5)
+        box.move_to([X_RIGHT - 2.0, y, 0])
+        tab_text = txt("subagent box on Vultr", 18, GROUND, weight="BOLD")
+        tab = VGroup(RoundedRectangle(corner_radius=0.1, width=tab_text.width + 0.4, height=0.4,
+                                      fill_color=AMBER, fill_opacity=1, stroke_width=0), tab_text)
+        tab_text.move_to(tab[0])
+        tab.move_to(box.get_top()).align_to(box, LEFT).shift(RIGHT * 0.3)
+        icons = VGroup()
+        for ic, lab in ((icon_shell(0.6), "Shell"), (icon_browser(0.6), "Browser"), (icon_file(0.6), "Files")):
+            icons.add(VGroup(ic, txt(lab, 20, MUTED)).arrange(DOWN, buff=0.15))
+        icons.arrange(RIGHT, buff=0.45).move_to(box).shift(DOWN * 0.1)
+
+        x0, x1 = app_card.get_right()[0] + 0.15, box.get_left()[0] - 0.15
+        go = Arrow([x0, y + 0.4, 0], [x1, y + 0.4, 0], buff=0, color=AMBER, stroke_width=5, tip_length=0.25)
+        back = Arrow([x1, y - 0.4, 0], [x0, y - 0.4, 0], buff=0, color=OK, stroke_width=5, tip_length=0.25)
+        go_lab = txt("a task, over MCP or REST", 22, TEXT).next_to(go, UP, buff=0.15)
+        back_lab = txt("results and files", 22, OK).next_to(back, DOWN, buff=0.15)
+
+        cmd = code_block([[("claude mcp add ", TEXT), ("--transport http ", MUTED), ("agent ", TEXT),
+                           ("https://<host>/mcp", RUN)]], size=24)
+        cmd_bg = card(X_RIGHT - X_LEFT, cmd.height + 0.6)
+        fit(cmd, cmd_bg.width - 0.6)
+        place(cmd_bg, left=X_LEFT, top=-1.55)
+        cmd.move_to(cmd_bg)
+        place(cmd, left=X_LEFT + 0.35)
+        cmd_cap = txt("One line in Claude Code. Or one POST /v1/sessions from any app.", 22, MUTED)
+        place(cmd_cap, left=X_LEFT, top=cmd_bg.get_bottom()[1] - 0.2)
+
+        self.play(pop_in(app), Create(box, run_time=0.8), FadeIn(tab, shift=DOWN * 0.15, rate_func=EASE),
+                  pop_in(*icons, lag=0.15))
+        self.play(GrowArrow(go), FadeIn(go_lab, shift=UP * 0.1), run_time=0.7)
+        self.play(GrowArrow(back), FadeIn(back_lab, shift=DOWN * 0.1), run_time=0.7)
+        self.play(FadeIn(cmd_bg, shift=UP * RISE, rate_func=EASE), run_time=0.4)
+        self.play(AddTextLetterByLetter(cmd, time_per_char=0.015, run_time=0.9), rise_in(cmd_cap))
+
+    # ---- 4. The box -------------------------------------------------------
+
+    def s4_box(self) -> None:
+        self.enter("The box", "Real tools inside, solid walls around",
+                   notes="Each session gets its own gVisor box with a shell, a browser and files. "
+                         "Nothing secret is inside, it cannot reach your network, and every resource is capped.")
+        box = RoundedRectangle(corner_radius=0.28, width=5.2, height=4.4, stroke_color=AMBER, stroke_width=6)
+        place(box, left=X_LEFT, top=1.9)
+        tab_text = txt("one gVisor box per session", 20, GROUND, weight="BOLD")
         tab = VGroup(RoundedRectangle(corner_radius=0.1, width=tab_text.width + 0.4, height=0.42,
                                       fill_color=AMBER, fill_opacity=1, stroke_width=0), tab_text)
         tab_text.move_to(tab[0])
-        tab.move_to(box.get_top() + DOWN * 0.02).align_to(box, LEFT).shift(RIGHT * 0.35)
-
+        tab.move_to(box.get_top()).align_to(box, LEFT).shift(RIGHT * 0.35)
         rows = VGroup()
-        for icon, label in ((icon_shell(0.55), "Shell"), (icon_browser(0.55), "Headless browser"),
-                            (icon_file(0.55), "4 GiB /workspace")):
-            ic = VGroup(card(0.85, 0.85, fill=RAISED), icon)
+        for icon, label in ((icon_shell(0.7), "Shell"), (icon_browser(0.7), "Browser"), (icon_file(0.7), "Files")):
+            ic = VGroup(card(1.0, 1.0, fill=RAISED), icon)
             icon.move_to(ic[0])
-            rows.add(VGroup(ic, txt(label, 26)).arrange(RIGHT, buff=0.3))
-        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.35)
-        rows.move_to(box).shift(DOWN * 0.1).align_to(box, LEFT).shift(RIGHT * 0.5)
+            rows.add(VGroup(ic, txt(label, 34)).arrange(RIGHT, buff=0.35))
+        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.32)
+        rows.move_to(box).shift(DOWN * 0.1).align_to(box, LEFT).shift(RIGHT * 0.55)
 
-        points = [
-            ("One sealed box per session", "gVisor, uid 1000, read-only root, no capabilities,\ncapped CPU, memory and disk"),
-            ("No credentials inside", "API keys, the worker token and the inference key\nstay in trusted code"),
-            ("Public internet only", "Cloud metadata, private networks, the host\nand mail ports are blocked"),
-        ]
+        walls = ["No keys or secrets inside", "No private network or metadata",
+                 "No way to the host or other boxes", "Capped memory, disk, time, spend"]
         items = VGroup()
-        for head, body in points:
-            items.add(pair(head, body, 30, 21, gap=0.14))
-        items.arrange(DOWN, aligned_edge=LEFT, buff=0.5)
-        place(items, left=0.1, top=1.9)
-        fit(items, X_RIGHT - 0.1)
-        place(items, left=0.1, top=1.9)
+        for w in walls:
+            items.add(VGroup(cross(0.3), txt(w, 30)).arrange(RIGHT, buff=0.3))
+        items[-1][0].become(tick(0.34).move_to(items[-1][0]))
+        items.arrange(DOWN, aligned_edge=LEFT, buff=0.55)
+        place(items, left=box.get_right()[0] + 0.6, top=1.55)
+        fit(items, X_RIGHT - items.get_left()[0])
 
         self.play(Create(box, run_time=0.9), FadeIn(tab, shift=DOWN * 0.15, rate_func=EASE, run_time=0.6))
         self.play(pop_in(*rows, lag=0.2), rise_in(*items, lag=0.25, run_time=1.4))
 
-    # ---- 4. Architecture --------------------------------------------------
+    # ---- 5. Live demo -----------------------------------------------------
 
-    def node(self, head: str, sub: str, w: float, h: float, pos, head_size: float = 24) -> VGroup:
-        box = card(w, h)
-        content = stack(bold(head, head_size), txt(sub, 18, MUTED, line_spacing=0.85), buff=0.1)
-        fit(content, w - 0.3)
-        content.move_to(box)
-        return VGroup(box, content).move_to([*pos, 0])
-
-    def s04_architecture(self) -> None:
-        self.enter("How it fits together", "Two VMs, one wall",
-                   notes="Your app talks to the control VM, which runs the sessions and calls Vultr inference. "
-                         "It never runs a command the model chose. The worker VM is private, reached over mTLS, "
-                         "and runs the boxes behind the egress filter.")
-        row_y = 0.75
-        client = self.node("Your app", "or any MCP client", 2.1, 1.1, (-5.35, row_y))
-        control = self.node("Control VM", "sessions, keys,\nspend ledger", 2.25, 1.6, (-2.6, row_y))
-        infer = self.node("Vultr Serverless\nInference", "GLM 5.3 Flash", 2.25, 1.35, (-2.6, -1.55), head_size=22)
-
-        worker_box = card(2.9, 3.6)
-        worker_box.move_to([1.05, -0.1, 0])
-        w_head = pair("Worker VM", "private network", 24, 18, gap=0.06)
-        place(w_head, left=worker_box.get_left()[0] + 0.25, top=worker_box.get_top()[1] - 0.22)
-        boxes = VGroup(*[
-            VGroup(RoundedRectangle(corner_radius=0.08, width=0.68, height=0.68, stroke_color=AMBER,
-                                    stroke_width=3, fill_color=RAISED, fill_opacity=1),
-                   mono(">_", 16, TEXT))
-            for _ in range(3)
-        ]).arrange(RIGHT, buff=0.18)
-        for b in boxes:
-            b[1].move_to(b[0])
-        boxes.move_to(worker_box).shift(DOWN * 0.05)
-        w_foot = txt("one gVisor box\nper session", 17, MUTED, line_spacing=0.85)
-        w_foot.next_to(boxes, DOWN, buff=0.25).align_to(w_head, LEFT)
-        worker = VGroup(worker_box, w_head)
-
-        a1 = Arrow(client.get_right(), control.get_left(), buff=0.06,
-                   color=MUTED, stroke_width=3, tip_length=0.16)
-        a2 = Arrow(control.get_bottom(), infer.get_top(), buff=0.06,
-                   color=MUTED, stroke_width=3, tip_length=0.16)
-        a2_label = txt("every model call", 17, MUTED)
-        place(a2_label, right=a2.get_left()[0] - 0.15)
-        a2_label.set_y(a2.get_y())
-        link = DashedLine(control.get_right(), [worker_box.get_left()[0], row_y, 0], dash_length=0.1,
-                          color=MUTED, stroke_width=3)
-        link_label = txt("private\nmTLS", 17, MUTED, line_spacing=0.85).next_to(link, UP, buff=0.12)
-
-        wall_x = 3.2
-        wall = Line([wall_x, 1.95, 0], [wall_x, -2.3, 0], stroke_color=AMBER, stroke_width=7)
-        wall_label = txt("egress filter", 20, AMBER, weight="BOLD")
-        wall_label.next_to(wall, DOWN, buff=0.15)
-
-        flows = [("Public internet", True), ("Cloud metadata", False), ("Private networks", False),
-                 ("Host services, SSH", False), ("Mail ports", False)]
-        ys = [1.35, 0.6, -0.15, -0.9, -1.65]
-        flow_anims, label_mobs, marks = [], [], []
-        for (label, allowed), y in zip(flows, ys):
-            start = np.array([worker_box.get_right()[0], y, 0])
-            lab = txt(label, 21, TEXT if allowed else MUTED)
-            place(lab, left=wall_x + 0.62)
-            lab.set_y(y)
-            if allowed:
-                arr = Arrow(start, [wall_x + 0.5, y, 0], buff=0.05, color=OK, stroke_width=3, tip_length=0.16)
-                mark = tick(0.26).move_to([wall_x, y + 0.34, 0])
-            else:
-                arr = Line(start + RIGHT * 0.05, [wall_x - 0.05, y, 0], stroke_color=BAD, stroke_width=3)
-                mark = cross(0.22).move_to([wall_x, y, 0])
-            fit(lab, X_RIGHT - (wall_x + 0.62))
-            flow_anims.append(arr)
-            label_mobs.append(lab)
-            marks.append(mark)
-        # Left to right: the path a request takes, then the wall, then what the wall stops.
-        self.play(
-            pop_in(client, control, lag=0.3),
-            AnimationGroup(Create(a1), Create(a2), FadeIn(a2_label, shift=UP * 0.1), pop_in(infer), lag_ratio=0.3),
-            run_time=1.0,
-        )
-        self.play(
-            Create(link), FadeIn(link_label, shift=UP * 0.1), FadeIn(worker, scale=0.9, rate_func=EASE),
-            LaggedStart(*[FadeIn(b, scale=0.6, rate_func=EASE) for b in boxes], lag_ratio=0.2),
-            FadeIn(w_foot, shift=UP * 0.1),
-            run_time=0.8,
-        )
-        self.play(
-            AnimationGroup(
-                AnimationGroup(Create(wall, rate_func=EASE), FadeIn(wall_label, shift=UP * 0.1)),
-                LaggedStart(*[AnimationGroup(Create(f), FadeIn(l, shift=RIGHT * 0.15))
-                              for f, l in zip(flow_anims, label_mobs)], lag_ratio=0.12),
-                LaggedStart(*[FadeIn(m, scale=1.6, rate_func=EASE) for m in marks], lag_ratio=0.15),
-                lag_ratio=0.4,
-            ),
-            run_time=2.0,
-        )
-
-    # ---- 5. Tools ----------------------------------------------------------
-
-    def s05_tools(self) -> None:
-        self.enter("What agents can do", "Real tools, inside the box",
-                   notes="These are the agent's built-in tools. Shell, browser, files, research and conversion "
-                         "run in the box. Skills, its own config and MCP run in trusted code on the control VM.")
-        tiles_spec = [
-            (icon_shell, "Shell", "Build, test, install,\nstart servers", "box"),
-            (icon_browser, "Browser", "Clicks, types and\ntakes screenshots", "box"),
-            (icon_file, "Files", "Read, edit and search\nfiles in /workspace", "box"),
-            (icon_search, "Web research", "Searches the web and\nreads pages as text", "box"),
-            (icon_convert, "Convert", "pandoc, LibreOffice,\nImageMagick, ffmpeg", "box"),
-            (icon_skill, "Skills", "Loads and saves\nSKILL.md playbooks", "control"),
-            (icon_plug, "MCP", "Remote servers on\nthe operator's list", "control"),
-            (icon_sliders, "Its own config", "Can tune itself,\nnot its own limits", "control"),
-        ]
-        w, h = 2.95, 2.05
-        tiles = []
-        for icon_fn, head, body, where in tiles_spec:
-            bg = card(w, h)
-            ic = icon_fn(0.5)
-            tag = txt("in the box" if where == "box" else "trusted code", 15,
-                      MUTED if where == "box" else FAINT)
-            hd = bold(head, 26)
-            bd = txt(body, 18, MUTED, line_spacing=0.9)
-            fit(bd, w - 0.5)
-            ic.move_to(bg.get_corner(UL) + np.array([0.5, -0.48, 0]))
-            place(tag, right=bg.get_right()[0] - 0.22)
-            tag.set_y(ic.get_y())
-            place(hd, left=bg.get_left()[0] + 0.25, top=bg.get_top()[1] - 0.9)
-            place(bd, left=bg.get_left()[0] + 0.25, top=hd.get_top()[1] - bold("Hg", 26).height - 0.1)
-            tiles.append(VGroup(bg, ic, tag, hd, bd))
-        grid = VGroup(*tiles).arrange_in_grid(rows=2, cols=4, buff=(0.33, 0.33))
-        place(grid, left=X_LEFT, top=1.95)
-        self.play(pop_in(*tiles, lag=0.12, run_time=1.8))
-
-    # ---- 6. Demo: kanban ----------------------------------------------------
-
-    def s06_demo_kanban(self) -> None:
-        self.enter("Live demo, session 629d0b6f", "Build a kanban app, then use it",
-                   notes="On the public instance the agent built a kanban board with a Python backend, ran it, "
-                         "and used it in its own browser: add three cards, move one to Done, reload. "
-                         "Then dark mode in turn two, and deleting a card in turn three. 92 tool calls, $0.0244.")
-        kb = "docs/evidence/live/demo-build-kanban/outputs/"
-        crop = (0, 0, 910, 450)
-        shots_spec = [
-            (kb + "shot3_add3.png", "kb1", "Three cards added"),
-            (kb + "shot_after_reload.png", "kb2", "Moved to Done, kept after reload"),
-            (kb + "dark-mode.png", "kb3", "Dark mode toggle, turn 2"),
-            (kb + "after-delete.png", "kb4", "A card deleted, turn 3"),
-        ]
-        sw = 3.45
-        shots = []
-        for src, name, cap in shots_spec:
-            img = image(src, name, sw, crop)
-            c = txt(cap, 18, MUTED)
-            fit(c, sw)
-            c.next_to(img, DOWN, buff=0.14).align_to(img, LEFT)
-            shots.append(Group(img, c))
-        grid = Group(*shots).arrange_in_grid(rows=2, cols=2, buff=(0.3, 0.35))
-        place(grid, right=X_RIGHT, top=1.95)
-
-        col_w = grid.get_left()[0] - 0.45 - X_LEFT
-        chat = image("docs/evidence/ui/demo-build-kanban.png", "kanban-chat", col_w, crop=(462, 290, 880, 515))
-        place(chat, left=X_LEFT, top=1.95)
-        chat_cap = txt("Its steps in the web chat", 18, MUTED).next_to(chat, DOWN, buff=0.14).align_to(chat, LEFT)
-
-        turns = VGroup()
-        for secs, what in (("166 s", "build and use"), ("82 s", "dark mode"), ("16 s", "delete")):
-            turns.add(stack(display(secs, 40, width=80), txt(what, 17, MUTED), buff=0.06))
-        turns.arrange(RIGHT, buff=0.55, aligned_edge=UP)
-        place(turns, left=X_LEFT, top=chat_cap.get_bottom()[1] - 0.35)
-        total = txt("3 turns, 92 tool calls, $0.0244 model cost", 21)
-        fit(total, col_w)
-        place(total, left=X_LEFT, top=turns.get_bottom()[1] - 0.3)
-
-        self.play(pop_in(Group(chat, chat_cap)), rise_in(*turns, lag=0.2, run_time=1.0))
-        self.play(pop_in(*shots, lag=0.3, run_time=1.6), rise_in(total))
-
-    # ---- 7. Demo: everyday tasks ------------------------------------------
-
-    def s06b_demo_everyday(self) -> None:
-        self.enter("Live demo, session c8fcac86", "Data, a chart, a memo, tidy files",
-                   notes="Five ordinary office requests, one turn each: totals from a CSV, a bar chart, a memo as "
-                         "Word and PDF, renaming messy files, and shrinking the chart to a JPG. Every turn took under "
-                         "ten seconds. 7 tool calls, $0.0034. The memo's revenue figures are right, but the model "
-                         "invented the units and the softest month: it wrote them without computing.")
-        ev = "docs/evidence/live/demo-everyday-tasks-v2/outputs/"
-        cw = 4.5
-        chart = image(ev + "revenue.png", "everyday-chart", cw)
-        place(chart, right=X_RIGHT, top=1.95)
-        chart_cap = txt("revenue.png, drawn by the agent with matplotlib", 18, MUTED)
-        fit(chart_cap, cw)
-        chart_cap.next_to(chart, DOWN, buff=0.14).align_to(chart, LEFT)
-        strip = image("docs/evidence/ui/demo-everyday-tasks.png", "everyday-chat", cw, crop=(452, 128, 1000, 236))
-        place(strip, left=chart.get_left()[0], top=chart_cap.get_bottom()[1] - 0.28)
-        strip_cap = txt("Turn 5 in the web chat, both sizes reported", 18, MUTED)
-        fit(strip_cap, cw)
-        strip_cap.next_to(strip, DOWN, buff=0.14).align_to(strip, LEFT)
-
-        col_w = chart.get_left()[0] - 0.5 - X_LEFT
-        turns = [("3.9 s", "Totals per region from sales.csv", "36 rows; North 2,125,200, best month 2025-12"),
-                 ("4.5 s", "Bar chart, revenue.png", "First try; the bars match the CSV totals"),
-                 ("9.3 s", "Memo as .docx plus a PDF copy", "Fell back to LibreOffice when pdflatex was missing"),
-                 ("2.0 s", "Rename 5 messy file names", "To lowercase-with-dashes"),
-                 ("1.7 s", "PNG to an 800 px JPG", "40,020 B down to 34,193 B")]
-        rows = VGroup()
-        for secs, head, sub in turns:
-            t = display(secs, 36, width=80)
-            body = pair(head, sub, 23, 17, gap=0.05, head_mob=txt(head, 23))
-            row = VGroup(t, body)
-            place(body, left=t.get_left()[0] + 1.25, top=t.get_top()[1] + 0.02)
-            rows.add(row)
-        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.26)
-        fit(rows, col_w)
-        place(rows, left=X_LEFT, top=1.95)
-
-        total = txt("5 turns, 7 tool calls, $0.0034 model cost", 21)
-        fit(total, col_w)
-        place(total, left=X_LEFT, top=rows.get_bottom()[1] - 0.38)
-        caveat = txt("The memo's revenue figures are right; its units and softest\n"
-                     "month were invented by the model, never computed.", 17, MUTED, line_spacing=0.9)
-        fit(caveat, col_w)
-        place(caveat, left=X_LEFT, top=total.get_bottom()[1] - 0.2)
-
-        self.play(rise_in(*rows, lag=0.18, run_time=1.4), pop_in(Group(chart, chart_cap), run_time=0.8))
-        self.play(pop_in(Group(strip, strip_cap)), rise_in(total, caveat, lag=0.3))
-
-    # ---- 8. Demo: research to PDF -----------------------------------------
-
-    def s07_demo_research(self) -> None:
-        self.enter("Live demo, session 1c047b6c", "Research, build, test, report",
-                   notes="One request: research HTTP 418, build a lookup app, test it in the browser, write a PDF report. "
-                         "Mid-turn I sent an interjection asking for a footer. First turn 35 seconds, "
-                         "17 tool calls over two turns, model cost $0.0054.")
-        steps = [("Research", "web_search, web_fetch"), ("Build", "write_file, bash"),
-                 ("Browser test", "type, click, screenshot"), ("PDF report", "convert_file")]
-        chips = VGroup()
-        for head, sub in steps:
-            g = stack(bold(head, 24), mono(sub, 14, MUTED), buff=0.08)
-            bg = card(2.55, 0.95)
-            fit(g, 2.12)
-            g.move_to(bg)
-            place(g, left=bg.get_left()[0] + 0.22)
-            chips.add(VGroup(bg, g))
-        chips.arrange(RIGHT, buff=0.87)
-        place(chips, left=X_LEFT, top=2.05)
-        arrows = VGroup(*[Arrow(a.get_right(), b.get_left(), buff=0.1, color=AMBER, stroke_width=3, tip_length=0.15)
-                          for a, b in zip(chips[:-1], chips[1:])])
-
-        chat = image("docs/evidence/ui/live-session.png", "research-chat", 5.5, crop=(450, 262, 1236, 752))
-        place(chat, left=X_LEFT, top=0.75)
-        chat_cap = txt("Follow-up turn in the web chat, with the PDF attached", 18, MUTED)
-        chat_cap.next_to(chat, DOWN, buff=0.14).align_to(chat, LEFT)
-
-        app = image("docs/evidence/live/session-demo-v2/screenshot.png", "research-app", 6.0, crop=(310, 18, 980, 278))
-        place(app, right=X_RIGHT, top=0.75)
-        app_cap = txt("The app, as the agent's browser saw it", 18, MUTED)
-        app_cap.next_to(app, DOWN, buff=0.14).align_to(app, LEFT)
-
+    def s5_demo(self) -> None:
+        self.enter("Live demo", "It built an app, then used it",
+                   notes="On the public instance the agent built a kanban board, ran it, and tested it in its own "
+                         "browser over three turns. 92 tool calls for $0.0244 of model time.")
+        shot = image("docs/evidence/ui/demo-build-kanban.png", "kanban-ui", 8.2, crop=(452, 140, 1232, 575))
+        place(shot, right=X_RIGHT, top=1.95)
         stats = VGroup()
-        for big, small in (("35 s", "first turn"), ("17", "tool calls, two turns"), ("$0.0054", "model cost")):
-            stats.add(stack(display(big, 52, width=80), txt(small, 18, MUTED), buff=0.08))
-        stats.arrange(RIGHT, buff=0.6, aligned_edge=UP)
-        fit(stats, X_RIGHT - app.get_left()[0])
-        place(stats, left=app.get_left()[0], top=app_cap.get_bottom()[1] - 0.35)
+        for big, small in (("3", "turns"), ("92", "tool calls"), ("$0.0244", "model cost")):
+            stats.add(stack(display(big, 72, width=80), txt(small, 24, MUTED), buff=0.08))
+        stats.arrange(DOWN, aligned_edge=LEFT, buff=0.42)
+        fit(stats, shot.get_left()[0] - 0.5 - X_LEFT)
+        place(stats, left=X_LEFT, top=1.95)
+        cap = txt("The agent's reply and its own screenshot, session 629d0b6f", 20, MUTED)
+        fit(cap, shot.width)
+        cap.next_to(shot, DOWN, buff=0.16).align_to(shot, LEFT)
 
-        self.play(LaggedStart(*[AnimationGroup(FadeIn(c, shift=UP * RISE, rate_func=EASE),
-                                               *([Create(arrows[i - 1])] if i else []))
-                                for i, c in enumerate(chips)], lag_ratio=0.3, run_time=1.4))
-        self.play(pop_in(Group(chat, chat_cap), Group(app, app_cap), lag=0.35, run_time=1.1))
-        self.play(rise_in(*stats, lag=0.2))
+        self.play(pop_in(Group(shot, cap), run_time=0.9), rise_in(*stats, lag=0.25, run_time=1.2))
 
-    # ---- 9. Containment proof ---------------------------------------------
+    # ---- 6. Containment ---------------------------------------------------
 
-    def s08_containment(self) -> None:
+    def s6_containment(self) -> None:
+        blocked, total = CONTAINMENT
         self.enter("Containment, tested live", "We tried to break out",
-                   notes="A probe session asked the agent to reach metadata, the worker, the host's SSH and mail ports. "
-                         "Every attempt failed at the network. A 4300 MiB write stopped at the workspace quota. "
-                         "On the deployed binary, 9 of 9 box checks and 10 of 10 job checks pass.")
-        # Left: probe attempts, each struck through with a red cross.
-        probes = [("Cloud metadata, 169.254.169.254", "No route to host"),
-                  ("Worker listener, 10.42.0.4:8443", "Could not connect"),
-                  ("Host SSH, port 22", "Could not connect"),
-                  ("SMTP, ports 25 and 587", "Network is unreachable")]
-        header_l = txt("Probe session 2401b687, real tool calls", 19, MUTED)
-        place(header_l, left=X_LEFT, top=2.0)
-        rows, crosses = VGroup(), []
-        for head, result in probes:
-            text = pair(head, result, 23, 18, BAD, gap=0.04, head_mob=txt(head, 23))
-            mark = cross(0.26)
-            row = VGroup(mark, text).arrange(RIGHT, buff=0.28)
-            rows.add(row)
-            crosses.append(mark)
-        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.24)
-        place(rows, left=X_LEFT + 0.05, top=header_l.get_bottom()[1] - 0.3)
+                   notes=f"From inside a live box we tried eight escapes: stealing cloud credentials, finding keys, "
+                         f"reaching the private network and the host, spam, system files, a fork bomb and an 8 GiB "
+                         f"memory grab. {blocked} of {total} were blocked. The fork bomb and the memory grab only killed that "
+                         f"box, which restarted on the next call with its files kept.")
+        big = display(f"{blocked}/{total}", 190, OK, width=80)
+        place(big, left=X_LEFT, top=1.95)
+        big_lab = txt("escape attempts\nblocked", 36, line_spacing=0.9)
+        place(big_lab, left=X_LEFT + 0.05, top=big.get_bottom()[1] - 0.3)
+        checks = txt("A killed box restarts on the next call,\nits files kept. The internet still works.", 22,
+                     MUTED, line_spacing=0.9)
+        place(checks, left=X_LEFT + 0.05, top=big_lab.get_bottom()[1] - 0.5)
 
-        disk_label = txt("dd 4300 MiB into /workspace", 23)
-        place(disk_label, left=X_LEFT, top=rows.get_bottom()[1] - 0.42)
-        bar_w = 6.0
-        track = RoundedRectangle(corner_radius=0.08, width=bar_w, height=0.3, fill_color=RAISED, fill_opacity=1,
-                                 stroke_color=RULE, stroke_width=2)
-        place(track, left=X_LEFT, top=disk_label.get_bottom()[1] - 0.18)
-        quota_x = X_LEFT + bar_w * 4096 / 4300
-        quota = Line([quota_x, track.get_top()[1] + 0.12, 0], [quota_x, track.get_bottom()[1] - 0.12, 0],
-                     stroke_color=AMBER, stroke_width=4)
-        quota_label = txt("4096 MiB quota", 17, AMBER)
-        place(quota_label, right=quota_x + 0.1, bottom=track.get_top()[1] + 0.16)
-        stop_frac = 4126887936 / (4300 * 1024 * 1024)
-        fill = Rectangle(width=bar_w * stop_frac, height=0.3, fill_color=RUN, fill_opacity=1, stroke_width=0)
-        place(fill, left=X_LEFT, top=track.get_top()[1])
-        fill.stretch_to_fit_height(0.26).align_to(track, DOWN).shift(UP * 0.02)
-        disk_result = txt("No space left on device, after 4,126,887,936 bytes", 18, BAD)
-        place(disk_result, left=X_LEFT, top=track.get_bottom()[1] - 0.15)
+        attempts = ["Steal cloud credentials", "Find API keys in its env", "Reach the private network",
+                    "SSH into the host", "Send spam on port 25", "Write to system files",
+                    "Fork bomb", "Grab 8 GiB of memory"]
+        rows, marks = VGroup(), []
+        for a in attempts:
+            m = cross(0.28)
+            rows.add(VGroup(m, txt(a, 30)).arrange(RIGHT, buff=0.32))
+            marks.append(m)
+        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.3)
+        place(rows, left=0.6, top=1.95)
+        for r in rows:
+            r[0].set_opacity(0)
 
-        # Right: qualification checks ticking in.
-        col_x = 0.9
-        box_checks = ["Metadata", "Private networks", "Host services", "SMTP", "Public HTTPS",
-                      "No credentials", "Read-only root", "Disk quota", "Volume destroyed"]
-        counter_box = bold("0/9", 64, OK)
-        place(counter_box, left=col_x, top=2.05)
-        box_lab = txt("box checks pass", 24, TEXT)
-        final_box = place(bold("9/9", 64, OK), left=col_x, top=2.05)
-        box_lab.next_to(final_box, RIGHT, buff=0.3).align_to(final_box, DOWN).shift(UP * 0.08)
-        cells, ticks = [], []
-        for name in box_checks:
-            t = tick(0.22)
-            l = txt(name, 17, MUTED)
-            cell = VGroup(t, l).arrange(RIGHT, buff=0.12)
-            cells.append(cell)
-            ticks.append(t)
-        grid = VGroup(*cells).arrange_in_grid(rows=3, cols=3, buff=(0.3, 0.26), col_alignments="lll")
-        fit(grid, X_RIGHT - col_x)
-        place(grid, left=col_x, top=counter_box.get_bottom()[1] - 0.3)
+        self.play(rise_in(*[r[1] for r in rows], lag=0.12, run_time=1.0))
+        self.play(LaggedStart(*[m.animate.set_opacity(1) for m in marks], lag_ratio=0.2, run_time=1.2),
+                  FadeIn(big, scale=0.85, rate_func=EASE, run_time=0.8))
+        self.play(rise_in(big_lab, checks, lag=0.3))
 
-        counter_job = bold("0/10", 64, OK)
-        place(counter_job, left=col_x, top=grid.get_bottom()[1] - 0.55)
-        job_lab = txt("job checks pass", 24, TEXT)
-        final_job = place(bold("10/10", 64, OK), left=col_x, top=counter_job.get_top()[1])
-        job_lab.next_to(final_job, RIGHT, buff=0.3).align_to(final_job, DOWN).shift(UP * 0.08)
-        dots = VGroup(*[VGroup(Circle(radius=0.2, stroke_color=RULE, stroke_width=3, fill_color=SURFACE,
-                                      fill_opacity=1), tick(0.18, width=4)) for _ in range(10)]).arrange(RIGHT, buff=0.14)
-        place(dots, left=col_x, top=counter_job.get_bottom()[1] - 0.3)
-        fit(dots, X_RIGHT - col_x)
+    # ---- 7. Vultr ---------------------------------------------------------
 
-        def counter_updater(mob, total, anchor):
-            def update(m, alpha):
-                n = int(round(alpha * total))
-                new = bold(f"{n}/{total}", 64, OK)
-                place(new, left=anchor[0], top=anchor[1])
-                m.become(new)
-            return update
-
-        cells_static = [c[1] for c in cells]
-        self.play(FadeIn(header_l, shift=UP * 0.1),
-                  LaggedStart(*[FadeIn(r[1], shift=UP * RISE, rate_func=EASE) for r in rows], lag_ratio=0.15),
-                  FadeIn(counter_box, box_lab, counter_job, job_lab, *cells_static, shift=UP * 0.15,
-                         rate_func=EASE),
-                  FadeIn(*[d[0] for d in dots]),
-                  run_time=0.9)
-        # Attempts fail one after another, the disk write runs into its quota,
-        # and then both qualification reports tick in together.
-        self.play(LaggedStart(*[FadeIn(c, scale=1.8, rate_func=EASE) for c in crosses], lag_ratio=0.25),
-                  FadeIn(disk_label, track, shift=UP * 0.1), Create(quota), FadeIn(quota_label),
-                  run_time=0.8)
-        fill_target = fill.copy()
-        fill.stretch_to_fit_width(0.01).align_to(track, LEFT)
-        self.add(fill)
-        self.play(fill.animate.become(fill_target), run_time=0.8, rate_func=rate_functions.ease_in_out_sine)
-        self.play(fill.animate.set_fill(BAD), FadeIn(disk_result, shift=UP * 0.1), run_time=0.3)
-        anchor_box = (counter_box.get_left()[0], counter_box.get_top()[1])
-        anchor_job = (counter_job.get_left()[0], counter_job.get_top()[1])
-        self.play(
-            UpdateFromAlphaFunc(counter_box, counter_updater(counter_box, 9, anchor_box)),
-            LaggedStart(*[AnimationGroup(Create(t), c[1].animate.set_color(TEXT)) for t, c in zip(ticks, cells)],
-                        lag_ratio=0.3),
-            UpdateFromAlphaFunc(counter_job, counter_updater(counter_job, 10, anchor_job)),
-            LaggedStart(*[AnimationGroup(d[0].animate.set_stroke(OK).set_fill(RAISED), Create(d[1]))
-                          for d in dots], lag_ratio=0.3),
-            run_time=1.5,
-        )
-
-    # ---- 10. Integrate -------------------------------------------------------
-
-    def s09_integrate(self) -> None:
-        self.enter("Plug it in", "A sealed subagent for your app",
-                   notes="This is the point of it: plug it into the app or agent you already have. "
-                         "Add it to Claude Code, Cursor or any MCP client as one remote server, or start a session "
-                         "with one POST. Your app hands off the task; the subagent runs code and a browser offsite, "
-                         "in its own box on Vultr, and hands back the result. Turn ends are POSTed to your webhooks, signed.")
-        C_CMD, C_FLAG, C_STR, C_VAR, C_DIM = TEXT, MUTED, OK, RUN, FAINT
-        rest = code_block([
-            [("curl ", C_CMD), ("$HOST", C_VAR), ("/v1/sessions \\", C_CMD)],
-            [("  -H ", C_FLAG), ('"authorization: Bearer ', C_STR), ("$AR_KEY", C_VAR), ('"', C_STR), (" \\", C_CMD)],
-            [("  -H ", C_FLAG), ("'content-type: application/json'", C_STR), (" \\", C_CMD)],
-            [("  -d ", C_FLAG), ("'{\"message\":\"Build a kanban board and test it\"}'", C_STR)],
-        ])
-        mcp = code_block([
-            [("claude mcp add ", C_CMD), ("--transport http ", C_FLAG), ("agent \\", C_CMD)],
-            [("  https://<host>/mcp \\", C_VAR)],
-            [("  --header ", C_FLAG), ('"Authorization: Bearer ar_..."', C_STR)],
-        ])
-        panel_w = 8.3
-
-        def panel(label: str, code: MarkupText) -> VGroup:
-            lab = txt(label, 18, MUTED)
-            fit(code, panel_w - 0.6)
-            bg = card(panel_w, code.height + 0.95)
-            place(lab, left=bg.get_left()[0] + 0.3, top=bg.get_top()[1] - 0.2)
-            place(code, left=bg.get_left()[0] + 0.3, top=lab.get_bottom()[1] - 0.2)
-            return VGroup(bg, lab, code)
-
-        p1 = panel("From any app: one POST hands a subagent its task", rest)
-        p2 = panel("From your agent: Claude Code, Cursor or any MCP client", mcp)
-        panels = VGroup(p1, p2).arrange(DOWN, buff=0.35, aligned_edge=LEFT)
-        place(panels, left=X_LEFT, top=1.95)
-
-        feats = [("Offsite, on Vultr", "Its own box, never your servers"),
-                 ("MCP server at /mcp", "15 tools, the same API keys"),
-                 ("REST and live events", "Sessions, files, server-sent events"),
-                 ("Signed webhooks", "HMAC-SHA256 on every turn end")]
-        items = VGroup()
-        for head, sub in feats:
-            dot = Rectangle(width=0.07, height=0.62, fill_color=AMBER, fill_opacity=1, stroke_width=0)
-            body = pair(head, sub, 24, 18, gap=0.06)
-            items.add(VGroup(dot, body).arrange(RIGHT, buff=0.22))
-        items.arrange(DOWN, aligned_edge=LEFT, buff=0.42)
-        place(items, left=panels.get_right()[0] + 0.5, top=1.95)
-        fit(items, X_RIGHT - items.get_left()[0])
-
-        self.play(FadeIn(p1[0], p1[1], shift=UP * RISE, rate_func=EASE), run_time=0.5)
-        self.play(AddTextLetterByLetter(p1[2], time_per_char=0.012, run_time=1.2),
-                  rise_in(*items, lag=0.25, run_time=1.4))
-        self.play(FadeIn(p2[0], p2[1], shift=UP * RISE, rate_func=EASE), run_time=0.45)
-        self.play(AddTextLetterByLetter(p2[2], time_per_char=0.012, run_time=0.9))
-
-    # ---- 11. Vultr ----------------------------------------------------------
-
-    def s10_vultr(self) -> None:
+    def s7_vultr(self) -> None:
         self.enter("Built on Vultr", "Every agent call runs on Vultr",
-                   notes="Every agent model call goes to Vultr Serverless Inference, GLM 5.3 Flash. "
-                         "Both VMs are Vultr instances in Chicago. The 16 vCPU worker has run "
-                         "72 agent sessions at once through the public URL. "
-                         "These are the real model costs of the demos.")
-        rows = VGroup()
-        for icon_text, head, sub in (
-            ("AI", "Vultr Serverless Inference", "Every agent model call, GLM 5.3 Flash"),
-            ("VM", "Two Vultr VMs in Chicago", "Control 2 vCPU, 4 GB. Private worker 16 vCPU, 64 GB: 72 agent sessions at once"),
-        ):
-            badge = VGroup(card(0.9, 0.9, fill=RAISED), bold(icon_text, 24, TEXT))
-            badge[1].move_to(badge[0])
-            body = pair(head, sub, 30, 21, gap=0.1)
-            rows.add(VGroup(badge, body).arrange(RIGHT, buff=0.35))
-        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.38)
-        place(rows, left=X_LEFT, top=1.95)
-
-        cap = txt("Model cost of real runs on the public instance", 19, MUTED)
-        place(cap, left=X_LEFT, top=rows.get_bottom()[1] - 0.5)
-        costs = [("$0.0244", "Build and use a kanban app", "92 tool calls, 3 turns"),
-                 ("$0.0054", "Research, build, test, PDF", "17 tool calls, 2 turns"),
-                 ("$0.0058", "One-shot job 7d466fa9", "5 model calls, 58 s")]
-        cards = VGroup()
+                   notes="Every agent model call goes to Vultr Serverless Inference, GLM 5.3 Flash. Both VMs run on "
+                         "Vultr in Chicago: a public control VM and a private 16 vCPU worker, which has run "
+                         "72 agent sessions at once.")
+        cards_spec = [("GLM 5.3 Flash", "Vultr Serverless Inference,\nfor every agent call"),
+                      ("72", "agent sessions at once on\na 16 vCPU / 64 GB Vultr VM"),
+                      ("2 VMs", "in Chicago: a public control\nVM and a private worker")]
         cw = (X_RIGHT - X_LEFT - 2 * 0.35) / 3
-        for big, head, sub in costs:
-            bg = card(cw, 1.9)
-            content = stack(display(big, 60, width=80), txt(head, 21), txt(sub, 18, MUTED), buff=0.1)
-            fit(content, cw - 0.5)
+        cards = VGroup()
+        for big, sub in cards_spec:
+            bg = card(cw, 3.6)
+            head = fit(display(big, 80, width=78), cw - 0.6)
+            content = stack(head, fit(txt(sub, 24, MUTED, line_spacing=0.95), cw - 0.6), buff=0.3)
             place(content, left=bg.get_left()[0] + 0.3)
             content.set_y(bg.get_y())
             cards.add(VGroup(bg, content))
         cards.arrange(RIGHT, buff=0.35)
-        place(cards, left=X_LEFT, top=cap.get_bottom()[1] - 0.2)
+        place(cards, left=X_LEFT, top=1.6)
+        self.play(pop_in(*cards, lag=0.25, run_time=1.4))
 
-        self.play(rise_in(*rows, lag=0.3, run_time=1.0))
-        self.play(FadeIn(cap, shift=UP * 0.1), pop_in(*cards, lag=0.2, run_time=1.2))
+    # ---- 8. Close ---------------------------------------------------------
 
-    # ---- 12. Close ----------------------------------------------------------
-
-    def s11_close(self) -> None:
+    def s8_close(self) -> None:
         self.enter(None, None, chrome=False,
                    notes="It is live now. Plug it into your app, or open the URL and give it a task.")
         name = display(PRODUCT, 120, width=70)
         fit(name, 3.1 - 0.45 - X_LEFT)  # stop short of the mark on the right
-        line = txt("Plug a contained subagent into any app.", 34)
-        line2 = txt("A blast radius of one box.", 34, MUTED)
-        lines = stack(line, line2, buff=0.14)
+        line = txt("A contained subagent for any app.", 38)
+        line2 = txt("A blast radius of one box.", 38, MUTED)
+        lines = stack(line, line2, buff=0.16)
         fit(lines, 3.1 - 0.45 - X_LEFT)
-        url_lab = txt("Try it live", 20, MUTED)
-        url = mono(LIVE_URL, 30, AMBER)
+        url_lab = txt("Try it live", 22, MUTED)
+        url = mono(LIVE_URL, 32, AMBER)
         url_group = stack(url_lab, url, buff=0.14)
         group = stack(name, lines, url_group, buff=0.55)
         place(group, left=X_LEFT, top=1.95)

@@ -1,0 +1,16 @@
+{
+    "box_id": null,
+    "created_at": 1794081217393,
+    "forked_from": null,
+    "id": "3e127627-c18f-41d1-9962-558e5ce15d93",
+    "input_tokens": 9162,
+    "last_seq": 15,
+    "model": "glm-5.3-flash",
+    "model_calls": 6,
+    "output_tokens": 594,
+    "owner": "operator",
+    "spend_usd": 0.0011241,
+    "status": "closed",
+    "title": "Plug-in test from Claude Code",
+    "updated_at": 1794081227032
+}

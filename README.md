@@ -220,10 +220,11 @@ What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) 
 
 ## Hackathon fit (Blast Radius Zero)
 
-- **Business value: a contained subagent for apps that already exist.** Any MCP client or HTTP app can hand work to it, so teams get agents that run code and browse without giving them their own servers. See [Plug it into the app you already have](#plug-it-into-the-app-you-already-have) and the live MCP run in [docs/evidence/live/mcp/](docs/evidence/live/mcp/).
+- **Business value: a contained subagent for apps that already exist.** Any MCP client or HTTP app can hand work to it, so teams get agents that run code and browse without giving them their own servers. On 2026-11-07 Claude Code handed a coding task to the live instance over MCP: the subagent wrote and ran the tests in its box (4 passed) in 19 s for $0.0011. See [Plug it into the app you already have](#plug-it-into-the-app-you-already-have) and [plugin-and-containment-2026-11-07/](docs/evidence/live/plugin-and-containment-2026-11-07/).
 - **Every agent LLM call goes to Vultr.** Job `7d466fa9` on the public instance made 5 model calls, all to `glm-5.3-flash`. It finished in 58 s for $0.0058, and its reviewer approved the result. Receipt: [docs/evidence/live/vultr-public/](docs/evidence/live/vultr-public/).
 - **Everything runs on Vultr.** The control and worker VMs are both Vultr instances in Chicago.
 - **Containment evidence:**
+  - The containment moment in the demo video, run live on 2026-11-07 with [qa/containment_demo.py](qa/containment_demo.py): 8 of 8 escape attempts from inside a box blocked (cloud metadata, secrets, private network, host SSH, SMTP, system files, a fork bomb, 8 GiB of memory). A killed box restarts with its files, and a planted prompt injection was refused: [plugin-and-containment-2026-11-07/](docs/evidence/live/plugin-and-containment-2026-11-07/).
   - 9 of 9 box checks pass on a scratch box network, which left the live `ar-box` network untouched: [box-qualification-v2/](docs/evidence/live/box-qualification-v2/). The earlier 8-check report, [box-qualification.json](docs/evidence/live/box-qualification/box-qualification.json), predates the host guard and the disk quota, and the worker no longer accepts it.
   - An earlier dump of the applied egress rules: [egress-policy.txt](docs/evidence/live/box-qualification/egress-policy.txt). The current rules are in [deploy/box-network.sh](deploy/box-network.sh).
   - The 10 job containment checks: [worker-qualification-2026-11-05.json](docs/evidence/live/worker-qualification-2026-11-05.json) (nine at first deploy) and [VERIFICATION.md](docs/VERIFICATION.md) (10 of 10 after the scaling check was added).
@@ -238,7 +239,7 @@ What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) 
 - [Design](docs/DESIGN.md) and [security](docs/SECURITY.md)
 - [Configuration](docs/CONFIGURATION.md) and [deployment](docs/DEPLOYMENT.md)
 - [Live deployment](docs/LIVE_DEPLOYMENT.md), [verification](docs/VERIFICATION.md) and [benchmarks](docs/BENCHMARKS.md)
-- [Hackathon entry draft](docs/SUBMISSION.md)
+- [Hackathon entry draft](docs/SUBMISSION.md), [demo video](presentation/video/out/demo.mp4) and its [script](docs/VIDEO_SCRIPT.md), [pitch deck PDF](presentation/manim/out/vultr-placeholder-test123-deck.pdf)
 
 ## License
 

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Render the demo video to out/demo.mp4 (1920x1080, 30 fps), with a silent
+# audio track so upload sites that expect one accept it.
+#
+#   QUALITY=l ./render.sh    fast 480p draft
+set -euo pipefail
+cd "$(dirname "$0")"
+VENV=../manim/.venv
+if [ ! -x "$VENV/bin/manim" ]; then
+  echo "Needs the deck's virtualenv: run ../manim/render.sh once first." >&2
+  exit 1
+fi
+QUALITY="${QUALITY:-h}"
+"$VENV/bin/manim" render video.py DemoVideo --quality "$QUALITY" --media_dir media --disable_caching
+src=$(ls -t media/videos/video/*/DemoVideo.mp4 | head -1)
+mkdir -p out
+ffmpeg -loglevel error -y -i "$src" -f lavfi -i anullsrc=r=48000:cl=stereo -shortest \
+  -c:v libx264 -pix_fmt yuv420p -crf 20 -preset slow -c:a aac -b:a 64k -movflags +faststart out/demo.mp4
+ffprobe -v error -show_entries format=duration,size -of default=nw=1 out/demo.mp4

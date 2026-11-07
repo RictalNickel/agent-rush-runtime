@@ -15,40 +15,28 @@
 <body>
 <div class="reveal">
 <div class="slides">
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/3ac606c4648f0e87.mp4" data-background-video-muted="">
-<aside class="notes" data-markdown="">Vultr-Placeholder-Test123: plug a contained subagent into the app or agent you already have. It does real work offsite, and the damage stays in one box.</aside>
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/234b53fd5fc8df0a.mp4" data-background-video-muted="">
+<aside class="notes" data-markdown="">Vultr-Placeholder-Test123 gives the app or agent you already have a contained subagent. It does real work offsite, and anything that goes wrong stays in one box.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/1d8166827cb95c7e.mp4">
-<aside class="notes" data-markdown="">Agents that do real work need to run code and browse. On your own servers that is a huge blast radius: one prompt injection away from all of it.</aside>
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/27186067703d3fad.mp4">
+<aside class="notes" data-markdown="">Useful agents run code and drive a browser. Run that on your own servers and one prompt injection can reach your keys, your network and your host.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/b7638f66a3242ca0.mp4">
-<aside class="notes" data-markdown="">Each session gets one gVisor container on a private worker VM. No credentials ever enter it, and an egress filter keeps it on the public internet.</aside>
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/a467a6ac56ff668a.mp4">
+<aside class="notes" data-markdown="">Plug it into the app or agent you already have, over MCP or one REST call. The subagent does the work in its own box on Vultr and hands back the result.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/6c9e9acec566a162.mp4">
-<aside class="notes" data-markdown="">This is the point of it: plug it into the app or agent you already have. Add it to Claude Code, Cursor or any MCP client as one remote server, or start a session with one POST. Your app hands off the task; the subagent runs code and a browser offsite, in its own box on Vultr, and hands back the result. Turn ends are POSTed to your webhooks, signed.</aside>
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/b3017328e405b107.mp4">
+<aside class="notes" data-markdown="">Each session gets its own gVisor box with a shell, a browser and files. Nothing secret is inside, it cannot reach your network, and every resource is capped.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/873442158a50864a.mp4">
-<aside class="notes" data-markdown="">Your app talks to the control VM, which runs the sessions and calls Vultr inference. It never runs a command the model chose. The worker VM is private, reached over mTLS, and runs the boxes behind the egress filter.</aside>
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/47c6dd612efbc9e7.mp4">
+<aside class="notes" data-markdown="">On the public instance the agent built a kanban board, ran it, and tested it in its own browser over three turns. 92 tool calls for $0.0244 of model time.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/1567028b77932cdc.mp4">
-<aside class="notes" data-markdown="">These are the agent's built-in tools. Shell, browser, files, research and conversion run in the box. Skills, its own config and MCP run in trusted code on the control VM.</aside>
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/d271cb5b08f278ca.mp4">
+<aside class="notes" data-markdown="">From inside a live box we tried eight escapes: stealing cloud credentials, finding keys, reaching the private network and the host, spam, system files, a fork bomb and an 8 GiB memory grab. 8 of 8 were blocked. The fork bomb and the memory grab only killed that box, which restarted on the next call with its files kept.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/58ca141c8e5ff8b5.mp4">
-<aside class="notes" data-markdown="">On the public instance the agent built a kanban board with a Python backend, ran it, and used it in its own browser: add three cards, move one to Done, reload. Then dark mode in turn two, and deleting a card in turn three. 92 tool calls, $0.0244.</aside>
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/f15ebd452635da7a.mp4">
+<aside class="notes" data-markdown="">Every agent model call goes to Vultr Serverless Inference, GLM 5.3 Flash. Both VMs run on Vultr in Chicago: a public control VM and a private 16 vCPU worker, which has run 72 agent sessions at once.</aside>
 </section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/f357c2309db099ec.mp4">
-<aside class="notes" data-markdown="">Five ordinary office requests, one turn each: totals from a CSV, a bar chart, a memo as Word and PDF, renaming messy files, and shrinking the chart to a JPG. Every turn took under ten seconds. 7 tool calls, $0.0034. The memo's revenue figures are right, but the model invented the units and the softest month: it wrote them without computing.</aside>
-</section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/58af8526cfd6b9b1.mp4">
-<aside class="notes" data-markdown="">One request: research HTTP 418, build a lookup app, test it in the browser, write a PDF report. Mid-turn I sent an interjection asking for a footer. First turn 35 seconds, 17 tool calls over two turns, model cost $0.0054.</aside>
-</section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/f49886b401472315.mp4">
-<aside class="notes" data-markdown="">A probe session asked the agent to reach metadata, the worker, the host's SSH and mail ports. Every attempt failed at the network. A 4300 MiB write stopped at the workspace quota. On the deployed binary, 9 of 9 box checks and 10 of 10 job checks pass.</aside>
-</section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/e24d89f72e7911dc.mp4">
-<aside class="notes" data-markdown="">Every agent model call goes to Vultr Serverless Inference, GLM 5.3 Flash. Both VMs are Vultr instances in Chicago. The 16 vCPU worker has run 72 agent sessions at once through the public URL. These are the real model costs of the demos.</aside>
-</section>
-<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/294f1665cbb409e2.mp4">
+<section data-background-color="#12161b" data-background-size="contain" data-background-video="vultr-placeholder-test123-deck_assets/feac5847ebbfe81e.mp4">
 <aside class="notes" data-markdown="">It is live now. Plug it into your app, or open the URL and give it a task.</aside>
 </section>
 </div>

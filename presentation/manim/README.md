@@ -1,12 +1,12 @@
 # Pitch deck (Manim Slides)
 
-A 12-slide deck for the 3 to 4 minute Vultr hackathon pitch (Blast Radius Zero track). Every animation is rendered with [Manim](https://www.manim.community/). [Manim Slides](https://manim-slides.eertmans.be/) splits it into real slides that you advance with the arrow keys. Each slide's motion lasts about 2 to 5 seconds and then holds, so you set the pace.
+An 8-slide deck for the Vultr hackathon pitch (Blast Radius Zero track): one idea per slide, large type, the product's dark theme. The animations total about 32 seconds; the presenter sets the pace. Every animation is rendered with [Manim](https://www.manim.community/). [Manim Slides](https://manim-slides.eertmans.be/) splits it into real slides that you advance with the arrow keys. Each slide's motion lasts about 2 to 5 seconds and then holds, so you set the pace.
 
 ## Files
 
 | Path | What it is |
 | --- | --- |
-| `deck.py` | The deck: shared style and helpers at the top, then one method per slide (`s01_title` … `s11_close`, plus `s06b_demo_everyday` after the kanban demo). `construct` sets the order: `s09_integrate`, the plug-in pitch, is shown fourth, right after the idea |
+| `deck.py` | The deck: shared style and helpers at the top, then one method per slide: `s1_title`, `s2_problem`, `s3_plug_in`, `s4_box`, `s5_demo`, `s6_containment`, `s7_vultr`, `s8_close`. `CONTAINMENT` holds the live result shown on slide 6 |
 | `render.sh` | Renders at 1920x1080, then exports the HTML deck, the PDF and the previews |
 | `previews.py` | Saves the last frame of each slide to `out/previews/slide-NN.png` and prints each slide's length |
 | `requirements.txt` | Pinned Python packages (Python 3.12) |
