@@ -1,0 +1,6 @@
+Build a polished sales analytics dashboard in /workspace/dash.
+1. Write generate.py: a seeded (seed 42) CSV of 2,000 orders across 2025 with date, region (North, South, East, West), product (6 products), units, unit_price and revenue.
+2. Write analyze.py: read the CSV with pandas and write summary.json with total revenue, order count, average order value, best region, revenue by month in calendar order (Jan to Dec), revenue by region and the top 5 products.
+3. Write a Flask app.py serving one dark page: four KPI cards in a row, a monthly revenue line chart, a revenue-by-region bar chart and a top-products table. Use Chart.js from cdn.jsdelivr.net, background #0f1115, cards #171a21 with 12px corners, accent #e8b04b, system-ui font.
+4. Start it, open it in the browser, check the KPI numbers on the page match summary.json and the months run Jan to Dec, and fix anything that doesn't.
+5. Attach a screenshot and summarise the numbers.

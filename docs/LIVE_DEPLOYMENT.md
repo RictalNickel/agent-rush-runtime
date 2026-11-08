@@ -220,7 +220,7 @@ Most of a job's time is model time. Sandbox execution took 0.8–0.9 s, or about
 
 ## Not yet done
 
-- The demo video (`presentation/video/out/demo.mp4`) is built from the deck, replays of real live runs and a real-time screen recording of a live web chat session, with captions. It has no voice-over.
+- The demo video (`presentation/video/out/demo.mp4`) is built from the deck, replays of real live runs and a screen recording of a live web chat session with a narration panel, with captions. It has no voice-over.
 - With the Anthropic provider (development only; the public instance uses Vultr), security-flavoured tasks can be declined by the Opus classifier. Anthropic's server-side `fallbacks` option would reroute those calls; it is off because it substitutes models outside the configured role table.
 - The private mTLS certificates were renewed on 2026-11-06. The worker server and control client certificates now expire 2026-12-16 03:55 UTC, and the private CA 2027-01-05 03:55 UTC. The CA certificate was reissued with the same key and subject, so certificates issued before the renewal still verify against it.
 

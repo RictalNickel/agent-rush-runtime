@@ -62,6 +62,18 @@ async def glide(page, selector):
     await page.mouse.up()
 
 
+async def type_text(page, text):
+    """Types like a person: Shift+Enter between lines, since Enter sends."""
+    lines = text.strip().split("\n")
+    for i, line in enumerate(lines):
+        await page.keyboard.type(line, delay=args_delay)
+        if i + 1 < len(lines):
+            await page.keyboard.press("Shift+Enter")
+
+
+args_delay = 6  # ms per typed character
+
+
 async def record(args):
     out = Path(args.out)
     frames_dir = out / "frames"
@@ -75,8 +87,9 @@ async def record(args):
 
     async with async_playwright() as p:
         browser = await p.chromium.launch()
+        width, height = (int(v) for v in args.size.split("x"))
         context = await browser.new_context(
-            viewport={"width": 1280, "height": 720}, device_scale_factor=1.5, color_scheme="dark")
+            viewport={"width": width, "height": height}, device_scale_factor=args.scale, color_scheme="dark")
         host = urlparse(args.url).hostname
         await context.add_cookies([{"name": "ar_session", "value": os.environ["AR_SESSION"],
                                     "domain": host, "path": "/", "secure": True, "httpOnly": True}])
@@ -96,26 +109,53 @@ async def record(args):
 
         cdp.on("Page.screencastFrame", on_frame)
         await cdp.send("Page.startScreencast", {"format": "jpeg", "quality": 92,
-                                                "maxWidth": 1920, "maxHeight": 1080})
+                                                "maxWidth": round(width * args.scale),
+                                                "maxHeight": round(height * args.scale)})
         mark("recording")
         await asyncio.sleep(2.5)
-        await glide(page, f'[data-example="{args.example}"]')
-        mark("example picked")
-        await asyncio.sleep(3)
+        if args.prompt_file:
+            await glide(page, "#prompt")
+            await type_text(page, Path(args.prompt_file).read_text())
+            mark("prompt typed")
+            await asyncio.sleep(1.5)
+        else:
+            await glide(page, f'[data-example="{args.example}"]')
+            mark("example picked")
+            await asyncio.sleep(3)
         await glide(page, "#run-button")
         mark("sent")
         await until(lambda: page.locator("#session-state").is_visible(), 60)
         await until(lambda: _is(page, {"Working"}), 60)
         mark("working")
-        await until(lambda: _is(page, {"Ready", "Failed", "Closed"}), args.timeout)
+        steer = Path(args.steer_file).read_text() if args.steer_file else None
+
+        async def ready_or_steer():
+            nonlocal steer
+            if steer and await state_of(page) == "Working" and args.steer_when in await page.locator("#log").inner_text():
+                # A message sent while the agent works reaches it before its next step.
+                await glide(page, "#prompt")
+                await type_text(page, steer)
+                await page.keyboard.press("Enter")
+                steer = None
+                mark("steered")
+            return await _is(page, {"Ready", "Failed", "Closed"})
+
+        await until(ready_or_steer, args.timeout)
+        if steer:  # finished before the trigger: send it as the next message instead
+            await glide(page, "#prompt")
+            await type_text(page, steer)
+            await page.keyboard.press("Enter")
+            mark("follow-up sent")
+            await until(lambda: _is(page, {"Working"}), 60)
+            await until(lambda: _is(page, {"Ready", "Failed", "Closed"}), args.timeout)
         state = await state_of(page)
         mark(f"finished: {state}")
-        # Scroll the thread to the agent's answer and its screenshot.
+        # Scroll the thread to the agent's answer and its screenshots.
         await asyncio.sleep(1.5)
-        await page.mouse.move(760, 420, steps=15)
-        for _ in range(16):
-            await page.mouse.wheel(0, 120)
-            await asyncio.sleep(0.12)
+        await page.mouse.move(width * 0.6, height * 0.55, steps=15)
+        for _ in range(40):
+            await page.mouse.wheel(0, 160)
+            await asyncio.sleep(0.1)
         await asyncio.sleep(args.hold)
         mark("end")
         await cdp.send("Page.stopScreencast")
@@ -136,7 +176,7 @@ async def record(args):
                                                 "state": state, "title": title}, indent=2))
     enc = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", str(fps),
                             "-c:v", "mjpeg", "-i", "-", "-vf",
-                            "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2",
+                            "pad=ceil(iw/2)*2:ceil(ih/2)*2",
                             "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", str(out / "raw.mp4")],
                            stdin=subprocess.PIPE)
     for j in picks:
@@ -152,6 +192,11 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--url", default="https://144-202-59-108.sslip.io")
     ap.add_argument("--example", default="webapp", choices=["webapp", "report", "csv", "bug"])
+    ap.add_argument("--prompt-file", help="type this task instead of clicking an example")
+    ap.add_argument("--steer-file", help="message to send while the agent is working")
+    ap.add_argument("--steer-when", default="Opened", help="send it once the thread shows this text")
+    ap.add_argument("--size", default="1280x720", help="viewport in CSS pixels")
+    ap.add_argument("--scale", type=float, default=1.5, help="device pixel ratio of the capture")
     ap.add_argument("--out", default="out/live")
     ap.add_argument("--timeout", type=int, default=900, help="seconds to wait for the agent")
     ap.add_argument("--hold", type=float, default=6, help="seconds to keep recording after the answer")

@@ -1,0 +1,40 @@
+{
+  "session": "29dd398b-e445-49d5-bcca-eb32fc8fb665",
+  "where": "Boxoro web chat · 144-202-59-108.sslip.io",
+  "task": "Generate 2,000 sales orders, analyse them, build a dark analytics dashboard, check it in a browser. Then, mid-run: add a region filter.",
+  "server_lag": 0.3,
+  "done_at": 45.4,
+  "tool_calls": [3.67, 7.7, 12.59, 16.85, 17.86, 20.66, 21.56, 22.07, 23.11, 25.72, 26.7, 27.68, 28.54, 31.18, 32.55, 33.7, 34.88, 36.29, 37.54, 38.98, 40.11, 41.21, 42.4, 43.79],
+  "steps": [
+    {"mark": "recording", "title": "Type the brief",
+     "detail": "We type a five-part brief into the live web chat: make the data, analyse it, build the dashboard to an exact colour spec, test it in a browser, report the numbers."},
+    {"at": 0.0, "title": "Its own sealed box",
+     "detail": "Sending starts a session. It gets its own gVisor box on the Vultr worker: no keys inside, no route to private networks. GLM 5.3 Flash on Vultr Serverless Inference plans the first step."},
+    {"at": 3.67, "title": "Write three programs",
+     "detail": "One shell command writes generate.py (2,000 seeded orders), analyze.py (pandas totals into summary.json) and app.py (a Flask page with Chart.js), then runs all three."},
+    {"at": 7.7, "title": "Fix a missing library",
+     "detail": "The numbers are ready: $6,414,795 from 2,000 orders. But the web server didn't start: Flask isn't installed. It installs it, restarts, and checks the page has the total and Jan to Dec."},
+    {"at": 12.59, "title": "Check in a real browser",
+     "detail": "It opens the page in Chromium inside the box, reads the four KPI cards back off the page, compares them with summary.json, and saves a screenshot."},
+    {"at": 16.0, "title": "We steer it mid-run",
+     "detail": "While it works we type a second message: add a region filter. It reaches the agent before its next step. No restart: same box, same files."},
+    {"at": 19.7, "title": "Answer, then keep going",
+     "detail": "It posts the first answer and screenshot, then takes on the new request: it computes West's totals straight from the CSV with pandas, as a reference to test against."},
+    {"at": 23.11, "title": "Rewrite the page",
+     "detail": "It adds per-region data to summary.json and patches app.py: a dropdown, filtered cards, chart and table, and a brighter bar for the chosen region. It checks the code parses and restarts."},
+    {"at": 31.18, "title": "Use the new filter",
+     "detail": "Back in the browser it picks West. Its first try passes a CSS selector where the tool wants a numbered ref, so it takes a snapshot, selects again, and reads the cards back."},
+    {"at": 41.21, "title": "Prove the numbers",
+     "detail": "A screenshot of the West view, then an independent pandas check on the CSV: 489 orders, $1,480,535, average $3,027.68. The page matches exactly."},
+    {"at": 45.4, "title": "Done", "final": true,
+     "detail": "45 seconds of agent time, 24 tool calls, 26 model calls on Vultr: $0.011. Both screenshots come back in the chat; the files stay in the box to download."}
+  ],
+  "results": [
+    {"file": "../../../docs/evidence/live/dashboard-recording-2026-11-08/dashboard.png", "seconds": 3.5,
+     "label": "THE RESULT  ·  THE AGENT'S OWN SCREENSHOT",
+     "caption": "All regions: $6,414,795 from 2,000 orders, months in calendar order."},
+    {"file": "../../../docs/evidence/live/dashboard-recording-2026-11-08/west.png", "seconds": 3.5,
+     "label": "AFTER THE MID-RUN MESSAGE",
+     "caption": "West selected: cards, monthly chart and table filtered; the West bar highlighted."}
+  ]
+}

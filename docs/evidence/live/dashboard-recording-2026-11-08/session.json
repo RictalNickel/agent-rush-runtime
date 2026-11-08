@@ -1,0 +1,16 @@
+{
+    "box_id": "2d66ec666ad840e789266a6076b29363",
+    "created_at": 1794121397838,
+    "forked_from": null,
+    "id": "29dd398b-e445-49d5-bcca-eb32fc8fb665",
+    "input_tokens": 95934,
+    "last_seq": 54,
+    "model": "glm-5.3-flash",
+    "model_calls": 26,
+    "output_tokens": 5257,
+    "owner": "operator",
+    "spend_usd": 0.011433350000000004,
+    "status": "idle",
+    "title": "Build a polished sales analytics dashboard in /workspace/dash.",
+    "updated_at": 1794121443223
+}

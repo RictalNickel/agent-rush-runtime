@@ -1,7 +1,7 @@
 """The demo video: the pitch deck's slides plus replays of real live runs, with captions.
 
-render.sh splices a screen recording of a live web chat session (out/live-session.mp4,
-made by record_live.py and cut_live.sh) in after the demo slide.
+render.sh splices a screen recording of a live web chat session (out/live-dash.mp4,
+made by record_live.py and compose_live.py) in after the Claude Code replay.
 
 Every line of terminal output and every number here is copied from
 docs/evidence/live/plugin-and-containment-2026-11-07/. The narration is in
@@ -55,12 +55,8 @@ class DemoVideo(PitchDeck):
             (self.slide("plug_in"), ["So hand the work off: one MCP server or one REST call.",
                                   "The subagent works offsite, in its own box on Vultr, and hands back the result."]),
             (self.v_claude_code, ["Live: Claude Code hands a task to the subagent over MCP.",
-                                  "It writes the code and tests in its box and runs them. 4 passed, 19 s, $0.0011."]),
-            (self.slide("demo"), ["In the web chat, a subagent built a kanban app, then used it in a real browser.",
-                                  "92 tool calls for 2.4 cents.",
-                                  "Here is a new session in the web chat, recorded live from start to finish."]),
-            (self.slide("box"), ["Each subagent gets its own gVisor box: a shell, a browser and files.",
-                                 "No keys inside, no way to your network or the host, and hard caps."]),
+                                  "It writes the code and tests in its box and runs them. 4 passed, 19 s, $0.0011.",
+                                  "Next, a harder task in the web chat, recorded live from start to finish."]),
             (self.v_injection, ["The containment moment. A ticket hides an order to steal credentials.",
                                 "The subagent spotted it and refused."]),
             (self.v_containment, ["Don't trust the model. Assume it was hijacked and runs anything.",
@@ -79,13 +75,13 @@ class DemoVideo(PitchDeck):
             scene()
             self.wait(1.0)
             self.captions(captions)
-            if scene.__name__.endswith("_demo"):
+            if scene.__name__ == "v_claude_code":
                 # The live recording goes in here: end on black so no slide flashes on either side.
                 self.play(FadeOut(*self.mobjects), run_time=0.5)
                 self.chrome = []
             ends.append(round(self.renderer.time, 3))
         self.wait(2.5)
-        # render.sh splices the live recording in after the demo slide.
+        # render.sh splices the live recording in after the Claude Code replay (scene 4).
         (VIDEO_DIR / "media").mkdir(exist_ok=True)
         (VIDEO_DIR / "media" / "scene_ends.json").write_text(json.dumps(ends))
 

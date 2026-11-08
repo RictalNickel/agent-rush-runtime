@@ -35,5 +35,5 @@ Vultr, Vultr Serverless Inference, GLM, gVisor, Docker, Rust, MCP (Model Context
 - **Demo application URL:** https://144-202-59-108.sslip.io
 - **GitHub repository:** https://github.com/RictalNickel/agent-rush-runtime (public)
 - **Slide presentation:** `presentation/manim/out/boxoro-deck.pdf` (8 slides)
-- **Video presentation:** `presentation/video/out/demo.mp4` (3:55, 1080p, about 10 MB, captioned). It includes a real screen recording of a new session in the live web chat, from the first click to the answer, in real time (2026-11-08). Its containment moments are the refused prompt injection and 8 of 8 escape attempts blocked, both run live on 2026-11-07. Script: `docs/VIDEO_SCRIPT.md`.
+- **Video presentation:** `presentation/video/out/demo.mp4` (4:51, 1080p, about 13 MB, captioned). At 1:18 it shows a real screen recording of a new session in the live web chat, beside a panel explaining each step. The agent builds a sales analytics dashboard, checks it in a browser, gets a second message mid-run asking for a region filter, adds one and proves the numbers ($0.011, 45 s of agent time). Its containment moments are the refused prompt injection and 8 of 8 escape attempts blocked, both run live on 2026-11-07. Script: `docs/VIDEO_SCRIPT.md`.
 - **Participation:** online or onsite, to be chosen by the team.

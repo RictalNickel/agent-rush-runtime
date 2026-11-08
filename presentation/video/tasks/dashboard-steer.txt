@@ -1,0 +1,1 @@
+Also add a region dropdown above the charts. Choosing a region should filter the KPI cards, the monthly chart and the product table, and highlight that region's bar in the region chart. Select West in the browser, check the numbers against the CSV, and attach a second screenshot.
