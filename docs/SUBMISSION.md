@@ -16,13 +16,11 @@ A contained subagent your app or agent calls over MCP or REST. It runs code and 
 
 Agents that run code and browse the web are one prompt injection away from your keys, network and host. Boxoro moves that work offsite.
 
-Your app or agent hands a task to a Boxoro subagent over MCP (one remote server in Claude Code, Cursor or any MCP client) or REST (one POST). It can steer the task mid-run, stream events, get a signed webhook and download the files.
+Your app or agent hands a task to a Boxoro subagent over MCP or REST. It can steer the task while it runs, stream events, get a signed webhook and download the files.
 
-Each session gets its own gVisor box on a private Vultr worker, with a shell, headless Chromium, web search and file converters. The box holds no credentials, can't reach cloud metadata, private networks, the host or other boxes, and has caps on memory, disk, time and spend. On the live instance, 8 of 8 escape attempts were blocked and a planted prompt injection was refused.
+Each session gets its own gVisor box on a private Vultr worker with a shell, a headless browser and web search. The box holds no credentials, can't reach the host, private networks or other boxes, and has caps on memory, disk, time and spend. On the live instance, 8 of 8 escape attempts were blocked.
 
-It runs on Vultr: two VMs in Chicago, with every model call on Vultr Serverless Inference (DeepSeek V4.1 Flash by default, GLM selectable). It has run 72 sessions at once, and real tasks cost cents.
-
-Rust backend, REST API, 15-tool MCP server, web chat. Limits: one operator per deployment, no independent audit.
+Every model call runs on Vultr Serverless Inference with DeepSeek V4.1 Flash, and real tasks cost cents.
 
 ## Technologies and categories
 
