@@ -91,7 +91,7 @@ enum Commands {
         #[arg(long)]
         output_file: PathBuf,
     },
-    /// Discover the exact requested model from Vultr; export no guessed tariff or paid request.
+    /// Look up the exact requested model on Vultr. Writes no guessed tariff and makes no paid request.
     VultrInferenceModel {
         #[arg(long)]
         output_file: PathBuf,
@@ -111,7 +111,7 @@ enum Commands {
         #[arg(long, default_value_t = 0.0)]
         spent_before_usd: f64,
     },
-    /// Track only an acknowledged newly created resource, never an unrelated existing resource.
+    /// Track an acknowledged, newly created resource; never an unrelated existing one.
     VultrTrack {
         #[arg(long)]
         manifest: PathBuf,
@@ -122,7 +122,8 @@ enum Commands {
         #[arg(long)]
         role: ResourceRole,
     },
-    /// Preview by default. --execute verifies ownership, deletes exact tracked resources and checks absence.
+    /// Preview by default. --execute verifies ownership, deletes exactly the tracked resources and
+    /// checks they are gone.
     VultrTeardown {
         #[arg(long)]
         manifest: PathBuf,

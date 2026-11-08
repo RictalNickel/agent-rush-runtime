@@ -4,7 +4,7 @@
 The recording (1440x1080) fills the left of a 1920x1080 frame. The panel on the right
 shows the task, the agent's clock and tool-call count, the list of steps (done, current,
 next) and a description of the current step. Step times come from the session's own
-event log, so the panel follows what the agent actually did.
+event log, so the panel follows what the agent did.
 
 The recording plays in real time. Where a step's description needs longer to read than
 the step took, the picture freezes at the start of that step, the badge says

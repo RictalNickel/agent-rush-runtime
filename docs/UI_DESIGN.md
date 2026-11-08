@@ -21,7 +21,7 @@ A conversation with an agent that works in its own sealed Linux workspace:
 | amber | `#e8b04b` | the only accent: send button, focus ring, the open session's marker, "Sent while working" |
 | ok / bad / run | `#5bbf8a` / `#ec6e76` / `#6aa8e8` | state colours only: step icons, status dots, "Working" |
 
-Amber comes from hazard tape, the vernacular of containment, and avoids the generic "near-black with vermilion or acid green" look. The font is Archivo (SIL OFL 1.1), self-hosted at `/assets/archivo.woff2` because the CSP allows no third-party origins. Condensed widths are used for the welcome headline, the wordmark and dialog titles. Monospace is used only for tool output and paths.
+Amber comes from hazard tape, a common sign of containment, and avoids the generic "near-black with vermilion or acid green" look. The font is Archivo (SIL OFL 1.1), self-hosted at `/assets/archivo.woff2` because the CSP allows no third-party origins. Condensed widths are used for the welcome headline, the wordmark and dialog titles. Monospace is used only for tool output and paths.
 
 ## Layout
 

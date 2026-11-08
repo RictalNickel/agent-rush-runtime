@@ -52,7 +52,7 @@ What it shows:
   - disk: free space divided by the workspace size `AR_BOX_DISK_MB` (each box's full quota is set aside).
 - What stopped the larger hosts:
   - The worker held back a flat quarter of RAM, whatever `AR_CAPACITY_MB` said: 16 GB of 64. With 1 GiB boxes that capped the 64 GB host at 47 boxes and the 32 GB host at 23. Fixed: the reserve is now at most 2 GiB plus 1/16 of RAM (4 GiB of 32, 6 GiB of 64; unchanged at 8 GiB and below), which raised the cap to 56.
-  - At 512 MB starting boxes (`AR_SESSION_BOX_MB=512`, new), the disk gate stopped it at 64: 64 × 4 GB workspaces fill a 266 GB free disk. With 2 GB workspaces all 96 started.
+  - At 512 MB starting boxes (`AR_SESSION_BOX_MB=512`), the disk gate stopped it at 64: 64 × 4 GB workspaces fill a 266 GB free disk. With 2 GB workspaces all 96 started.
 - **Sizing guide:**
   - About 2 busy sessions per vCPU before per-session times double (both hosts); 6 per vCPU still works, about 5× slower each.
   - `AR_BOX_MAX` of 2–6 × vCPU, and check the other two limits: `AR_CAPACITY_MB` ÷ `AR_SESSION_BOX_MB` and free disk ÷ `AR_BOX_DISK_MB`.

@@ -90,7 +90,7 @@ connection.
   instance and are in the live-probe section.
 - gVisor and Docker themselves, beyond the configuration they are given.
 
-## Live probes (2026-11-06, run by the orchestrator)
+## Live probes (2026-11-06)
 
 Run against the public instance and both VMs from the admin machine, with throwaway sessions that were deleted afterwards (`purge=true`) and keys that were revoked. Raw outputs are in [`live/`](live/). Total model spend: $0.
 

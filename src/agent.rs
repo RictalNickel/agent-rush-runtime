@@ -39,7 +39,7 @@ Write self-contained programs using only the standard library. They run as non-r
 pub const REVIEWER: &str = r#"You are an independent reviewer. You receive a task, the code that ran, the sandbox worker's evidence and the proposed final answer. Approve only if the evidence shows the task was actually done and the answer is accurate and makes no unsupported claims. Return exactly one JSON object and no Markdown:
 {"tool":"review","approved":true,"notes":"short justification or required fixes"}"#;
 
-/// Context role. `Solo` is the original single-agent profile with every tool.
+/// Context role. `Solo` is the single-agent profile with every tool.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Role {

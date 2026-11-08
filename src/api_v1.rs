@@ -141,7 +141,7 @@ impl FromRequestParts<AppState> for Operator {
 /// The owner, holding one of their long-request slots (`max_long_requests_per_owner`)
 /// for as long as the request runs. It is taken before the body is read, so an owner
 /// at the cap is refused (429) before an upload is buffered. Without sessions there is
-/// no slot; the handler then answers 503 as before.
+/// no slot; the handler then answers 503.
 pub(crate) struct BusyOwner {
     pub owner: String,
     _slot: Option<OwnerSlot>,
@@ -547,7 +547,7 @@ async fn fork_session(
         Json(json!({"session": session, "sent": sent})),
     ))
 }
-/// Unknown parameters are ignored, as they were before `purge` existed.
+/// Unknown parameters are ignored, so requests that worked before `purge` existed still do.
 #[derive(Deserialize)]
 struct CloseQuery {
     #[serde(default)]

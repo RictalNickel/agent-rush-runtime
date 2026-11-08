@@ -231,7 +231,7 @@ What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) 
   - A containment probe receipt, runaway runs killed on timeout, and an overlapping run refused with HTTP 429: [containment/](docs/evidence/live/containment/) and [load/](docs/evidence/live/load/).
   - A 2026-11-06 security test: a source review, a clean `cargo audit`, and 21 live probes of the public instance (metadata, VPC, box-to-box, private DNS names, the browser, fork bombs, path traversal, auth, CSRF, TLS). Two low findings and three smaller issues were fixed: [security-audit-2026-11-06/](docs/evidence/live/security-audit-2026-11-06/).
 - **Benchmarks.** Box throughput on 4 and 8 vCPU workers (16 sessions at once with no refusals on 8 vCPU / 32 GB), and GLM 5.3 Flash against full GLM 5.3 on six graded tasks (35/36 against 34/36; full GLM costs about 7× more and is slower): [BENCHMARKS.md](docs/BENCHMARKS.md).
-- **Limits, stated plainly.** One operator per deployment. No independent third-party security audit. No multi-tenant claim. The box checks prove nine specific things, not escape resistance in general. See [SECURITY.md](docs/SECURITY.md).
+- **Limits.** One operator per deployment. No independent third-party security audit. No multi-tenant claim. The box checks prove nine specific things, not escape resistance in general. See [SECURITY.md](docs/SECURITY.md).
 
 ## Documentation
 

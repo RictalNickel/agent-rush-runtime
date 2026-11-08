@@ -31,4 +31,4 @@ Files: `events.json` (34 events), `stream.sse` (live SSE), and `outputs/` (downl
 | Units total | **49,915** (North 17,710, West 16,640, South 15,565) | | **71,910** (25,710, 24,140, 22,060): invented |
 | Softest month | **2025-01, 399,000** | | **"September, $499,200"**: invented |
 
-The memo turn ran no computation. It wrote the memo from the totals in its context, which now carry over between turns. Units and the monthly low were never computed, so GLM invented them. This is a model accuracy issue, not a product failure, but a system-prompt rule such as "compute every figure you report from the data" would help.
+The memo turn ran no computation. It wrote the memo from the totals in its context, which now carry over between turns. Units and the monthly low were never computed, so GLM invented them. This is a model accuracy issue, not a product failure. A system-prompt rule such as "compute every figure you report from the data" would help.

@@ -86,8 +86,8 @@ pub fn decode_response(body: Value) -> Result<Completion> {
         message["content"].is_string(),
         "provider returned no text completion"
     );
-    // The same bound as the Anthropic path. 32 KiB was too small: a turn that writes a
-    // whole module and its tests in one tool call failed the session.
+    // The same bound as the Anthropic path. A turn that writes a whole module and its
+    // tests in one tool call can exceed 32 KiB.
     ensure!(
         !content.is_empty() && content.len() <= 400_000,
         "invalid model output length ({} bytes, finish_reason {})",
@@ -496,8 +496,8 @@ impl InferenceGateway {
         );
         // The model and its tariff come from the operator's configuration, never from
         // model output: an ID outside the list is refused before anything is reserved.
-        // Without a list every call runs the default model, as before models were chosen,
-        // even for a session recorded under an earlier default.
+        // Without a list every call runs the default model, even for a session recorded
+        // under an earlier default.
         let chosen = model.filter(|m| !m.is_empty() && !self.settings.inference_models.is_empty());
         let (model, input, output) = match chosen {
             None => (

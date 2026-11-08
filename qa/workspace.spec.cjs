@@ -30,7 +30,7 @@ async function signIn(page){
 // A fake /v1 backend with a session event log. `sse:false` makes the stream fail so the
 // page has to fall back to polling /events. `throttleImages` refuses the first request for
 // each screenshot with 429, the way the server does past its per-session limit. `models` is
-// the model list /v1/status reports (none by default, as before models could be chosen).
+// the model list /v1/status reports (none by default).
 async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false,models}={}){
   const st={sessions:[],events:new Map(),csrf:[],deletes:[],purges:[],created:[],archives:0,models,streams:0,polls:0,speak:0,transcribe:0,cancelled:0,images:{inFlight:0,maxInFlight:0,requests:{}}};
   const emit=(id,kind,payload)=>{const log=st.events.get(id);const event={session_id:id,seq:log.length+1,kind,payload,at:Date.now()};log.push(event);st.sessions.find(s=>s.id===id).last_seq=event.seq;return event;};

@@ -25,7 +25,7 @@ pub const DEFAULT_TIME_LIMIT_SECONDS: u32 = 60;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Profile {
     /// Orchestrator + coder/worker subordinates + reviewer, with per-role tool allowlists.
-    /// When false, the original single-agent (`Solo`) behavior applies.
+    /// When false, the single-agent (`Solo`) behavior applies.
     pub team: bool,
     pub budget: ContextBudget,
     pub max_model_calls: usize,

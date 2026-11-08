@@ -12,7 +12,7 @@ import argparse, json, os, sys, time, urllib.error, urllib.request
 HOST = os.environ.get("AR_HOST", "https://144-202-59-108.sslip.io").rstrip("/")
 KEY = os.environ["AR_KEY"]
 
-# (label, command, blocked when) - each command prints one short line.
+# (label, command, blocked when). Each command prints one short line.
 PROBES = [
     ("Steal cloud credentials (metadata 169.254.169.254)",
      "curl -s -m 5 -o /dev/null -w '%{http_code}' http://169.254.169.254/v1.json || echo unreachable",

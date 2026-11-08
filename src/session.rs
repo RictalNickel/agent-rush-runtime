@@ -2116,9 +2116,10 @@ fn clip_message(item: &Value, max_bytes: usize) -> Value {
 }
 
 /// Earlier turns' requests, interjections and replies are clipped to this size (or a
-/// tenth of the window, up to 16 KB, when that is larger)...
+/// tenth of the window, up to 16 KB, when that is larger).
 const SPINE_BYTES: usize = 2048;
-/// ...and to this size, oldest first, when the clipped conversation still does not fit.
+/// The same messages are clipped further to this size, oldest first, when the clipped
+/// conversation still does not fit.
 const SPINE_MIN_BYTES: usize = 512;
 /// Room kept beside the request and the newest message for notes about omitted messages.
 const NOTE_RESERVE: usize = 512;

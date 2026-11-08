@@ -89,7 +89,7 @@ impl Server {
     fn slot(&self, owner: &str) -> SessionSlot {
         let mut sessions = self.sessions.lock().unwrap_or_else(|e| e.into_inner());
         if !sessions.contains_key(owner) && sessions.len() >= MAX_OWNER_SESSIONS {
-            // Forget idle sessions first; a forgotten one is simply initialized again.
+            // Forget idle sessions first; a forgotten one is initialized again.
             sessions.retain(|_, slot| Arc::strong_count(slot) > 1);
         }
         sessions.entry(owner.to_string()).or_default().clone()

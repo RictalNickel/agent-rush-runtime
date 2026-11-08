@@ -1,6 +1,6 @@
 """The demo video: the pitch deck's slides plus replays of real live runs, with captions.
 
-render.sh splices a screen recording of a live web chat session (out/live-dash.mp4,
+render.sh splices a screen recording of a live web chat session (out/live-shop.mp4,
 made by record_live.py and compose_live.py) in after the Claude Code replay.
 
 Every line of terminal output and every number here is copied from

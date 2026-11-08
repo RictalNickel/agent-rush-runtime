@@ -18,7 +18,7 @@ use tokio::{
 
 #[tokio::test]
 async fn webhook_delivery_ignores_environment_proxies() {
-    // A "proxy" that counts connections and answers 200 to anything.
+    // A fake proxy that counts connections and answers 200 to anything.
     let proxy = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let proxy_url = format!("http://{}", proxy.local_addr().unwrap());
     let proxied = Arc::new(AtomicUsize::new(0));

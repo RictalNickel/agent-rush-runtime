@@ -17,7 +17,7 @@ A variable marked "none" has no default and is unset unless you set it.
 | `VULTR_INFERENCE_API_KEY` | none | Vultr inference key, used by the control plane's inference gateway. Keep it out of `worker.env` |
 | `AR_INFERENCE_MODEL` | none | Vultr catalog model ID. The public instance uses `glm-5.3-flash`. Vultr inference stays disabled until this, both tariffs and `AR_PRICING_VERIFIED=true` are set |
 | `AR_INPUT_USD_PER_MILLION`, `AR_OUTPUT_USD_PER_MILLION` | none | Model tariffs in USD per million tokens. Blank means unknown, never zero |
-| `AR_INFERENCE_MODELS` | none | Vultr only. Models a session may choose, as comma-separated `id:input:output` (USD per million tokens), for example `glm-5.3-flash:0.10:0.35,glm-5.3:0.75:3.00`. `AR_INFERENCE_MODEL` must be listed and stays the default; its listed prices become the default tariff, and an `AR_*_USD_PER_MILLION` value that differs stops startup. Up to 16 models, each with two prices. Unset: every session runs `AR_INFERENCE_MODEL`, as before. `AR_PRICING_VERIFIED=true` covers every listed price. A model removed from the list later fails the next call of a session that runs on it |
+| `AR_INFERENCE_MODELS` | none | Vultr only. Models a session may choose, as comma-separated `id:input:output` (USD per million tokens), for example `glm-5.3-flash:0.10:0.35,glm-5.3:0.75:3.00`. `AR_INFERENCE_MODEL` must be listed and stays the default; its listed prices become the default tariff, and an `AR_*_USD_PER_MILLION` value that differs stops startup. Up to 16 models, each with two prices. Unset: every session runs `AR_INFERENCE_MODEL`. `AR_PRICING_VERIFIED=true` covers every listed price. A model removed from the list later fails the next call of a session that runs on it |
 | `AR_PRICING_VERIFIED` | `false` | Set to `true` only after the tariffs are checked against the provider |
 | `AR_INFERENCE_BUDGET_USD` | `5` | Total model spend the ledger allows. Must be between 0 and 25 |
 | `ANTHROPIC_API_KEY` | none | Key for `AR_INFERENCE_PROVIDER=anthropic`. Calls are priced from Anthropic's list prices |
@@ -124,9 +124,9 @@ Historical record. The selections below were made on 2026-11-05. Later checks ch
 
 The user selected **GLM 5.3 Flash** and delegated remaining configuration and credential choices. Machine-readable decisions are in deploy/decisions.json. These are configuration selections, not a claim that cloud deployment or inference has been activated.
 
-`AR_OPERATOR_PASSWORD` is already chosen privately; the user should not type or publish it. `AR_INFERENCE_MODEL` is a setup-managed binding for Vultr's exact catalog identifier of GLM 5.3 Flash. `AR_INPUT_USD_PER_MILLION` and `AR_OUTPUT_USD_PER_MILLION` are internal billing metadata, not prices chosen by the user and not changes to what Vultr charges. Trusted setup must obtain the provider's actual rates for the selected model and fill them only after verification. The configurable allowance is $5; it is distinct from those provider tariffs. Blank/missing tariff fields are accepted as unconfigured and keep paid inference disabled rather than assuming a zero price. No manual price selection is required from the user.
+`AR_OPERATOR_PASSWORD` is already chosen privately; the user should not type or publish it. `AR_INFERENCE_MODEL` is a setup-managed binding for Vultr's exact catalog identifier of GLM 5.3 Flash. `AR_INPUT_USD_PER_MILLION` and `AR_OUTPUT_USD_PER_MILLION` are internal billing metadata, not prices chosen by the user and not changes to what Vultr charges. Trusted setup must obtain the provider's actual rates for the selected model and fill them only after verification. The configurable allowance is $5; it is distinct from those provider tariffs. Blank or missing tariff fields are accepted as unconfigured and keep paid inference disabled rather than assuming a zero price. No manual price selection is required from the user.
 
-Numbers entered into those fields alone do not enable paid calls. An internal `AR_PRICING_VERIFIED` flag defaults false; trusted setup sets it true only after verifying the provider/model tariff and its units. The user need not supply this flag or choose tariff amounts.
+Numbers entered into those fields alone do not enable paid calls. An internal `AR_PRICING_VERIFIED` flag defaults false; trusted setup sets it true only after verifying the provider's tariff for the model and its units. The user need not supply this flag or choose tariff amounts.
 
 | Setting | Choice |
 | --- | --- |
@@ -135,7 +135,7 @@ Numbers entered into those fields alone do not enable paid calls. An internal `A
 | Inference budget | $5, with existing durable reservations and per-call output bounds |
 | Temperature/output | 0.2; at most 4096 output tokens |
 | Main/subordinate calls | Same selected model and fixed Vultr gateway; no alternate provider |
-| Preferred region | Chicago (`ord`), subject to actual availability/pricing |
+| Preferred region | Chicago (`ord`), subject to availability and pricing |
 | VM operating system | Ubuntu 24.04 LTS, x86-64, subject to provider availability |
 | VM selection | Lowest-priced adequate control 2 vCPU/4 GiB and worker 4 vCPU/8 GiB plans |
 | Overall spending | $300 ceiling, at least $50 reserve, combined target at most $0.30/hour, temporary checks at most two hours |
@@ -146,16 +146,16 @@ Numbers entered into those fields alone do not enable paid calls. An internal `A
 | Node authentication | Separate generated 256-bit bearer token plus private mTLS |
 | SSH | Dedicated Ed25519 deployment key, key-only server access, private key restricted to trusted runner |
 | Private TLS | P-256 development CA valid 30 days; seven-day worker/client certificates |
-| Private worker identity | `worker.agent-rush.internal`; route to the actual private VM IP only after provisioning |
+| Private worker identity | `worker.agent-rush.internal`; route to the private VM IP only after provisioning |
 | Public hostname | Derive `agent-rush.<control-public-ip>.sslip.io` after allocation; verify DNS and publicly trusted TLS before use; no domain purchase |
 | Database | SQLite file; no database password/account to manage |
 
-The exact operator password, worker token, environment files, SSH key and private TLS keys are documented in `/workspace/.agent-rush-secrets/CREDENTIALS.md`. That file and the credential directory are owner-only, outside Git and submission artifacts. Current secrets are not populated into environment-draft suggested values. Store/export them privately before any shared filesystem snapshot; do not copy the credential directory into build images or source archives.
+The exact operator password, worker token, environment files, SSH key and private TLS keys are documented in `/workspace/.agent-rush-secrets/CREDENTIALS.md`. That file and the credential directory are owner-only, outside Git and submission artifacts. Current secrets are not populated into environment-draft suggested values. Store or export them privately before any shared filesystem snapshot; do not copy the credential directory into build images or source archives.
 
 Local configuration is `/workspace/.agent-rush-secrets/local.env`; future control and worker configurations are alongside it. The local environment disconnects the worker, uses loopback-only HTTP and keeps paid inference disabled. Production configuration keeps secure cookies enabled and uses the private mTLS worker route. Certificate validation passed at creation; certificates are not a substitute for a publicly trusted web certificate, and expiration must be checked before deployment.
 
-The catalog lookup for the selected model currently fails at proxy CONNECT with 403. No inference key, verified API model identifier or prices are configured. `AR_INFERENCE_MODEL` is intentionally left unset until Vultr's exact identifier is confirmed; a display name or guessed slug must not be sent as a verified model ID. Keep missing prices unset rather than assigning zero. Verify the selected model exists and is available through Vultr; do not silently choose another provider/model if it does not.
+The catalog lookup for the selected model currently fails at proxy CONNECT with 403. No inference key, verified API model identifier or prices are configured. `AR_INFERENCE_MODEL` is left unset until Vultr's exact identifier is confirmed; a display name or guessed slug must not be sent as a verified model ID. Keep missing prices unset rather than assigning zero. Verify the selected model exists and is available through Vultr; do not silently choose another provider or model if it does not.
 
-Official Vultr SDK inspection confirmed that the authorized infrastructure account API can retrieve keys for existing serverless-inference subscriptions. `vultr-inference-key` exports an unambiguous existing key to an owner-only file without printing it or creating a subscription. `vultr-inference-model` uses that inference credential to query Vultr's model catalog and export only the exact selected model ID. These steps cannot run until the saved API network rules are applied. Model lookup alone does not verify billing rates or enable paid calls; setup still has to inspect the provider tariff and its units. The password and pricing choices do not require another permission question.
+Official Vultr SDK inspection confirmed that the authorized infrastructure account API can retrieve keys for existing serverless-inference subscriptions. `vultr-inference-key` exports an unambiguous existing key to an owner-only file without printing it or creating a subscription. `vultr-inference-model` uses that inference credential to query Vultr's model catalog and export only the exact selected model ID. These steps cannot run until the saved API network rules are applied. Model lookup alone does not verify billing rates or enable paid calls; setup still has to inspect the provider tariff and its units.
 
 These choices create no VMs, API subscriptions or billable model requests. The host still fails resource-controller qualification and must refuse task execution.

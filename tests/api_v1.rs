@@ -184,7 +184,7 @@ async fn the_operator_cookie_with_csrf_can_create_keys() {
 }
 
 /// Regression: a bearer key could mint more keys, revoke the operator's other keys and
-/// register webhooks. Those routes now need the operator cookie with CSRF.
+/// register webhooks. Those routes need the operator cookie with CSRF.
 #[tokio::test]
 async fn a_bearer_key_cannot_mint_or_revoke_keys_or_manage_webhooks() {
     let a = app(vec![]);

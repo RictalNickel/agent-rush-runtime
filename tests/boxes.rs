@@ -680,7 +680,7 @@ async fn live_box_round_trip() {
     log("list src", format!("{entries:?}"));
     assert!(entries.iter().any(|e| e.name == "hello.py" && !e.is_dir));
 
-    // Review Focus 1: escapes by `..` and by symlinks are refused, never served.
+    // Escapes by `..` and by symlinks are refused, never served.
     for path in ["../../etc/passwd", "/etc/passwd", "/workspace/../root"] {
         let e = client.read_file(&id, path).await.unwrap_err();
         log(&format!("read {path}"), format!("refused: {e:#}"));
@@ -716,7 +716,7 @@ async fn live_box_round_trip() {
         Some(BoxError::NoSuchPath(_))
     ));
 
-    // Review Focus 4: large and binary output is truncated, lossy, never a failure.
+    // Large and binary output is truncated, lossy, never a failure.
     let r = client
         .exec(
             &id,

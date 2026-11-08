@@ -1,6 +1,6 @@
 # Design
 
-Boxoro is an original Rust system. Its core rule: authority stays in trusted code. Models choose only a validated tool call from an allowlist. They never hold credentials, Docker access or the power to exceed a limit.
+Boxoro is an original Rust system. Its core rule is that authority stays in trusted code. Models choose only a validated tool call from an allowlist. They never hold credentials, Docker access or the power to exceed a limit.
 
 The system has two paths that share one control plane and one worker:
 
@@ -109,7 +109,7 @@ MCP stdio servers are not run on the control VM. The MCP client speaks only stre
 
 ## Deliberately not included
 
-These are still excluded:
+These are excluded:
 
 - **Desktop control.** No screen capture or input outside a box.
 - **MCP stdio servers on the control plane.** Servers run only on the remote side of an HTTP connection.
@@ -120,7 +120,7 @@ These are still excluded:
 - **Unlimited subordinate depth.** The one-shot team has depth one.
 - **Parallel tool calls in one turn.**
 
-Shell and browser are no longer excluded. They exist inside the box.
+Shell and browser are not on this list because they run inside the box.
 
 ## How the one-shot job agent works
 

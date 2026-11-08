@@ -1,6 +1,6 @@
 # Pitch deck (Manim Slides)
 
-An 8-slide deck for the Vultr hackathon pitch (Blast Radius Zero track): one idea per slide, large type, the product's dark theme. The animations total about 32 seconds; the presenter sets the pace. Every animation is rendered with [Manim](https://www.manim.community/). [Manim Slides](https://manim-slides.eertmans.be/) splits it into real slides that you advance with the arrow keys. Each slide's motion lasts about 2 to 5 seconds and then holds, so you set the pace.
+An 8-slide deck for the Vultr hackathon pitch (Blast Radius Zero track): one idea per slide, large type, the product's dark theme. The animations total about 32 seconds. Every animation is rendered with [Manim](https://www.manim.community/). [Manim Slides](https://manim-slides.eertmans.be/) splits it into real slides that you advance with the arrow keys. Each slide's motion lasts about 2 to 5 seconds and then holds, so you set the pace.
 
 ## Files
 

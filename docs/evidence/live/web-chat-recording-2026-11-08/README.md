@@ -1,6 +1,6 @@
 # Web chat session, screen-recorded live (2026-11-08 UTC)
 
-A screen recording of one new session on the public instance, `https://144-202-59-108.sslip.io` (binary `8f9d5b65`), from the first click to the agent's answer. It was the live clip in an earlier cut of the demo video; on its own it is [presentation/video/out/live-session.mp4](../../../../presentation/video/out/live-session.mp4). The entry video now uses the [dashboard recording](../dashboard-recording-2026-11-08/).
+A screen recording of one new session on the public instance, `https://144-202-59-108.sslip.io` (binary `8f9d5b65`), from the first click to the agent's answer. It was the live clip in an earlier cut of the demo video; on its own it is [presentation/video/out/live-session.mp4](../../../../presentation/video/out/live-session.mp4). The entry video now uses the [inventory app recording](../shop-recording-2026-11-08/).
 
 How it was made:
 

@@ -39,8 +39,8 @@ pub const DEFAULT_NETWORK: &str = "ar-box";
 pub const DEFAULT_IDLE_SECONDS: u64 = 1800;
 pub const DEFAULT_CEILING_MB: u32 = 4096;
 pub const CPU_CEILING_MILLIS: u32 = 2000;
-/// Boxes with a running container at once; parked workspaces do not count.
-/// Default number of boxes one worker runs at once (`AR_BOX_MAX`).
+/// Default number of boxes with a running container one worker runs at once
+/// (`AR_BOX_MAX`); parked workspaces do not count.
 pub const MAX_BOXES: usize = 8;
 /// Upper bound for `AR_BOX_MAX`: the box network is a /24.
 pub const MAX_BOXES_LIMIT: usize = 200;

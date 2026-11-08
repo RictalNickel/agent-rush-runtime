@@ -1,4 +1,4 @@
-// Standard-library-only Rust task fixture. Run ONLY through `agent-rush sandbox`.
+// Standard-library-only Rust task fixture. Run it only through `agent-rush sandbox`.
 fn main() {
     let csv = "region,revenue\nNorth,1200\nSouth,850\nNorth,400\nWest,950\n";
     let mut totals = std::collections::BTreeMap::<String, u64>::new();

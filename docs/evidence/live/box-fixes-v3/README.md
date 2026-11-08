@@ -67,4 +67,4 @@ Gate: `cargo fmt --all --check`, `cargo clippy --locked --all-targets -D warning
 
 The 42 new packages take 257 MiB installed. Ubuntu's matplotlib and pandas pull in `python3-scipy` (60 MiB) and `python3-sympy` (24 MiB) as hard dependencies. Most of the rest of the layer growth is precompiled `.pyc`: 120 MiB under `/usr/lib/python3`, up from 10 MiB. The box needs it precompiled because the root is read-only, so Python cannot write it at import time.
 
-One caveat: an agent that runs `pip install --user --upgrade numpy` (numpy 2.x) shadows the system numpy that apt's pandas and scipy were built against. Ordinary installs leave it alone, because the system numpy satisfies their requirements.
+An agent that runs `pip install --user --upgrade numpy` (numpy 2.x) shadows the system numpy that apt's pandas and scipy were built against. Ordinary installs leave it alone, because the system numpy satisfies their requirements.

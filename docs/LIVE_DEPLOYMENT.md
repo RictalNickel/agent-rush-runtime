@@ -117,17 +117,17 @@ All four succeeded with cleanup verified, under the same two-slot admission. Wal
 | Credential-like environment variables | none present |
 | Write to `/usr`, `/etc` | blocked: permission denied |
 | Write to `/work` | allowed (bounded scratch, by design) |
-| Allocate 2 GiB with a 256 MiB cap | **the whole sandbox was killed** (exit 128), not just the allocating child; cleanup verified |
+| Allocate 2 GiB with a 256 MiB cap | **the whole sandbox was killed** (exit 128), not only the allocating child; cleanup verified |
 | Create 1000 threads | allowed; see the finding below |
 
-Finding: `--pids-limit 64` stops process creation (the qualification run was denied before reaching 64 children), but gVisor does not count threads against it. Thread growth is bounded by the memory and CPU caps instead, not by a thread cap.
+Finding: `--pids-limit 64` stops process creation (the qualification run was denied before reaching 64 children), but gVisor does not count threads against it. Thread growth is bounded by the memory and CPU caps instead.
 
 **In-product, job `76a60e82`:** an ordinary task (statistics over 300 million hashes) planned by the orchestrator as a bounded-memory streaming solution.
 - Three of the coder's sandbox runs exceeded the 60-second time cap. Each was killed with `reason: timeout` and `cleanup_state: verified`, and the coder received the evidence and retried.
 - The 15-minute job lifetime then ended the job as `failed`, with the lease released and no containers left. Cost was $0.19.
 - This is a real runaway-compute containment event, but not a successful answer.
 
-**Model refusals:** two earlier attempts that asked the agents to deliberately probe or exceed the sandbox were declined by Opus 5.5's safety classifier (`stop_reason: refusal`, category `cyber`) on the orchestrator's first call. Before a fix in this branch, a refusal kept its worst-case reservation (about $2.02, still counted in the live ledger). Refusals and structured API errors now settle at their actual cost.
+**Model refusals:** two earlier attempts that asked the agents to deliberately probe or exceed the sandbox were declined by Opus 5.5's safety classifier (`stop_reason: refusal`, category `cyber`) on the orchestrator's first call. Before a fix, a refusal kept its worst-case reservation (about $2.02, still counted in the live ledger). Refusals and structured API errors now settle at their actual cost.
 
 ### Vultr Serverless Inference path (job `2fd5b26f`)
 
@@ -172,7 +172,7 @@ Raw evidence: `evidence/live/vultr-public/`.
 
 Users no longer pick memory or time. The orchestrator sets a ceiling with `set_limits`, and every run starts at 256 MiB and 0.5 vCPU. The worker polls the sandbox's cgroup every 100 ms and raises its limits through `docker update` when use crosses 70% of memory or 85% of CPU, up to the ceiling.
 
-Before relying on it, I checked directly on the worker that a running gVisor sandbox can be resized. A container started at 256 MiB and raised to 1 GiB mid-run could allocate 300 MiB.
+Before relying on it, a direct check on the worker confirmed that a running gVisor sandbox can be resized. A container started at 256 MiB and raised to 1 GiB mid-run could allocate 300 MiB.
 
 Requalified on the worker, 10 of 10 checks, through the real requalify service. The new `scaling` check started at 256 MiB with a 512 MiB ceiling:
 - The worker raised the limit when the program reached 202 MiB.
