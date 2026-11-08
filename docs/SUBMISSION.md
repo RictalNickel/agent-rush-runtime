@@ -20,13 +20,13 @@ Boxoro lets the app or agent you already have hand that work to a contained suba
 
 Each subagent session gets its own gVisor box on a private Vultr worker: a shell, headless Chromium, web search, language runtimes and file converters. The box holds no credentials, cannot reach cloud metadata, private networks, the host or other boxes, and has caps on memory, disk, time and spend. A subagent that goes wrong damages one box. On the live instance, 8 of 8 escape attempts from inside a box were blocked, a planted prompt injection was refused, and 21 earlier security probes all held.
 
-Every agent model call goes to Vultr Serverless Inference (GLM 5.3 Flash). The control VM and a 16 vCPU / 64 GB worker are Vultr instances in Chicago. Through the public URL the worker has run 72 agent sessions at once, and real tasks cost cents: building and then using a kanban app took 92 tool calls for $0.024.
+Every agent model call goes to Vultr Serverless Inference: DeepSeek V4.1 Flash by default, with GLM 5.3 Flash and GLM 5.3 selectable per session. The control VM and a 16 vCPU / 64 GB worker are Vultr instances in Chicago. Through the public URL the worker has run 72 agent sessions at once, and real tasks cost cents: building and then using a kanban app took 92 tool calls for $0.024.
 
 It is a Rust backend with a REST API, an MCP server with 15 tools, a web chat, skills, self-editable agent config and one-line installers. Its known limits are one trusted operator per deployment and no independent audit.
 
 ## Technologies and categories
 
-Vultr, Vultr Serverless Inference, GLM, gVisor, Docker, Rust, MCP (Model Context Protocol), Chromium, AI agents, sandboxing, security, developer tools, API
+Vultr, Vultr Serverless Inference, DeepSeek, GLM, gVisor, Docker, Rust, MCP (Model Context Protocol), Chromium, AI agents, sandboxing, security, developer tools, API
 
 ## Other fields
 

@@ -44,7 +44,7 @@ Status: the public instance is live on Vultr. See [Live demo](#live-demo).
         v
  +--------------------------------------------+   control VM (public HTTPS)
  | session engine   skills   agent config     |-----> Vultr Serverless Inference
- | ledger (SQLite)  remote MCP client         |       (GLM 5.3 Flash)
+ | ledger (SQLite)  remote MCP client         |       (DeepSeek V4.1 Flash)
  +--------------------------------------------+
         |  mTLS + bearer token, private network
         v
@@ -197,8 +197,8 @@ Settings are environment variables. The most important are below. The full list,
 | `AR_OPERATOR_PASSWORD` | none | Operator sign-in. At least 16 characters. |
 | `AR_INFERENCE_PROVIDER` | `vultr` | `vultr` for Vultr Serverless Inference, or `anthropic` for development. |
 | `VULTR_INFERENCE_API_KEY` | none | Vultr inference key, read by the control VM only. |
-| `AR_INFERENCE_MODEL` | none | Vultr catalog model ID. The public instance uses `glm-5.3-flash`. |
-| `AR_INFERENCE_MODELS` | none | Optional models a session may choose, with prices: `glm-5.3-flash:0.10:0.35,glm-5.3:0.75:3.00`. |
+| `AR_INFERENCE_MODEL` | none | Vultr catalog model ID. The public instance uses `deepseek-v4.1-flash-1017` (since 2026-11-08; `glm-5.3-flash` before). |
+| `AR_INFERENCE_MODELS` | none | Optional models a session may choose, with prices: `deepseek-v4.1-flash-1017:0.15:0.60,glm-5.3-flash:0.10:0.35,glm-5.3:0.75:3.00`. |
 | `AR_INFERENCE_BUDGET_USD` | `5` | Total model spend the ledger allows. Range 0 to 25. |
 | `AR_WORKER_URL`, `AR_WORKER_TOKEN` | none | Private worker link. The token is at least 32 characters. |
 | `AR_BOX_IMAGE` | none | Workspace image reference the worker runs boxes from. |
@@ -213,7 +213,7 @@ Settings are environment variables. The most important are below. The full list,
 
 - **Public instance:** https://144-202-59-108.sslip.io (Let's Encrypt certificate through Caddy).
 - **Where it runs:** two Vultr VMs in Chicago (`ord`): a control VM (2 vCPU, 4 GB) and a private worker VM (16 vCPU, 64 GB since 2026-11-06, for large demos), about $0.74 per hour in total. The worker has run 64 sandboxes and 72 agent sessions at once through the public URL. See [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md).
-- **Inference:** the public instance sends every agent call to Vultr Serverless Inference, using GLM 5.3 Flash.
+- **Inference:** the public instance sends every agent call to Vultr Serverless Inference, using DeepSeek V4.1 Flash 1017 by default ($0.15 in, $0.60 out per million tokens). Sessions can pick GLM 5.3 Flash or GLM 5.3 instead. The recorded demos below ran on GLM 5.3 Flash.
 - **Evidence:** [VERIFICATION.md](docs/VERIFICATION.md) lists what was observed and when. Raw receipts are in [docs/evidence/live/](docs/evidence/live/), including the box qualification ([box-qualification-v2/](docs/evidence/live/box-qualification-v2/) and the earlier [box-qualification/](docs/evidence/live/box-qualification/)), the workspace image build ([workspace-image/](docs/evidence/live/workspace-image/)), a box round trip ([boxes/](docs/evidence/live/boxes/)), the session demo ([session-demo/](docs/evidence/live/session-demo/)), the MCP run ([mcp/](docs/evidence/live/mcp/)) and the voice service run ([voice/](docs/evidence/live/voice/)).
 
 What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) and [VERIFICATION.md](docs/VERIFICATION.md).
