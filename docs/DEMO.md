@@ -6,7 +6,7 @@ Boxoro gives the app or agent you already have a contained, offsite subagent: it
 
 ## The recorded demo
 
-The entry video is `presentation/video/out/demo.mp4` (3:05). Its scene list and narration are in [VIDEO_SCRIPT.md](VIDEO_SCRIPT.md), and every output it replays is in [evidence/live/plugin-and-containment-2026-11-07/](evidence/live/plugin-and-containment-2026-11-07/).
+The entry video is `presentation/video/out/demo.mp4` (3:55). Its scene list and narration are in [VIDEO_SCRIPT.md](VIDEO_SCRIPT.md). Every output it replays is in [evidence/live/plugin-and-containment-2026-11-07/](evidence/live/plugin-and-containment-2026-11-07/), and its screen recording of a live web chat session, start to finish, is in [evidence/live/web-chat-recording-2026-11-08/](evidence/live/web-chat-recording-2026-11-08/) (also on its own as `presentation/video/out/live-session.mp4`).
 
 ## A live demo in three steps
 

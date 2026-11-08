@@ -1,0 +1,16 @@
+{
+    "box_id": "7937561254da4c2387a1d72b4961c288",
+    "created_at": 1794120476008,
+    "forked_from": null,
+    "id": "45d812f6-4e55-4f09-bd6e-b6ca15d8f668",
+    "input_tokens": 21560,
+    "last_seq": 26,
+    "model": "glm-5.3-flash",
+    "model_calls": 12,
+    "output_tokens": 939,
+    "owner": "operator",
+    "spend_usd": 0.00248465,
+    "status": "idle",
+    "title": "Create a small Flask to-do app in /workspace/todo with one HTML page. Start it,",
+    "updated_at": 1794120495288
+}

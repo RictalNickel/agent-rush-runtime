@@ -1,0 +1,22 @@
+[Script Info]
+; Captions for the live web chat recording of 2026-11-08 (session 45d812f6).
+; Times are for out/live-session.mp4, whose first 5 s hold the opening frame.
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 0
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,Archivo,40,&H00EEEAE6,&H00EEEAE6,&H1B1612&,&H101B1612,0,0,0,0,100,100,0,0,3,16,0,2,120,120,26,1
+Style: Live,Archivo,26,&H004BB0E8,&H004BB0E8,&H1B1612&,&H201B1612,1,0,0,0,100,100,1,0,3,10,0,8,0,0,22,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:43.57,Live,,0,0,0,,●  LIVE RECORDING  ·  2026-11-08  ·  REAL TIME
+Dialogue: 0,0:00:00.30,0:00:04.50,Cap,,0,0,0,,A new session on the public instance, recorded start to finish.
+Dialogue: 0,0:00:04.60,0:00:12.20,Cap,,0,0,0,,The task: build a to-do app, test it in a real browser, attach a screenshot.
+Dialogue: 0,0:00:12.30,0:00:16.80,Cap,,0,0,0,,Its own gVisor box. It writes the app and starts it.
+Dialogue: 0,0:00:16.90,0:00:21.40,Cap,,0,0,0,,Flask is missing, so it installs it and retries.
+Dialogue: 0,0:00:21.50,0:00:31.60,Cap,,0,0,0,,Then it drives a real browser in the box: adds “Buy milk”, checks it off, takes a screenshot.
+Dialogue: 0,0:00:31.70,0:00:43.57,Cap,,0,0,0,,Done in 19 s: 12 model calls on Vultr for $0.0025. The screenshot comes back with the answer.

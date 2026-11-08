@@ -1,5 +1,8 @@
 """The demo video: the pitch deck's slides plus replays of real live runs, with captions.
 
+render.sh splices a screen recording of a live web chat session (out/live-session.mp4,
+made by record_live.py and cut_live.sh) in after the demo slide.
+
 Every line of terminal output and every number here is copied from
 docs/evidence/live/plugin-and-containment-2026-11-07/. The narration is in
 docs/VIDEO_SCRIPT.md; the captions are a shortened copy of it.
@@ -8,11 +11,12 @@ Render with ./render.sh (it reuses the deck's virtualenv and fonts).
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "manim"))
+VIDEO_DIR = Path(__file__).resolve().parent  # deck.py has its own HERE, which the import below overwrites
+sys.path.insert(0, str(VIDEO_DIR.parent / "manim"))
 
 from manim import *  # noqa: E402,F401,F403
 from deck import *  # noqa: E402,F401,F403  the deck's style, helpers and slides
@@ -53,7 +57,8 @@ class DemoVideo(PitchDeck):
             (self.v_claude_code, ["Live: Claude Code hands a task to the subagent over MCP.",
                                   "It writes the code and tests in its box and runs them. 4 passed, 19 s, $0.0011."]),
             (self.slide("demo"), ["In the web chat, a subagent built a kanban app, then used it in a real browser.",
-                                  "92 tool calls for 2.4 cents."]),
+                                  "92 tool calls for 2.4 cents.",
+                                  "Here is a new session in the web chat, recorded live from start to finish."]),
             (self.slide("box"), ["Each subagent gets its own gVisor box: a shell, a browser and files.",
                                  "No keys inside, no way to your network or the host, and hard caps."]),
             (self.v_injection, ["The containment moment. A ticket hides an order to steal credentials.",
@@ -68,12 +73,21 @@ class DemoVideo(PitchDeck):
         ]
         self.total = len(self.scenes)
         self.chrome = []
+        ends = []
         for i, (scene, captions) in enumerate(self.scenes, start=1):
             self.index = i
             scene()
             self.wait(1.0)
             self.captions(captions)
+            if scene.__name__.endswith("_demo"):
+                # The live recording goes in here: end on black so no slide flashes on either side.
+                self.play(FadeOut(*self.mobjects), run_time=0.5)
+                self.chrome = []
+            ends.append(round(self.renderer.time, 3))
         self.wait(2.5)
+        # render.sh splices the live recording in after the demo slide.
+        (VIDEO_DIR / "media").mkdir(exist_ok=True)
+        (VIDEO_DIR / "media" / "scene_ends.json").write_text(json.dumps(ends))
 
     # ---- framing ------------------------------------------------------------
 

@@ -79,7 +79,7 @@ Raw earlier local receipts and the complete failing resource-suite log are in do
 | Nested Docker, browser/desktop profiles | Not enabled | Not qualified |
 | Repository publication | Done | Public since 2026-11-07; commit emails replaced with the owner's GitHub no-reply address first |
 | Presentation | 8-slide deck built from live evidence (`presentation/manim/`), with a PDF | Done |
-| Demo video | `presentation/video/out/demo.mp4`, built from the deck and replays of real live runs | Done; the lablab entry is submitted by the owner |
+| Demo video | `presentation/video/out/demo.mp4` (3:55), built from the deck, replays of real live runs and a real-time screen recording of a new web chat session (2026-11-08) | Done; the lablab entry is submitted by the owner |
 
 ## Measurement limits
 
