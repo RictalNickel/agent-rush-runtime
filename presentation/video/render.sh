@@ -14,9 +14,9 @@ QUALITY="${QUALITY:-h}"
 "$VENV/bin/manim" render video.py DemoVideo --quality "$QUALITY" --media_dir media --disable_caching
 src=$(ls -t media/videos/video/*/DemoVideo.mp4 | head -1)
 mkdir -p out
-# Splice the live web chat recording (out/live-dash.mp4: record_live.py, then compose_live.py)
+# Splice the live web chat recording (out/live-shop.mp4: record_live.py, then compose_live.py)
 # in after the Claude Code replay, scene 4.
-live=out/live-dash.mp4
+live=out/live-shop.mp4
 cut=$(python3 -c "import json; print(json.load(open('media/scene_ends.json'))[3])")
 ffmpeg -loglevel error -y -i "$src" -i "$live" -f lavfi -i anullsrc=r=48000:cl=stereo -filter_complex \
   "[0:v]trim=end=$cut,setpts=PTS-STARTPTS,fps=30,format=yuv420p[a];[1:v]fps=30,format=yuv420p[l];[0:v]trim=start=$cut,setpts=PTS-STARTPTS,fps=30,format=yuv420p[b];[a][l][b]concat=n=3:v=1:a=0[v]" \

@@ -1,0 +1,1 @@
+Now write a one-page A4 PDF sales report from the database: total revenue, a table of the orders, and a bar chart of revenue by product. Check that every column and the whole chart fit inside the page, then attach report.pdf.

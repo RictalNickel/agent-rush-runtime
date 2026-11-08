@@ -148,8 +148,30 @@ async def record(args):
             mark("follow-up sent")
             await until(lambda: _is(page, {"Working"}), 60)
             await until(lambda: _is(page, {"Ready", "Failed", "Closed"}), args.timeout)
+        for follow_up in args.followup_file or []:
+            # A new turn in the same session: same box, same files.
+            await asyncio.sleep(3)
+            await glide(page, "#prompt")
+            await type_text(page, Path(follow_up).read_text())
+            await asyncio.sleep(0.6)
+            await page.keyboard.press("Enter")
+            mark(f"follow-up: {Path(follow_up).name}")
+            await until(lambda: _is(page, {"Working"}), 60)
+            await until(lambda: _is(page, {"Ready", "Failed", "Closed"}), args.timeout)
+            mark(f"follow-up done: {await state_of(page)}")
         state = await state_of(page)
         mark(f"finished: {state}")
+        if args.browse:
+            # Open the workspace in the Files panel and step into each folder given.
+            await asyncio.sleep(1.5)
+            await glide(page, "#files-button")
+            await asyncio.sleep(2.5)
+            for folder in args.browse:
+                await glide(page, f'#files-list button.dir:has-text("{folder}/")')
+                await asyncio.sleep(3.5)
+            mark("files shown")
+            await page.keyboard.press("Escape")
+            await asyncio.sleep(1)
         # Scroll the thread to the agent's answer and its screenshots.
         await asyncio.sleep(1.5)
         await page.mouse.move(width * 0.6, height * 0.55, steps=15)
@@ -195,6 +217,8 @@ def main():
     ap.add_argument("--prompt-file", help="type this task instead of clicking an example")
     ap.add_argument("--steer-file", help="message to send while the agent is working")
     ap.add_argument("--steer-when", default="Opened", help="send it once the thread shows this text")
+    ap.add_argument("--followup-file", action="append", help="a further message after the agent answers")
+    ap.add_argument("--browse", action="append", help="folder to open in the Files panel at the end")
     ap.add_argument("--size", default="1280x720", help="viewport in CSS pixels")
     ap.add_argument("--scale", type=float, default=1.5, help="device pixel ratio of the capture")
     ap.add_argument("--out", default="out/live")

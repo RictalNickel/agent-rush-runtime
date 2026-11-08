@@ -1,0 +1,7 @@
+Build a small inventory and orders app in /workspace/shop.
+1. Flask and SQLite. Tables: products (name, price, stock) and orders (product_id, qty, total, created_at). Seed 8 products.
+2. JSON API: GET /api/products and POST /api/orders. An order reduces stock, and is refused with 409 if there isn't enough.
+3. One dark HTML page: a products table with stock, an order form, and the 5 latest orders. Background #0f1115, cards #171a21, accent #e8b04b, system-ui font.
+4. Write pytest tests for the API, including the 409 case, and run them.
+5. Start the app, use the browser to place two orders through the form, and check the stock went down on the page.
+6. Attach a screenshot and the test results.

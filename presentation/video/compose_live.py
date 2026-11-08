@@ -60,6 +60,8 @@ def main(rec_dir, narration_file):
     n = json.loads(Path(narration_file).read_text())
     frames = marks["frames"]
     r0, r_end = frames[0], marks["marks"]["end"]
+    if "end_mark" in n:  # stop the clip a little after this mark instead of at the end of the recording
+        r_end = min(r_end, marks["marks"][n["end_mark"]] + n.get("end_pad", 1.5))
     # Recording time of a session event: the message reached the server just after "sent".
     sent = marks["marks"]["sent"] + n.get("server_lag", 0.3)
     steps = n["steps"]
@@ -76,6 +78,10 @@ def main(rec_dir, narration_file):
         need = len(s["detail"]) / READ_CPS + 1.0
         if need > nxt - s["r"]:
             pauses.append((s["r"], round(need - (nxt - s["r"]), 2)))
+    if "max_pause" in n and sum(d for _, d in pauses) > n["max_pause"]:
+        # Keep the clip's length in budget: shorten every pause by the same factor.
+        k = n["max_pause"] / sum(d for _, d in pauses)
+        pauses = [(at, round(d * k, 2)) for at, d in pauses]
 
     def out_t(r, before_pause=False):
         """Output time of recording time r (after any pause that starts at r, unless before_pause)."""
@@ -198,7 +204,8 @@ def main(rec_dir, narration_file):
 
     out = rec.parent / f"{rec.name}.mp4"
     inputs = [arg for p in parts for arg in ("-i", str(p))]
-    graph = "".join(f"[{i}:v]" for i in range(len(parts))) + f"concat=n={len(parts)}:v=1:a=0[v]"
+    graph = ("".join(f"[{i}:v]setsar=1[p{i}];" for i in range(len(parts)))
+             + "".join(f"[p{i}]" for i in range(len(parts))) + f"concat=n={len(parts)}:v=1:a=0[v]")
     subprocess.run(["ffmpeg", "-loglevel", "error", "-y", *inputs, "-f", "lavfi", "-i",
                     "anullsrc=r=48000:cl=stereo", "-filter_complex", graph, "-map", "[v]", "-map",
                     f"{len(parts)}:a", "-shortest", "-c:v", "libx264", "-crf", "18", "-preset", "slow",

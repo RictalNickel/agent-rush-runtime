@@ -1,0 +1,318 @@
+<title>{{TITLE}}</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a control room. The recording stays put on the left; the session's log scrolls on the right,
+   lit up at the step the video is showing. One dark look, the same as the product's web chat. */
+:root {
+  color-scheme: dark;
+  --ground: #0e1013;
+  --panel: #161a20;
+  --raise: #1d222a;
+  --line: #2a3039;
+  --text: #e8eaed;
+  --muted: #a0a6af;
+  --faint: #6e757f;
+  --amber: #e8b04b;
+  --amber-ink: #1a1408;
+  --ok: #5fc08e;
+  --bad: #ec7a83;
+  --you: #8bb6ff;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--ground); color: var(--text); font: 15px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+.wrap { max-width: 1440px; margin: 0 auto; display: grid; gap: 28px; }
+a { color: var(--amber); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+.top { display: grid; gap: 10px; max-width: 900px; }
+.eyebrow { font: 600 12px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--amber); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.eyebrow .live { color: var(--muted); }
+h1 { font: 800 clamp(32px, 5vw, 56px)/1.02 var(--display); font-stretch: 72%; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+.story { color: var(--muted); font-size: 17px; max-width: 68ch; margin: 0; }
+.meta { font: 13px/1.5 var(--mono); color: var(--faint); margin: 0; overflow-wrap: anywhere; }
+
+.stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stat { background: var(--panel); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.stat b { font: 700 28px/1.1 var(--display); font-stretch: 80%; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.stat small { color: var(--faint); font-size: 12px; }
+
+.replay { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; gap: 14px; min-width: 0; }
+video { width: 100%; aspect-ratio: 4 / 3; max-width: 100%; background: #000; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.transport { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.clock { font: 500 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.clock b { color: var(--text); font-weight: 500; }
+.speed { display: flex; gap: 4px; margin-left: auto; }
+.pill { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 11px; font-size: 13px; cursor: pointer; }
+.pill[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); border-color: var(--amber); font-weight: 600; }
+.pill:hover { border-color: var(--faint); }
+.now { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; }
+.now .k { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.now h2 { font: 700 22px/1.2 var(--display); font-stretch: 85%; margin: 0; }
+.now p { margin: 0; color: var(--muted); }
+.chapters { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; }
+.chapter { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: baseline; text-align: left; background: none; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; cursor: pointer; font-size: 13px; }
+.chapter time { font: 12px var(--mono); color: var(--faint); font-variant-numeric: tabular-nums; }
+.chapter.done { color: var(--muted); }
+.chapter.current { border-color: var(--amber); background: var(--raise); }
+.chapter.current time { color: var(--amber); }
+
+.log { display: grid; gap: 12px; min-width: 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.filters .count { margin-left: auto; font-size: 13px; color: var(--faint); }
+.follow { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: calc(100vh - 140px); overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.ev { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); min-width: 0; }
+.ev.now-ev { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }
+.ev.past { opacity: .78; }
+.row { width: 100%; display: grid; grid-template-columns: 46px 74px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 9px 12px; background: none; border: 0; text-align: left; cursor: pointer; }
+.row time { font: 12px var(--mono); color: var(--faint); font-variant-numeric: tabular-nums; }
+.tag { font: 600 11px/1.6 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tag.shell { color: #d9c08a; } .tag.file { color: #9fc7a8; } .tag.browser { color: #9ec3e6; } .tag.invalid { color: var(--bad); }
+.line { font: 13px/1.45 var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.res { font: 12px var(--mono); white-space: nowrap; }
+.res.ok { color: var(--ok); } .res.bad { color: var(--bad); }
+.more { padding: 0 12px 12px; display: grid; gap: 8px; }
+.more h4 { margin: 4px 0 0; font: 600 11px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+pre { margin: 0; font: 12.5px/1.5 var(--mono); background: var(--ground); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; overflow-x: auto; max-height: 360px; white-space: pre; }
+pre.wrap-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg { padding: 12px 14px; display: grid; gap: 6px; }
+.msg .who { display: flex; gap: 10px; align-items: baseline; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+.msg.you { border-color: color-mix(in srgb, var(--you) 45%, var(--line)); }
+.msg.you .who { color: var(--you); }
+.msg.agent .who { color: var(--amber); }
+.msg .who time { font: 12px var(--mono); color: var(--faint); letter-spacing: 0; text-transform: none; }
+.msg .who button { margin-left: auto; }
+.msg .text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
+.msg.clamped .text { max-height: 7.5em; overflow: hidden; mask-image: linear-gradient(#000 60%, transparent); }
+.files { display: flex; flex-wrap: wrap; gap: 6px; }
+.files code { font: 12px var(--mono); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; color: var(--muted); }
+.link { background: none; border: 0; padding: 0; color: var(--amber); cursor: pointer; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+
+.section-h { font: 700 26px/1.1 var(--display); font-stretch: 78%; margin: 0; }
+.results { display: grid; gap: 14px; }
+.figs { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 16px; align-items: start; }
+figure { margin: 0; display: grid; gap: 8px; min-width: 0; }
+figure img { border-radius: 8px; border: 1px solid var(--line); width: 100%; background: #fff; }
+figcaption { color: var(--muted); font-size: 13px; }
+.notes { display: grid; gap: 8px; max-width: 80ch; color: var(--muted); }
+.notes p { margin: 0; }
+
+@media (max-width: 1100px) { .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } .figs { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 980px) {
+  .replay { grid-template-columns: 1fr; }
+  .stage { position: static; }
+  .list { max-height: none; overflow: visible; }
+}
+@media (max-width: 560px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .figs { grid-template-columns: 1fr; }
+  .row { grid-template-columns: 40px minmax(0, 1fr) auto; }
+  .row .tag { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow"><span>Boxoro · session replay</span><span class="live">Recorded live on the public instance</span></div>
+    <h1 id="title"></h1>
+    <p class="story" id="story"></p>
+    <p class="meta" id="meta"></p>
+  </header>
+
+  <section class="stats" id="stats" aria-label="Session totals"></section>
+
+  <section class="replay">
+    <div class="stage">
+      <video id="video" src="recording.mp4" controls playsinline preload="metadata" muted></video>
+      <div class="transport">
+        <span class="clock">Agent time <b id="agent-clock">00:00</b></span>
+        <span class="clock">Tool calls <b id="call-count">0</b></span>
+        <div class="speed" role="group" aria-label="Playback speed">
+          <button class="pill" type="button" data-speed="1" aria-pressed="true">1×</button>
+          <button class="pill" type="button" data-speed="2" aria-pressed="false">2×</button>
+          <button class="pill" type="button" data-speed="4" aria-pressed="false">4×</button>
+        </div>
+      </div>
+      <div class="now" aria-live="polite">
+        <span class="k" id="now-k">Before the first message</span>
+        <h2 id="now-title">The brief is typed in</h2>
+        <p id="now-detail"></p>
+      </div>
+      <div class="chapters" id="chapters"></div>
+    </div>
+
+    <div class="log">
+      <div class="filters" role="group" aria-label="Show">
+        <button class="pill" type="button" data-filter="all" aria-pressed="true">Everything</button>
+        <button class="pill" type="button" data-filter="msg" aria-pressed="false">Messages</button>
+        <button class="pill" type="button" data-filter="shell" aria-pressed="false">Shell</button>
+        <button class="pill" type="button" data-filter="file" aria-pressed="false">Files</button>
+        <button class="pill" type="button" data-filter="browser" aria-pressed="false">Browser</button>
+        <button class="pill" type="button" data-filter="failed" aria-pressed="false">Failed steps</button>
+        <label class="follow"><input type="checkbox" id="follow" checked> Follow the video</label>
+      </div>
+      <ol class="list" id="list" aria-label="Everything the session did, in order"></ol>
+    </div>
+  </section>
+
+  <section class="results" aria-labelledby="results-h">
+    <h2 class="section-h" id="results-h">What it handed back</h2>
+    <div class="figs" id="figs"></div>
+  </section>
+
+  <section class="notes" aria-labelledby="notes-h">
+    <h2 class="section-h" id="notes-h">How this replay was made</h2>
+    <div id="notes"></div>
+  </section>
+</div>
+
+<script id="data" type="application/json">/*DATA*/null</script>
+<script>
+(() => {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const $ = s => document.querySelector(s);
+  const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter(k => k != null)); return n; };
+  const mmss = t => { t = Math.max(0, t); return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`; };
+  const video = $('#video');
+  const S = D.stats;
+
+  document.getElementById('title').textContent = D.title;
+  $('#story').textContent = D.story;
+  $('#meta').textContent = `${D.where} · ${D.date} · session ${S.id.slice(0, 8)} · ${S.model}`;
+
+  const stat = (value, label, note) => el('div', { className: 'stat' }, el('b', { textContent: value }), el('span', { textContent: label }), note ? el('small', { textContent: note }) : null);
+  $('#stats').append(
+    stat(`${S.agent_seconds.toFixed(0)} s`, 'Agent time', 'from the first message to the last answer'),
+    stat(String(S.messages), 'Messages from us', 'one sent while it was working'),
+    stat(String(S.tool_calls), 'Tool calls', `${S.failed} failed and retried`),
+    stat(String(S.model_calls), 'Model calls', 'GLM 5.3 Flash on Vultr'),
+    stat(`${Math.round(S.input_tokens / 1000)}k / ${Math.round(S.output_tokens / 1000)}k`, 'Tokens in / out', 'read and written by the model'),
+    stat(`$${S.spend_usd.toFixed(3)}`, 'Model cost', 'the whole session'),
+  );
+
+  // Chapters.
+  const chapterEls = D.chapters.map(c => {
+    const b = el('button', { type: 'button', className: 'chapter' }, el('time', { textContent: mmss(c.t) }), el('span', { textContent: c.title }));
+    b.addEventListener('click', () => seek(c.t));
+    $('#chapters').append(b);
+    return b;
+  });
+
+  // The log.
+  const KIND = { shell: 'Shell', file: 'File', browser: 'Browser', invalid: 'Rejected', other: 'Tool' };
+  const rows = D.items.map((it, i) => {
+    const li = el('li', { className: 'ev', id: `ev-${i}` });
+    li.dataset.group = it.type === 'you' || it.type === 'agent' ? 'msg' : it.type;
+    if (it.ok === false) li.dataset.failed = '1';
+    if (it.type === 'you' || it.type === 'agent') {
+      li.classList.add('msg', it.type);
+      const long = it.text.length > 420;
+      const toggle = long ? el('button', { type: 'button', className: 'link', textContent: 'Show all' }) : null;
+      const jump = el('button', { type: 'button', className: 'link', textContent: 'Play from here' });
+      jump.addEventListener('click', () => seek(it.t));
+      li.append(el('div', { className: 'who' }, el('time', { textContent: mmss(it.t) }), el('span', { textContent: it.label }), jump),
+                el('div', { className: 'text', textContent: it.text }));
+      if (it.files?.length) li.append(el('div', { className: 'files' }, ...it.files.map(f => el('code', { textContent: f.replace('/workspace/', '') }))));
+      if (long) {
+        li.classList.add('clamped');
+        toggle.addEventListener('click', () => { const c = li.classList.toggle('clamped'); toggle.textContent = c ? 'Show all' : 'Show less'; });
+        li.append(toggle);
+      }
+      return li;
+    }
+    const res = it.ok === null ? el('span', { className: 'res', textContent: '' })
+      : el('span', { className: `res ${it.ok ? 'ok' : 'bad'}`, textContent: it.ok ? `ok ${it.dt ?? ''}s` : 'failed' });
+    const row = el('button', { type: 'button', className: 'row', ariaExpanded: 'false' },
+      el('time', { textContent: mmss(it.t) }), el('span', { className: `tag ${it.type}`, textContent: KIND[it.type] || it.tool }),
+      el('span', { className: 'line', textContent: it.line }), res);
+    const more = el('div', { className: 'more', hidden: true });
+    if (it.body) more.append(el('h4', { textContent: it.tool === 'bash' ? 'Command' : 'Content' }), el('pre', { textContent: it.body }));
+    if (it.args) more.append(el('h4', { textContent: 'Arguments' }), el('pre', { textContent: it.args }));
+    more.append(el('h4', { textContent: it.ok === false ? 'What came back (an error)' : 'What came back' }), el('pre', { className: 'wrap-text', textContent: it.out || '(nothing)' }));
+    row.addEventListener('click', () => {
+      const open = more.hidden;
+      more.hidden = !open;
+      row.setAttribute('aria-expanded', String(open));
+      if (open) seek(it.t, false);
+    });
+    li.append(row, more);
+    return li;
+  });
+  $('#list').append(...rows);
+
+  // Filters.
+  const filterButtons = [...document.querySelectorAll('[data-filter]')];
+  filterButtons.forEach(b => b.addEventListener('click', () => {
+    filterButtons.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    const f = b.dataset.filter;
+    rows.forEach(li => { li.hidden = !(f === 'all' || (f === 'failed' ? li.dataset.failed : li.dataset.group === f)); });
+  }));
+
+  // Speed.
+  const speedButtons = [...document.querySelectorAll('[data-speed]')];
+  speedButtons.forEach(b => b.addEventListener('click', () => {
+    video.playbackRate = Number(b.dataset.speed);
+    speedButtons.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+
+  // Video sync.
+  function seek(agentT, play = true) {
+    video.currentTime = Math.max(0, D.offset + agentT - 0.4);
+    if (play) video.play().catch(() => {});
+  }
+  let current = -1;
+  const wide = matchMedia('(min-width: 981px)');
+  function sync() {
+    const t = video.currentTime - D.offset;
+    $('#agent-clock').textContent = mmss(Math.min(Math.max(t, 0), S.agent_seconds));
+    $('#call-count').textContent = D.items.filter(it => it.ok !== undefined && 'line' in it && it.t <= t).length;
+    let idx = -1;
+    D.items.forEach((it, i) => { if (it.t <= t) idx = i; });
+    if (t < 0) idx = -1;
+    if (idx !== current) {
+      rows.forEach((li, i) => { li.classList.toggle('now-ev', i === idx); li.classList.toggle('past', i < idx); });
+      current = idx;
+      if (idx >= 0 && $('#follow').checked && wide.matches && !rows[idx].hidden) {
+        const list = $('#list'), r = rows[idx];
+        list.scrollTo({ top: r.offsetTop - list.offsetTop - list.clientHeight / 3, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }
+    }
+    let ch = -1;
+    D.chapters.forEach((c, i) => { if (c.t <= t) ch = i; });
+    chapterEls.forEach((b, i) => { b.classList.toggle('current', i === ch); b.classList.toggle('done', i < ch); });
+    if (ch >= 0) {
+      $('#now-k').textContent = `Step ${ch + 1} of ${D.chapters.length} · ${mmss(D.chapters[ch].t)}`;
+      $('#now-title').textContent = D.chapters[ch].title;
+      $('#now-detail').textContent = D.chapters[ch].detail;
+    } else {
+      $('#now-k').textContent = 'Before the first message';
+      $('#now-title').textContent = 'The brief is typed in';
+      $('#now-detail').textContent = 'The recording starts in the live web chat. Press play, or pick any step on the right to jump to it.';
+    }
+  }
+  video.addEventListener('timeupdate', sync);
+  video.addEventListener('seeked', sync);
+  sync();
+
+  // Results and notes.
+  D.results.forEach(r => {
+    const body = r.src ? el('img', { src: r.src, alt: r.alt || r.caption, loading: 'lazy' }) : el('pre', { className: 'wrap-text', textContent: r.text });
+    $('#figs').append(el('figure', {}, body, el('figcaption', { textContent: r.caption })));
+  });
+  D.notes.forEach(p => $('#notes').append(el('p', { textContent: p })));
+})();
+</script>

@@ -1,13 +1,13 @@
 # Dashboard session with a mid-run message, screen-recorded live (2026-11-08 UTC)
 
-The live demo in the entry video (`presentation/video/out/demo.mp4`, after the Claude Code replay; on its own as `presentation/video/out/live-dash.mp4`). One new session on the public instance, `https://144-202-59-108.sslip.io` (binary `8f9d5b65`), from typing the task to the agent's last answer.
+The live demo in an earlier cut of the entry video; on its own it is `presentation/video/out/live-dash.mp4`. The entry video now uses the [inventory app recording](../shop-recording-2026-11-08/). One new session on the public instance, `https://144-202-59-108.sslip.io` (binary `8f9d5b65`), from typing the task to the agent's last answer.
 
 ## How it was recorded
 
 - `presentation/video/record_live.py` drove headless Chromium against the live web chat. It typed the brief in [presentation/video/tasks/dashboard.txt](../../../../presentation/video/tasks/dashboard.txt) and sent it. Once the thread showed the agent's first browser step, it typed and sent [dashboard-steer.txt](../../../../presentation/video/tasks/dashboard-steer.txt) while the agent was still working. It then waited for the session to go back to Ready. The screen was captured throughout.
 - The web chat signs in with the operator cookie. A sign-in that expired after 2 hours was added straight to the control database, so the operator password was never typed. That sign-in was deleted after the recording.
 - `presentation/video/compose_live.py` puts the recording next to a narration panel built from [narration/dashboard.json](../../../../presentation/video/narration/dashboard.json). The step times in that file are the event times in `session-events.json`.
-- The recording plays in real time. Where a step's description needs more reading time than the step took, the picture freezes at the start of that step and the badge reads "PAUSED TO EXPLAIN", with the agent clock stopped. There are 9 such pauses, 56.5 s in all. Nothing is sped up, cut or reordered.
+- The recording plays in real time. Where a step's description needs more reading time than the step took, the picture freezes at the start of that step and the badge reads "PAUSED TO EXPLAIN", with the agent clock stopped. There are 9 such pauses, 51.0 s in all. Nothing is sped up, cut or reordered.
 
 ## What the session did
 

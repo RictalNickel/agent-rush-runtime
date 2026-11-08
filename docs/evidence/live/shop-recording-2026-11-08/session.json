@@ -1,0 +1,16 @@
+{
+    "box_id": "c69dbe257f0f474d8936e4d8c48f0334",
+    "created_at": 1794122303435,
+    "forked_from": null,
+    "id": "132efae5-0c48-40ae-8197-3da9ff50718d",
+    "input_tokens": 129486,
+    "last_seq": 83,
+    "model": "glm-5.3-flash",
+    "model_calls": 39,
+    "output_tokens": 7945,
+    "owner": "operator",
+    "spend_usd": 0.015729350000000003,
+    "status": "idle",
+    "title": "Build a small inventory and orders app in /workspace/shop.",
+    "updated_at": 1794122373454
+}

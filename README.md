@@ -239,7 +239,7 @@ What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) 
 - [Design](docs/DESIGN.md) and [security](docs/SECURITY.md)
 - [Configuration](docs/CONFIGURATION.md) and [deployment](docs/DEPLOYMENT.md)
 - [Live deployment](docs/LIVE_DEPLOYMENT.md), [verification](docs/VERIFICATION.md) and [benchmarks](docs/BENCHMARKS.md)
-- [Hackathon entry draft](docs/SUBMISSION.md), [demo video](presentation/video/out/demo.mp4) and its [script](docs/VIDEO_SCRIPT.md), [pitch deck PDF](presentation/manim/out/boxoro-deck.pdf)
+- [Hackathon entry draft](docs/SUBMISSION.md), [demo video](presentation/video/out/demo.mp4) and its [script](docs/VIDEO_SCRIPT.md), [interactive session replay](presentation/replay/out/index.html), [pitch deck PDF](presentation/manim/out/boxoro-deck.pdf)
 
 ## License
 

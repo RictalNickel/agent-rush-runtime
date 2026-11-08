@@ -1,0 +1,1 @@
+Also show a red "Low stock" badge next to any product with fewer than 5 left, and add a test for it. Restart the app after the change and check in the browser that the badge text is on the page before you take the screenshot.
