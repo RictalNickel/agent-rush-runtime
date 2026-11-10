@@ -1,0 +1,250 @@
+{
+  "schema": "boxoro.security.catalog.v1",
+  "policy": "Scan owned or explicitly authorized targets only. Local static analysis is default; network and execution-based testing need explicit scoped authorization. No real credentials or malware samples in ordinary workspaces.",
+  "categories": [
+    {
+      "id": "sast",
+      "description": "Source vulnerability rules and taint analysis",
+      "tools": [
+        "semgrep",
+        "bandit",
+        "codeql",
+        "gosec",
+        "brakeman",
+        "spotbugs",
+        "psalm",
+        "phpstan"
+      ]
+    },
+    {
+      "id": "lint",
+      "description": "Style, types, correctness and secure coding",
+      "tools": [
+        "ruff",
+        "mypy",
+        "shellcheck",
+        "eslint",
+        "stylelint",
+        "hadolint",
+        "yamllint",
+        "actionlint",
+        "clang-tidy",
+        "cppcheck",
+        "clippy",
+        "golangci-lint"
+      ]
+    },
+    {
+      "id": "supply-chain-cve",
+      "description": "Dependency and package vulnerability detection",
+      "tools": [
+        "trivy",
+        "grype",
+        "osv-scanner",
+        "pip-audit",
+        "npm audit",
+        "cargo-audit",
+        "govulncheck"
+      ]
+    },
+    {
+      "id": "supply-chain-integrity",
+      "description": "SBOM, signatures, provenance and reputation signals",
+      "tools": [
+        "syft",
+        "cosign",
+        "slsa-verifier",
+        "scorecard",
+        "deps.dev",
+        "cyclonedx-cli",
+        "in-toto"
+      ]
+    },
+    {
+      "id": "credential-exposure",
+      "description": "Current and historical accidental secret exposure; never print recovered values",
+      "tools": [
+        "gitleaks",
+        "trufflehog",
+        "detect-secrets",
+        "git-secrets"
+      ]
+    },
+    {
+      "id": "credential-risk",
+      "description": "Authorized breach exposure checks or provider findings; never submit raw passwords or credentials",
+      "tools": [
+        "hibp-pwned-passwords",
+        "github-secret-scanning",
+        "cloud-provider-audit"
+      ]
+    },
+    {
+      "id": "malware-static",
+      "description": "Signatures, suspicious documents, executable classification",
+      "tools": [
+        "yara",
+        "yara-x",
+        "clamav",
+        "capa",
+        "die",
+        "pefile",
+        "oletools"
+      ]
+    },
+    {
+      "id": "malware-dynamic",
+      "description": "Behavior analysis in a dedicated isolated VM, not ordinary agent box",
+      "tools": [
+        "cuckoo",
+        "capa",
+        "sysmon-for-linux",
+        "strace"
+      ]
+    },
+    {
+      "id": "binary-reverse-engineering",
+      "description": "Firmware, ELF/PE, symbol and disassembly review",
+      "tools": [
+        "ghidra",
+        "rizin",
+        "radare2",
+        "binwalk",
+        "readelf",
+        "objdump",
+        "strings"
+      ]
+    },
+    {
+      "id": "fuzzing",
+      "description": "Crash discovery and invariant testing",
+      "tools": [
+        "afl++",
+        "libfuzzer",
+        "cargo-fuzz",
+        "atheris",
+        "honggfuzz",
+        "jazzer",
+        "boofuzz"
+      ]
+    },
+    {
+      "id": "web-dast",
+      "description": "Authorized staged web testing, scoped targets only",
+      "tools": [
+        "owasp-zap",
+        "nuclei",
+        "nikto",
+        "wapiti"
+      ]
+    },
+    {
+      "id": "api-security",
+      "description": "API contracts, schemas, input validation and auth tests",
+      "tools": [
+        "schemathesis",
+        "dredd",
+        "owasp-zap",
+        "42crunch"
+      ]
+    },
+    {
+      "id": "cloud-iac",
+      "description": "Infrastructure-as-code, public cloud posture and IAM review",
+      "tools": [
+        "checkov",
+        "tfsec",
+        "terrascan",
+        "conftest",
+        "prowler",
+        "scoutsuite"
+      ]
+    },
+    {
+      "id": "container-k8s",
+      "description": "Images, containers, Dockerfiles and Kubernetes configuration",
+      "tools": [
+        "trivy",
+        "grype",
+        "dockle",
+        "hadolint",
+        "kube-linter",
+        "kube-bench",
+        "kubescape",
+        "polaris"
+      ]
+    },
+    {
+      "id": "network-tls",
+      "description": "Authorized host configuration and TLS assessment",
+      "tools": [
+        "nmap",
+        "sslscan",
+        "sslyze",
+        "testssl.sh",
+        "lynis"
+      ]
+    },
+    {
+      "id": "identity-iam",
+      "description": "Privilege and cloud permissions policies",
+      "tools": [
+        "prowler",
+        "cloudsplaining",
+        "parliament",
+        "checkov"
+      ]
+    },
+    {
+      "id": "database",
+      "description": "SQL lint and authorized database security tests",
+      "tools": [
+        "sqlfluff",
+        "sqlmap",
+        "pg-audit"
+      ]
+    },
+    {
+      "id": "mobile",
+      "description": "Android and iOS static analysis; optional heavyweight workspaces",
+      "tools": [
+        "mobsf",
+        "jadx",
+        "apktool",
+        "semgrep"
+      ]
+    },
+    {
+      "id": "forensics",
+      "description": "Evidence parsing, memory and event timeline analysis",
+      "tools": [
+        "volatility3",
+        "plaso",
+        "autopsy",
+        "exiftool",
+        "bulk-extractor"
+      ]
+    },
+    {
+      "id": "ai-agent",
+      "description": "Prompt injection, tool misuse and LLM pipeline evaluations",
+      "tools": [
+        "promptfoo",
+        "garak",
+        "giskard",
+        "pyrit"
+      ]
+    },
+    {
+      "id": "policy-report",
+      "description": "Normalized evidence, compliance and policy enforcement",
+      "tools": [
+        "opa",
+        "conftest",
+        "sarif",
+        "cyclonedx-cli",
+        "oscal"
+      ]
+    }
+  ]
+}
