@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""Boxoro local security scan dispatcher. Default mode has no target network access."""
+import argparse
+import datetime
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+PROFILES = {
+    "fast": ["ruff", "bandit", "semgrep", "shellcheck", "cppcheck"],
+    "code": ["ruff", "bandit", "semgrep", "shellcheck", "cppcheck", "mypy"],
+    "secrets": ["detect-secrets", "gitleaks"],
+    "supply-chain": ["trivy", "osv-scanner", "syft"],
+    "config": ["checkov", "trivy", "hadolint"],
+    "malware-static": ["clamscan", "yara"],
+}
+TIMEOUT = 180
+
+def main():
+    parser = argparse.ArgumentParser(description="Offline-first authorized local code/security scanner")
+    parser.add_argument("target", help="Existing directory under /workspace")
+    parser.add_argument("--profile", choices=[*PROFILES, "all"], default="fast")
+    parser.add_argument("--output", default="/workspace/security-results/report.json")
+    parser.add_argument("--timeout", type=int, default=TIMEOUT)
+    args = parser.parse_args()
+    root = Path("/workspace").resolve()
+    target = Path(args.target).resolve()
+    output = Path(args.output).resolve()
+    if target != root and root not in target.parents:
+        parser.error("target must be under /workspace")
+    if not target.is_dir():
+        parser.error("target must be an existing directory")
+    if root not in output.parents or output == root:
+        parser.error("output must be a file under /workspace")
+    if not (1 <= args.timeout <= 600):
+        parser.error("timeout must be 1-600 seconds")
+    # Restrict file access; never follow repository-supplied symlinks outside workspace.
+    if target.is_symlink():
+        parser.error("symlink targets are not allowed")
+    selected = list(dict.fromkeys(t for values in PROFILES.values() for t in values)) if args.profile == "all" else PROFILES[args.profile]
+    results = []
+    for tool in selected:
+        installed = shutil.which(tool)
+        if not installed:
+            results.append({"tool": tool, "status": "unavailable", "message": "Not installed in this image; optional tool"})
+            continue
+        cmd = command_for(tool, target)
+        if cmd is None:
+            results.append({"tool": tool, "status": "skipped", "message": "Needs explicit configuration, rules, or a dedicated runtime"})
+            continue
+        try:
+            run = subprocess.run(cmd, cwd=target, capture_output=True, text=True,
+                                 timeout=args.timeout, env={**os.environ, "NO_COLOR": "1"})
+            # Scanner exit codes represent findings as well as failures; preserve code without declaring clean.
+            results.append({"tool": tool, "status": "completed", "exit_code": run.returncode,
+                            "stdout": run.stdout[:25000], "stderr": run.stderr[:4000],
+                            "truncated": len(run.stdout) > 25000 or len(run.stderr) > 4000})
+        except subprocess.TimeoutExpired:
+            results.append({"tool": tool, "status": "timeout", "timeout_seconds": args.timeout})
+        except OSError as error:
+            results.append({"tool": tool, "status": "error", "message": str(error)})
+    report = {"schema": "boxoro.security.report.v1", "target": str(target),
+              "profile": args.profile, "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              "scope": "local source; authorization required for external scans",
+              "results": results,
+              "warning": "A zero exit code or empty finding list is not a security guarantee. Outputs may contain sensitive data; review/redact before sharing."}
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, indent=2) + "\n")
+    os.chmod(output, 0o600)
+    print(json.dumps({"report": str(output), "tools": len(results),
+                      "completed": sum(x["status"] == "completed" for x in results),
+                      "unavailable_or_skipped": sum(x["status"] in ("unavailable", "skipped") for x in results)}))
+    return 0
+
+def command_for(tool, target):
+    target = str(target)
+    if tool == "ruff":
+        return ["ruff", "check", "--output-format", "json", target]
+    if tool == "bandit":
+        return ["bandit", "-r", "-f", "json", target]
+    if tool == "semgrep":
+        return ["semgrep", "scan", "--metrics", "off", "--config", "/opt/security/rules/semgrep.yml", "--json", target]
+    if tool == "shellcheck":
+        scripts = sorted([str(p) for p in Path(target).rglob("*.sh") if p.is_file() and not p.is_symlink()])[:100]
+        return ["shellcheck", "-f", "json", *scripts] if scripts else None
+    if tool == "cppcheck":
+        return ["cppcheck", "--enable=warning,style,performance,portability", "--xml", "--xml-version=2", target]
+    if tool == "mypy":
+        return ["mypy", "--no-incremental", target]
+    if tool == "detect-secrets":
+        return ["detect-secrets", "scan", "--all-files", target]
+    if tool == "gitleaks":
+        return ["gitleaks", "detect", "--source", target, "--no-git", "--redact", "--report-format", "json"]
+    if tool == "trivy":
+        return ["trivy", "fs", "--offline-scan", "--skip-db-update", "--format", "json", target]
+    if tool == "osv-scanner":
+        return ["osv-scanner", "scan", "source", "--format", "json", "--recursive", target]
+    if tool == "syft":
+        return ["syft", "dir:" + target, "-o", "cyclonedx-json"]
+    if tool == "checkov":
+        return ["checkov", "-d", target, "-o", "json", "--quiet"]
+    if tool == "hadolint":
+        dockerfiles = sorted([str(p) for p in Path(target).rglob("Dockerfile*") if p.is_file() and not p.is_symlink()])[:100]
+        return ["hadolint", "-f", "json", *dockerfiles] if dockerfiles else None
+    if tool == "clamscan":
+        return ["clamscan", "-r", "--infected", "--no-summary", target]
+    # YARA needs a vetted rule pack; do not invent one or scan blindly.
+    return None
+
+if __name__ == "__main__":
+    sys.exit(main())
