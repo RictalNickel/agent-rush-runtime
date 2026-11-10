@@ -1,0 +1,11 @@
+# Prototype dependency ranges. Before production, compile and commit a hash-locked
+# requirements file and build from reviewed immutable artifacts.
+semgrep>=1.0,<3
+bandit>=1.7,<2
+ruff>=0.12,<1
+pip-audit>=2.7,<3
+detect-secrets>=1.5,<2
+checkov>=3.0,<4
+schemathesis>=4.0,<5
+yamllint>=1.30,<2
+mypy>=1.10,<2
