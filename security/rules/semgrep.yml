@@ -1,0 +1,19 @@
+rules:
+  - id: boxoro-python-shell-true
+    languages: [python]
+    severity: WARNING
+    message: "shell=True with subprocess increases command injection risk; review untrusted input."
+    patterns:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+  - id: boxoro-python-unsafe-pickle
+    languages: [python]
+    severity: WARNING
+    message: "Deserializing untrusted pickle data can execute code."
+    pattern-either:
+      - pattern: pickle.load(...)
+      - pattern: pickle.loads(...)
+  - id: boxoro-javascript-eval
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: "Dynamic eval can enable script injection; review inputs."
+    pattern: eval(...)
