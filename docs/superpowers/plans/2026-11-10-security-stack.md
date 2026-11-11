@@ -76,9 +76,13 @@
 
 - [x] Run full Rust suite, fmt/clippy, Python suite and meaningful smoke scans (one documented /tmp environment exclusion; see validation record).
 - [x] Review the complete diff independently; fix important findings and retest.
-- [ ] Commit cohesive changes, push a feature branch and create a draft pull request if connector permissions allow; do not merge or deploy.
-- [ ] Report verified results, unresolved infrastructure requirements and startup steps.
+- [x] Commit cohesive changes, publish the feature branch and create a draft pull request; do not merge or deploy.
+- [x] Record verified results, unresolved infrastructure requirements and startup steps in the validation and operating guides.
 
 ## Deployment status
 
 Implementation and host-level checks are complete; image build, YARA compilation, live database coverage and gVisor qualification require the documented build/worker environment. See `docs/SECURITY_STACK_VALIDATION.md`. No image digest or deployment success is fabricated.
+
+## Delivery
+
+Draft pull request: [#2 — Add Boxoro security agent, scanner images and intelligence MCP](https://github.com/RictalNickel/agent-rush-runtime/pull/2). Feature branch: `feat/boxoro-security-stack`; target branch: `work`. The code is published for review. Deployment qualification remains explicit outstanding work; the branch is not merged.
