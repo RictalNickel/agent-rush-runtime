@@ -41,6 +41,11 @@ RUN python3 -m venv /opt/box/venv \
  && /opt/box/venv/bin/pip install --no-cache-dir "playwright==${PLAYWRIGHT_PY_VERSION}"
 COPY box-tools/browse box-tools/websearch box-tools/fetch box-tools/convert /opt/box/bin/
 COPY box-tools/README.md /opt/box/README.md
+COPY box-tools/security-scan /opt/box/bin/security-scan
+COPY security/boxoro_security /opt/box/security/boxoro_security
+COPY security/rules /opt/box/security/rules
+# The base helper reports missing scanner coverage honestly. Install the optional
+# deploy/security.Dockerfile image for the pinned scanner suite.
 RUN chmod 0755 /opt/box/bin/*
 
 # Packages a command installs for itself (`pip install --user`, or plain `pip install`,

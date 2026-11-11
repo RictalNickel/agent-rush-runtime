@@ -1,0 +1,49 @@
+#!/usr/bin/python3
+"""Run Boxoro's fixed security operations from one strict JSON argument."""
+
+from pathlib import Path
+import json
+import signal
+import sys
+
+# Installation-relative import only; never use the workspace or PYTHONPATH.
+security_home = Path(__file__).resolve().parents[1] / "security"
+sys.path.insert(0, str(security_home))
+from boxoro_security.runner import parse_json, run_request
+from boxoro_security.process import ScanCancelled
+
+
+def cancelled(_signum, _frame):
+    raise ScanCancelled("Security scan was cancelled.")
+
+
+def main():
+    for sig in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+        signal.signal(sig, cancelled)
+    if len(sys.argv) == 2 and sys.argv[1] == "--help":
+        print(
+            'security-scan \'{"action":"doctor"}\'\nActions: doctor, scan, image, web, update_databases. See docs/SECURITY_STACK.md.'
+        )
+        return 0
+    try:
+        if len(sys.argv) != 2:
+            raise ValueError("expected one JSON argument")
+        result = run_request(parse_json(sys.argv[1]), security_home=security_home)
+        print(json.dumps(result, ensure_ascii=True))
+        # Findings and incomplete scans are successful tool invocations with an
+        # explicit gate. CI must inspect gate, not this transport exit status.
+        return 0
+    except (ValueError, OSError, ScanCancelled) as error:
+        # Invalid request messages are fixed policy text; filesystem paths and
+        # provider/scanner diagnostics are deliberately not reflected.
+        message = (
+            str(error)
+            if isinstance(error, (ValueError, ScanCancelled))
+            else "Security workspace or report storage is unavailable."
+        )
+        print(json.dumps({"error": message, "gate": "incomplete"}))
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

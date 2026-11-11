@@ -6,7 +6,7 @@ use crate::{
     sandbox_api::{MAX_EXEC_TIMEOUT_SECONDS, MAX_FILE_BYTES},
 };
 use anyhow::{Context, Result, anyhow, bail, ensure};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 pub const BROWSER_ACTIONS: &[&str] = &[
@@ -29,6 +29,8 @@ const MAX_CALL_BYTES: usize = 512 * 1024;
 /// Largest shell command run in a box, whether written by the model or expanded from a
 /// custom tool template.
 pub const MAX_COMMAND_BYTES: usize = 64 * 1024;
+/// Leave 30 seconds for runner cleanup/reporting within the worker's 600-second ceiling.
+pub const DEFAULT_SECURITY_SCAN_TIMEOUT_SECONDS: u32 = 540;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -51,6 +53,30 @@ pub enum ConfigAction {
 pub enum McpAction {
     ListTools,
     Call,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SecurityAction {
+    Doctor,
+    Scan,
+    Image,
+    Web,
+    UpdateDatabases,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SecurityProfile {
+    Quick,
+    Standard,
+    Secrets,
+    Dependencies,
+    Sast,
+    Lint,
+    SupplyChain,
+    Iac,
+    Malware,
 }
 
 /// Fields the agent may change in its own config; absent fields keep their value.
@@ -153,6 +179,21 @@ pub enum ToolCall {
         input: String,
         output: String,
     },
+    SecurityScan {
+        action: SecurityAction,
+        #[serde(default)]
+        path: Option<String>,
+        #[serde(default)]
+        profile: Option<SecurityProfile>,
+        #[serde(default)]
+        image: Option<String>,
+        #[serde(default)]
+        target: Option<String>,
+        #[serde(default)]
+        offline: Option<bool>,
+        #[serde(default)]
+        timeout_seconds: Option<u32>,
+    },
     Skill {
         action: SkillAction,
         #[serde(default)]
@@ -207,6 +248,7 @@ impl ToolCall {
             ToolCall::WebSearch { .. } => "web_search",
             ToolCall::WebFetch { .. } => "web_fetch",
             ToolCall::ConvertFile { .. } => "convert_file",
+            ToolCall::SecurityScan { .. } => "security_scan",
             ToolCall::Skill { .. } => "skill",
             ToolCall::AgentConfig { .. } => "agent_config",
             ToolCall::Mcp { .. } => "mcp",
@@ -306,6 +348,64 @@ impl ToolCall {
                 path(input)?;
                 path(output)?;
             }
+            ToolCall::SecurityScan {
+                action,
+                path: scan_path,
+                profile,
+                image,
+                target,
+                offline,
+                timeout_seconds,
+            } => {
+                ensure!(
+                    timeout_seconds
+                        .is_none_or(|t| (10..=DEFAULT_SECURITY_SCAN_TIMEOUT_SECONDS).contains(&t)),
+                    "security_scan timeout_seconds must be 10-{DEFAULT_SECURITY_SCAN_TIMEOUT_SECONDS}"
+                );
+                ensure!(
+                    matches!(action, SecurityAction::Scan) || scan_path.is_none(),
+                    "security_scan path is only valid for scan"
+                );
+                ensure!(
+                    matches!(action, SecurityAction::Scan) || profile.is_none(),
+                    "security_scan profile is only valid for scan"
+                );
+                ensure!(
+                    matches!(action, SecurityAction::Image) || image.is_none(),
+                    "security_scan image is only valid for image"
+                );
+                ensure!(
+                    matches!(action, SecurityAction::Web) || target.is_none(),
+                    "security_scan target is only valid for web"
+                );
+                ensure!(
+                    matches!(
+                        action,
+                        SecurityAction::Scan
+                            | SecurityAction::Image
+                            | SecurityAction::UpdateDatabases
+                    ) || offline.is_none(),
+                    "security_scan offline is only valid for scan, image or update_databases"
+                );
+                if let Some(scan_path) = scan_path {
+                    path(scan_path)?;
+                }
+                match action {
+                    SecurityAction::Image => ensure!(
+                        image.as_deref().is_some_and(valid_security_image),
+                        "security_scan image requires registry/repo@sha256: followed by 64 lowercase hex digits (at most 512 bytes; no tag or credentials)"
+                    ),
+                    SecurityAction::Web => ensure!(
+                        target.as_deref().is_some_and(valid_security_target),
+                        "security_scan web target must be http://127.0.0.1:PORT or http://[::1]:PORT with port 1-65535, root path only, and no credentials, query or fragment"
+                    ),
+                    SecurityAction::UpdateDatabases => ensure!(
+                        *offline == Some(false),
+                        "security_scan update_databases requires explicit offline=false"
+                    ),
+                    SecurityAction::Doctor | SecurityAction::Scan => {}
+                }
+            }
             ToolCall::Reply { text, attachments } => {
                 ensure!(
                     !text.trim().is_empty() && text.len() <= 64 * 1024,
@@ -320,6 +420,63 @@ impl ToolCall {
         }
         Ok(())
     }
+}
+
+fn valid_security_port(port: &str) -> bool {
+    !port.is_empty()
+        && port.len() <= 5
+        && port.bytes().all(|b| b.is_ascii_digit())
+        && port.parse::<u16>().is_ok_and(|port| port > 0)
+}
+
+/// Deliberately accept a literal origin, without URL normalization or DNS resolution.
+fn valid_security_target(target: &str) -> bool {
+    if target.len() > 200 {
+        return false;
+    }
+    let Some(port) = target
+        .strip_prefix("http://127.0.0.1:")
+        .or_else(|| target.strip_prefix("http://[::1]:"))
+    else {
+        return false;
+    };
+    valid_security_port(port.strip_suffix('/').unwrap_or(port))
+}
+
+/// A bounded registry/repository digest reference, never a tag, URL or local archive.
+fn valid_security_image(reference: &str) -> bool {
+    if reference.len() > 512 {
+        return false;
+    }
+    let Some((name, digest)) = reference.split_once("@sha256:") else {
+        return false;
+    };
+    if digest.len() != 64
+        || !digest
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
+        return false;
+    }
+    let Some((registry, repository)) = name.split_once('/') else {
+        return false;
+    };
+    let host = match registry.split_once(':') {
+        Some((host, port)) if valid_security_port(port) => host,
+        Some(_) => return false,
+        None => registry,
+    };
+    let alnum = |b: u8| b.is_ascii_lowercase() || b.is_ascii_digit();
+    host.split('.').all(|label| {
+        let bytes = label.as_bytes();
+        bytes.first().is_some_and(|b| alnum(*b))
+            && bytes.last().is_some_and(|b| alnum(*b))
+            && bytes.iter().all(|b| alnum(*b) || *b == b'-')
+    }) && repository.split('/').all(|segment| {
+        segment
+            .split(['.', '_', '-'])
+            .all(|part| !part.is_empty() && part.bytes().all(alnum))
+    })
 }
 
 /// Models sometimes wrap the object in a fence or a sentence, or add a second object.
@@ -407,8 +564,14 @@ pub fn parse_call(content: &str, config: &AgentConfig) -> Result<ToolCall> {
         BUILTIN_TOOLS.contains(&name.as_str()),
         "unknown tool {name:?}"
     );
-    let call: ToolCall =
-        serde_json::from_value(value).map_err(|e| anyhow!("invalid arguments for {name}: {e}"))?;
+    // Decode this security envelope from the original text so duplicate fields are
+    // rejected rather than silently collapsed by the preliminary JSON Value parse.
+    let call: ToolCall = if name == "security_scan" {
+        serde_json::from_str(json_span(content))
+    } else {
+        serde_json::from_value(value)
+    }
+    .map_err(|e| anyhow!("invalid arguments for {name}: {e}"))?;
     call.validate()?;
     Ok(call)
 }
@@ -574,6 +737,10 @@ const TOOL_DOCS: &[(&str, &str)] = &[
     (
         "convert_file",
         r#"{"tool":"convert_file","input":"report.md","output":"report.pdf"} (md, html, docx, odt, pdf, xlsx, pptx, png, jpg, webp, wav, mp3, mp4 and more)"#,
+    ),
+    (
+        "security_scan",
+        r#"{"tool":"security_scan","action":"scan","path":".","profile":"standard","offline":true,"timeout_seconds":540} actions: doctor{timeout_seconds?}, scan{path?,profile?,offline?,timeout_seconds?}, image{image,offline?,timeout_seconds?}, web{target,timeout_seconds?}, update_databases{offline:false,timeout_seconds?}. Profiles: quick, standard, secrets, dependencies, sast, lint, supply_chain, iac, malware. Defaults: path '.', profile standard, offline true, timeout_seconds 540 (10-540). image requires registry/repo@sha256:64-lowercase-hex with no tag; web requires literal http://127.0.0.1:PORT or http://[::1]:PORT, root path only, no credentials/query/fragment. No arbitrary commands or scanner flags. Load security-audit first; doctor identifies missing scanners/databases. Scans run only in your box and report coverage and limitations; a missing or failed check is not a pass."#,
     ),
     (
         "skill",

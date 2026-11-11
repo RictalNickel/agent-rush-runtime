@@ -1,0 +1,3 @@
+title = "Boxoro trusted Gitleaks rules"
+[extend]
+useDefault = true

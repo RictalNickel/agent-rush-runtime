@@ -102,6 +102,11 @@ pub fn builtin_skills() -> Vec<Skill> {
             "Convert documents, images, audio and video between formats.",
             "Use convert_file with input and output paths; the extensions choose the converter (pandoc for md/html/docx/epub, LibreOffice for office formats and PDF, ImageMagick for images, ffmpeg for audio and video).\n- md -> pdf: convert to docx or html first if a direct conversion fails.\n- Check the result exists and is non-empty: bash ls -l <out> (and pdfinfo for PDFs).\n- For batches, loop in bash over convert <in> <out>.\n- Attach the outputs in reply.",
         ),
+        (
+            "security-audit",
+            "Audit secrets, vulnerable dependencies, code, configuration, supply-chain risks and malware indicators; prioritize fixes, test and rescan with explicit coverage limits.",
+            include_str!("../deploy/security/SECURITY_SKILL.md"),
+        ),
     ]
     .into_iter()
     .map(|(name, description, body)| Skill {

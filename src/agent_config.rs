@@ -19,6 +19,7 @@ pub const BUILTIN_TOOLS: &[&str] = &[
     "web_search",
     "web_fetch",
     "convert_file",
+    "security_scan",
     "skill",
     "agent_config",
     "mcp",

@@ -146,7 +146,7 @@ fn skills_are_validated_owner_scoped_and_bounded() {
         ("lint", "Run linters", "Run ruff.")
     );
     assert!(parse_skill_md("no front matter").is_err());
-    assert_eq!(builtin_skills().len(), 3);
+    assert_eq!(builtin_skills().len(), 4);
     assert!(builtin_skills().iter().all(|s| valid_skill_name(&s.name)));
 }
 

@@ -1,0 +1,58 @@
+# Original Boxoro rules, distributed under this repository's MIT license.
+# These intentionally narrow checks are not a substitute for full language and
+# framework-specific dataflow rules or manual authorization/business-logic review.
+rules:
+  - id: boxoro-python-tls-verification-disabled
+    languages: [python]
+    severity: ERROR
+    message: TLS certificate verification is disabled.
+    pattern: requests.$METHOD(..., verify=False, ...)
+    metadata:
+      category: security
+      cwe: CWE-295
+  - id: boxoro-python-shell-command
+    languages: [python]
+    severity: WARNING
+    message: Shell command construction requires input-flow review.
+    pattern: subprocess.$METHOD(..., shell=True, ...)
+    metadata:
+      category: security
+      cwe: CWE-78
+  - id: boxoro-python-unsafe-deserialization
+    languages: [python]
+    severity: WARNING
+    message: Pickle deserialization must never consume untrusted input.
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+    metadata:
+      category: security
+      cwe: CWE-502
+  - id: boxoro-js-dynamic-code
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Dynamic code execution requires review of input trust.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+    metadata:
+      category: security
+      cwe: CWE-95
+  - id: boxoro-js-tls-verification-disabled
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: TLS certificate verification is disabled.
+    pattern: "{..., rejectUnauthorized: false, ...}"
+    metadata:
+      category: security
+      cwe: CWE-295
+  - id: boxoro-js-dom-html-sink
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: HTML assignment requires review of sanitization and input trust.
+    pattern-either:
+      - pattern: $ELEMENT.innerHTML = $VALUE
+      - pattern: $ELEMENT.outerHTML = $VALUE
+    metadata:
+      category: security
+      cwe: CWE-79

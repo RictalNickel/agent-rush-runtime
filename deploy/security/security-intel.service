@@ -1,0 +1,44 @@
+[Unit]
+Description=Boxoro optional security intelligence MCP
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=boxoro-security-intel
+Group=boxoro-security-intel
+WorkingDirectory=/opt/agent-rush/security
+# Provision this root-owned, mode-0600 file separately. Never put keys in a box.
+EnvironmentFile=/etc/agent-rush/security-intel.env
+ExecStart=/usr/bin/python3 -I /opt/agent-rush/security/intel_server.py
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=5
+KillMode=control-group
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectProc=invisible
+ProcSubset=pid
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+LimitNOFILE=256
+TasksMax=64
+MemoryMax=512M
+CPUQuota=200%
+
+[Install]
+WantedBy=multi-user.target
