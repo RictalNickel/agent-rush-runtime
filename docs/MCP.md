@@ -58,6 +58,12 @@ A typical exchange:
 3. `send_message` with a follow-up, then `wait_for_reply` again.
 4. `read_file` or `run_command` to inspect the result, then `close_session`.
 
+## Security audits through a session
+
+Use `start_session` or `send_message` to ask the agent to load `security-audit`, run `security_scan doctor`, and audit a project already in its workspace. The agent's native `security_scan` tool runs inside that box; this adds no tool to Boxoro's public MCP endpoint and no REST route. Use `wait_for_reply`, `get_events` and `read_file` to collect the findings and report artifacts.
+
+The security workspace image provides the pinned scanners. Reports distinguish completed checks from missing tools, stale databases and other incomplete coverage. See [SECURITY_STACK.md](SECURITY_STACK.md) for the workflow and profiles and [SECURITY_STACK_RESEARCH.md](SECURITY_STACK_RESEARCH.md) for scanner choices. The [optional intelligence MCP bridge](SECURITY_INTELLIGENCE.md) is a separate operator-registered control-side service for narrow identifier lookups; it is not required for local scanning.
+
 ## Errors
 
 - **Tool failures** come back as a normal result with `isError: true` and a text message. Examples are a session that is not found, a closed session, or a workspace error. A session that belongs to another key's owner is reported as "Session not found", exactly like one that does not exist.

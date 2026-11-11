@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-11-11",
+  "supported_platforms": [
+    "linux/amd64"
+  ],
+  "platform_note": "The inherited Boxoro workspace builds Rust for x86_64. arm64 requires a separately validated base, binaries, Python wheels and image smoke run.",
+  "artifact_verification": "SHA-256 values are pinned from official GitHub release asset digest metadata. The build rehashes downloaded bytes; metadata research is not a successful binary download or image build.",
+  "tools": [
+    {
+      "name": "gitleaks",
+      "version": "8.30.1",
+      "profile": "core",
+      "kind": "tar",
+      "executable": "gitleaks",
+      "member": "gitleaks",
+      "license": "MIT",
+      "release_api": "https://api.github.com/repos/gitleaks/gitleaks/releases/tags/v8.30.1",
+      "release_url": "https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1",
+      "artifacts": {
+        "linux/amd64": {
+          "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
+          "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+          "size": 8230402
+        }
+      },
+      "notices": [
+        {
+          "url": "https://raw.githubusercontent.com/gitleaks/gitleaks/v8.30.1/LICENSE",
+          "filename": "LICENSE",
+          "sha256": "e3884b252b3bfc045e55be43a34d1e80da070bc6f804ac95bf4660e97d62ebc6",
+          "size": 1069
+        }
+      ]
+    },
+    {
+      "name": "trivy",
+      "version": "0.76.2",
+      "profile": "core",
+      "kind": "tar",
+      "executable": "trivy",
+      "member": "trivy",
+      "license": "Apache-2.0",
+      "release_api": "https://api.github.com/repos/aquasecurity/trivy/releases/tags/v0.76.2",
+      "release_url": "https://github.com/aquasecurity/trivy/releases/tag/v0.76.2",
+      "artifacts": {
+        "linux/amd64": {
+          "url": "https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz",
+          "sha256": "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf",
+          "size": 52714130
+        }
+      },
+      "notices": [
+        {
+          "url": "https://raw.githubusercontent.com/aquasecurity/trivy/v0.76.2/LICENSE",
+          "filename": "LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "size": 11357
+        }
+      ]
+    },
+    {
+      "name": "syft",
+      "version": "1.57.1",
+      "profile": "core",
+      "kind": "tar",
+      "executable": "syft",
+      "member": "syft",
+      "license": "Apache-2.0",
+      "release_api": "https://api.github.com/repos/anchore/syft/releases/tags/v1.57.1",
+      "release_url": "https://github.com/anchore/syft/releases/tag/v1.57.1",
+      "artifacts": {
+        "linux/amd64": {
+          "url": "https://github.com/anchore/syft/releases/download/v1.57.1/syft_1.57.1_linux_amd64.tar.gz",
+          "sha256": "bf52519eb57f675d47c07d43213cb6dff6449f3d6d1147ff6701ed91f44eef0c",
+          "size": 31432061
+        }
+      },
+      "notices": [
+        {
+          "url": "https://raw.githubusercontent.com/anchore/syft/v1.57.1/LICENSE",
+          "filename": "LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "size": 11357
+        }
+      ]
+    },
+    {
+      "name": "ruff",
+      "version": "0.17.4",
+      "profile": "core",
+      "kind": "tar",
+      "executable": "ruff",
+      "member": "ruff",
+      "license": "MIT",
+      "release_api": "https://api.github.com/repos/astral-sh/ruff/releases/tags/0.17.4",
+      "release_url": "https://github.com/astral-sh/ruff/releases/tag/0.17.4",
+      "artifacts": {
+        "linux/amd64": {
+          "url": "https://github.com/astral-sh/ruff/releases/download/0.17.4/ruff-x86_64-unknown-linux-gnu.tar.gz",
+          "sha256": "3ab2b34aeacdbc1ea5c529cdbda3e05792633d587228123fd09f3b5a0facb27a",
+          "size": 10177351
+        }
+      },
+      "notices": [
+        {
+          "url": "https://raw.githubusercontent.com/astral-sh/ruff/0.17.4/LICENSE",
+          "filename": "LICENSE",
+          "sha256": "2597d854122b77ddc71971564ca2350a37608575ce324adc5650a2b2051c8f18",
+          "size": 20731
+        }
+      ]
+    },
+    {
+      "name": "shellcheck",
+      "version": "0.11.0",
+      "profile": "core",
+      "kind": "tar",
+      "executable": "shellcheck",
+      "member": "shellcheck",
+      "license": "GPL-3.0",
+      "release_api": "https://api.github.com/repos/koalaman/shellcheck/releases/tags/v0.11.0",
+      "release_url": "https://github.com/koalaman/shellcheck/releases/tag/v0.11.0",
+      "artifacts": {
+        "linux/amd64": {
+          "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz",
+          "sha256": "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198",
+          "size": 2559196
+        }
+      },
+      "notices": [
+        {
+          "url": "https://raw.githubusercontent.com/koalaman/shellcheck/v0.11.0/LICENSE",
+          "filename": "LICENSE",
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "size": 35149
+        }
+      ],
+      "license_note": "Upstream Cabal metadata declares GPL-3; consult the preserved upstream license and source when redistributing."
+    },
+    {
+      "name": "hadolint",
+      "version": "2.15.1",
+      "profile": "core",
+      "kind": "raw",
+      "executable": "hadolint",
+      "license": "GPL-3.0",
+      "release_api": "https://api.github.com/repos/hadolint/hadolint/releases/tags/v2.15.1",
+      "release_url": "https://github.com/hadolint/hadolint/releases/tag/v2.15.1",
+      "artifacts": {
+        "linux/amd64": {
+          "url": "https://github.com/hadolint/hadolint/releases/download/v2.15.1/hadolint-linux-x86_64",
+          "sha256": "c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507",
+          "size": 55661096
+        }
+      },
+      "notices": [
+        {
+          "url": "https://raw.githubusercontent.com/hadolint/hadolint/v2.15.1/LICENSE",
+          "filename": "LICENSE",
+          "sha256": "589ed823e9a84c56feb95ac58e7cf384626b9cbf4fda2a907bc36e103de1bad2",
+          "size": 35141
+        }
+      ],
+      "license_note": "Upstream Cabal metadata declares GPL-3; consult the preserved upstream license and source when redistributing."
+    },
+    {
+      "name": "clamav",
+      "version": "1.5.4",
+      "profile": "malware",
+      "kind": "deb",
+      "executable": "clamscan",
+      "license": "GPL-2.0-only",
+      "release_api": "https://api.github.com/repos/Cisco-Talos/clamav/releases/tags/clamav-1.5.4",
+      "release_url": "https://github.com/Cisco-Talos/clamav/releases/tag/clamav-1.5.4",
+      "artifacts": {
+        "linux/amd64": {
+          "url": "https://github.com/Cisco-Talos/clamav/releases/download/clamav-1.5.4/clamav-1.5.4.linux.x86_64.deb",
+          "sha256": "28d6efc5b4423e7830c3559339552eb53870a9eac51ac4efb37d60530d329886",
+          "size": 105819396
+        }
+      },
+      "executables": [
+        "clamscan",
+        "freshclam"
+      ],
+      "install_note": "Installs the verified official Debian package at image build time. No daemon is started by the image and no signatures are included. Preserve upstream notices including the UnRAR license when redistributing.",
+      "notices": [
+        {
+          "url": "https://raw.githubusercontent.com/Cisco-Talos/clamav/clamav-1.5.4/COPYING.txt",
+          "filename": "COPYING.txt",
+          "sha256": "0c4fd2fa9733fc9122503797648710851e4ee6d9e4969dd33fcbd8c63cd2f584",
+          "size": 18738
+        },
+        {
+          "url": "https://raw.githubusercontent.com/Cisco-Talos/clamav/clamav-1.5.4/libclamunrar/license.txt",
+          "filename": "UNRAR-LICENSE.txt",
+          "sha256": "6ecc1687808b7d66b24f874755abfed7464d9751ed0001cd4e8e5d9bf397ff8a",
+          "size": 1976
+        }
+      ]
+    },
+    {
+      "name": "yara",
+      "version": "4.6.0",
+      "profile": "malware",
+      "kind": "git-source",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/VirusTotal/yara.git",
+      "commit": "6d47342e825e59f5d8f20874d0778332bcec83a6",
+      "release_url": "https://github.com/VirusTotal/yara/releases/tag/v4.6.0",
+      "integrity": "git-commit-sha1",
+      "configure": [
+        "--disable-shared",
+        "--enable-static",
+        "--disable-proc-scan",
+        "--disable-cuckoo",
+        "--disable-magic",
+        "--with-crypto"
+      ],
+      "install_note": "No upstream Linux binary release asset. Fetch exactly this content-addressed commit, verify HEAD, and build in the disposable malware-builder stage. This source pin is Git SHA-1, not a claimed SHA-256 archive checksum."
+    }
+  ],
+  "python": {
+    "semgrep_version": "1.185.0",
+    "license": "LGPL-2.1-or-later",
+    "supported_runtime": "CPython 3.12 / Ubuntu 24.04 / linux amd64",
+    "wheel_hashes": [
+      "0eb6aaadad5b957af96d1300487e10af1dc8016e8ef53072effb48cd4906c02b"
+    ],
+    "wheel_filename": "semgrep-1.185.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-manylinux_2_34_x86_64.whl",
+    "pypi_url": "https://pypi.org/project/semgrep/1.185.0/",
+    "uv_version": "0.13.6",
+    "upstream_files": [
+      {
+        "name": "pyproject.toml",
+        "url": "https://raw.githubusercontent.com/semgrep/semgrep/v1.185.0/cli/pyproject.toml",
+        "sha256": "b5f23035358c956d3e9835d003791cfb14dbf24658172457989989ba1b52f7fe"
+      },
+      {
+        "name": "uv.lock",
+        "url": "https://raw.githubusercontent.com/semgrep/semgrep/v1.185.0/cli/uv.lock",
+        "sha256": "d732b9bdcc5ed940b73def8b5dbe98f2003cf05ef50aa28ba82f6c37f91a3f6e"
+      }
+    ],
+    "rules_policy": "Only original Boxoro rules are bundled. Do not redistribute Semgrep registry rules without reviewing their separate license."
+  },
+  "rustfmt": {
+    "toolchain": "1.90.0",
+    "component": "rustfmt",
+    "source": "https://static.rust-lang.org/dist/channel-rust-1.90.0.toml",
+    "integrity": "rustup component verification against the pinned toolchain release manifest; no independent rustfmt SHA-256 is asserted in this lock."
+  }
+}

@@ -88,3 +88,18 @@ Picks the converter from the two extensions:
 - audio and video: ffmpeg
 
 An unsupported pair exits 2 with the reason.
+
+## security-scan
+
+Runs the fixed security operations used by the agent's native `security_scan` tool and built-in `security-audit` skill. It accepts one JSON argument; the native tool invokes it with an isolated Python interpreter:
+
+```sh
+/usr/bin/python3 -I /opt/box/bin/security-scan '{"action":"doctor"}'
+/usr/bin/python3 -I /opt/box/bin/security-scan '{"action":"scan","path":"app","profile":"standard","offline":true,"timeout_seconds":540}'
+```
+
+The updated base workspace includes the helper and rules. The optional security image installs the pinned scanners under `/opt/security/bin`; `doctor` reports readiness and missing coverage. Actions are `doctor`, `scan`, `image`, `web` and `update_databases`. Source scans use a bounded private snapshot and do not execute project scripts. Image scans require an immutable registry digest; web checks accept only a literal loopback HTTP origin. Database updates require explicit `offline:false`.
+
+Scan summaries include a `gate` (`pass`, `fail` or `incomplete`) and report paths under `/workspace/.security/reports/`. A successful helper process can still report findings or incomplete coverage: inspect `gate`, not only the exit code. Requests default to offline operation and a 540-second budget; scanner offline options do not replace the worker's network controls.
+
+The native tool uses the existing agent/session flow, with no new REST route or public MCP tool. See the [security stack guide](../../docs/SECURITY_STACK.md) for the full request contract, profiles and image setup, [scanner research](../../docs/SECURITY_STACK_RESEARCH.md) for coverage limits, and [optional control-side intelligence](../../docs/SECURITY_INTELLIGENCE.md) for enrichment whose credentials stay outside the box.

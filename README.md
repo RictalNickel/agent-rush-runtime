@@ -163,6 +163,7 @@ These are the agent's built-in tools. Its configuration can disable any of them 
 | `browser` | box | Drive headless Chromium: open pages, snapshot, click, type, scroll, screenshot |
 | `web_search`, `web_fetch` | box | Search the web without an API key, and read a page as text |
 | `convert_file` | box | Convert between documents, images, audio and video (pandoc, LibreOffice, ImageMagick, ffmpeg) |
+| `security_scan` | box | Audit source, immutable images and local HTTP headers; report findings, coverage and remediation evidence |
 | `skill` | control | List, load, save and delete skills |
 | `agent_config` | control | Read or change its own configuration, review its history and revert it |
 | `mcp` | control | List and call tools on the operator's remote MCP servers |
@@ -170,9 +171,15 @@ These are the agent's built-in tools. Its configuration can disable any of them 
 
 Each model call makes one tool call, and the result goes back to the model. The loop continues until `reply`, a limit or a cancel. The box publishes no ports, so a web app the agent starts on `localhost` is reachable only from inside the box.
 
+### Security audits
+
+The built-in `security-audit` skill uses native `security_scan` to inspect secrets, dependencies, code, configuration and supply-chain risks, with optional malware checks. Start by asking a session to load the skill, run `doctor`, and audit the project with the `standard` profile. The optional security workspace image supplies the pinned scanners; missing tools or databases remain explicit in the result.
+
+This uses the existing REST session messages or MCP `start_session` / `send_message` flow. It adds no REST route or tool to Boxoro's public MCP endpoint. Reports return through the existing session events and file downloads. See the [security stack guide](docs/SECURITY_STACK.md), [tool research and limitations](docs/SECURITY_STACK_RESEARCH.md), and [optional control-side intelligence MCP](docs/SECURITY_INTELLIGENCE.md).
+
 ## Extend the agent
 
-- **Skills.** Owner-scoped skills in the `SKILL.md` format: a name, a description and a body of up to 64 KiB, up to 200 per owner. Three built-in skills (`web-research`, `app-testing`, `file-conversion`) are always available. Manage yours with `/v1/skills`, or let the agent save them.
+- **Skills.** Owner-scoped skills in the `SKILL.md` format: a name, a description and a body of up to 64 KiB, up to 200 per owner. Four built-in skills (`web-research`, `app-testing`, `file-conversion`, `security-audit`) are always available. Manage yours with `/v1/skills`, or let the agent save them.
 - **Custom tools.** Define up to 20 tools as bash command templates with `{{arg}}` placeholders. Each value is shell-quoted before the command runs in the box. Custom tools cannot reuse built-in names.
 - **Agent config.** `system_addendum` (up to 8 KiB), `disabled_tools`, `custom_tools`, `mcp_servers` (only servers the operator allows) and `reasoning_effort` (`low`, `medium` or `high`). Every change is a new version, and any version can be restored. See [API.md](docs/API.md#endpoints).
 - **Remote MCP servers.** The operator lists servers in a JSON file named by `AR_MCP_SERVERS_FILE`: a name, a streamable HTTP URL, optional headers and an optional `allowed_tools` list. Headers hold credentials, which stay on the control VM. Up to 32 servers. MCP stdio servers are not run on the control VM.
@@ -237,6 +244,7 @@ What is not yet done is listed in [LIVE_DEPLOYMENT.md](docs/LIVE_DEPLOYMENT.md) 
 
 - [API](docs/API.md), [MCP](docs/MCP.md), [install](docs/INSTALL.md), [voice](docs/VOICE.md)
 - [Design](docs/DESIGN.md) and [security](docs/SECURITY.md)
+- [Security stack](docs/SECURITY_STACK.md), [scanner research](docs/SECURITY_STACK_RESEARCH.md) and [optional intelligence MCP](docs/SECURITY_INTELLIGENCE.md)
 - [Configuration](docs/CONFIGURATION.md) and [deployment](docs/DEPLOYMENT.md)
 - [Live deployment](docs/LIVE_DEPLOYMENT.md), [verification](docs/VERIFICATION.md) and [benchmarks](docs/BENCHMARKS.md)
 - [Hackathon entry draft](docs/SUBMISSION.md), [demo video](presentation/video/out/demo.mp4) and its [script](docs/VIDEO_SCRIPT.md), [interactive session replay](presentation/replay/out/index.html), [pitch deck PDF](presentation/manim/out/boxoro-deck.pdf)

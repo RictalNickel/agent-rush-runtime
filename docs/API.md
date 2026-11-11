@@ -109,6 +109,14 @@ curl -s -H "authorization: Bearer $AR_KEY" -H 'content-type: application/json' \
   -d '{"text":"Also add a /health route"}' $HOST/v1/sessions/$SID/messages
 ```
 
+### Security audits
+
+Request an audit through `POST /v1/sessions` or an existing session's messages endpoint, using an ordinary message such as:
+
+> Load the security-audit skill, run security_scan doctor, then audit /workspace/app with the standard profile. Report prioritized findings, coverage and remediation steps.
+
+The agent invokes the native `security_scan` tool inside its session box. Tool events and report files use the existing events, stream and file endpoints; there is no new REST route or public MCP tool. The optional security image supplies the pinned scanners, and unavailable checks remain incomplete. See [SECURITY_STACK.md](SECURITY_STACK.md) for setup, profiles and report gates, [the scanner research](SECURITY_STACK_RESEARCH.md) for coverage limits, and [SECURITY_INTELLIGENCE.md](SECURITY_INTELLIGENCE.md) for optional control-side enrichment.
+
 ### Events
 
 Every step is an event with a `seq` that counts up from 1 within the session:

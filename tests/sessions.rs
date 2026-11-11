@@ -7,6 +7,7 @@ use agent_rush::{
     },
     session::{ChargedError, ModelReply, SessionError, SessionLimits, SessionModel, Sessions},
     session_store::{SessionEvent, SessionStatus},
+    skills::parse_skill_md,
     tools::{ToolCall, apply_edit, expand_template, parse_call, shell_quote, truncate_bytes},
 };
 use anyhow::{Result, anyhow, bail};
@@ -126,6 +127,7 @@ struct FakeBoxes {
     next: AtomicUsize,
     boxes: Mutex<HashMap<String, HashMap<String, Vec<u8>>>>,
     commands: Mutex<Vec<(String, String)>>,
+    exec_requests: Mutex<Vec<ExecRequest>>,
     lose_once: AtomicBool,
     exec_started: Notify,
     /// Releases a running `block` command.
@@ -170,6 +172,7 @@ impl BoxClient for FakeBoxes {
                 .lock()
                 .unwrap()
                 .push((box_id.to_string(), request.command.clone()));
+            self.exec_requests.lock().unwrap().push(request.clone());
             let now = self.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
             self.max_in_flight.fetch_max(now, Ordering::SeqCst);
             struct Leave<'a>(&'a AtomicUsize);
@@ -738,6 +741,356 @@ async fn custom_tool_expands_with_shell_quoted_args() {
         "head -n '3' '$(id)'"
     );
     assert!(expand_template("x {{missing}}", args.as_object().unwrap()).is_err());
+}
+
+#[test]
+fn security_scan_decodes_actions_profiles_and_nullable_options() {
+    let config = AgentConfig::default();
+    let digest = "a".repeat(64);
+    for call in [
+        json!({"tool":"security_scan","action":"doctor"}),
+        json!({"tool":"security_scan","action":"scan"}),
+        json!({"tool":"security_scan","action":"image","image":format!("registry.example/team/app@sha256:{digest}")}),
+        json!({"tool":"security_scan","action":"web","target":"http://127.0.0.1:8080"}),
+        json!({"tool":"security_scan","action":"update_databases","offline":false}),
+        json!({"tool":"security_scan","action":"doctor","path":null,"profile":null,"image":null,"target":null,"offline":null,"timeout_seconds":null}),
+        json!({"tool":"security_scan","action":"scan","path":null,"profile":null,"offline":null,"timeout_seconds":null}),
+    ] {
+        let parsed = parse_call(&call.to_string(), &config)
+            .unwrap_or_else(|error| panic!("valid call rejected: {call}: {error}"));
+        assert_eq!(parsed.name(), "security_scan");
+    }
+    for profile in [
+        "quick",
+        "standard",
+        "secrets",
+        "dependencies",
+        "sast",
+        "lint",
+        "supply_chain",
+        "iac",
+        "malware",
+    ] {
+        let call = json!({"tool":"security_scan","action":"scan","profile":profile});
+        assert!(parse_call(&call.to_string(), &config).is_ok(), "{profile}");
+    }
+}
+
+#[test]
+fn security_scan_rejects_unknown_and_action_inappropriate_options() {
+    let config = AgentConfig::default();
+    parse_call(r#"{"tool":"security_scan","action":"scan"}"#, &config).unwrap();
+    for call in [
+        json!({"tool":"security_scan"}),
+        json!({"tool":"security_scan","action":"run"}),
+        json!({"tool":"security_scan","action":"SCAN"}),
+        json!({"tool":"security_scan","action":"scan","profile":"all"}),
+        json!({"tool":"security_scan","action":"scan","extra":null}),
+        json!({"tool":"security_scan","action":"scan","command":"id"}),
+        json!({"tool":"security_scan","action":"scan","cwd":"/tmp"}),
+        json!({"tool":"security_scan","action":"scan","image":"registry/app"}),
+        json!({"tool":"security_scan","action":"scan","target":"http://127.0.0.1:80"}),
+        json!({"tool":"security_scan","action":"doctor","path":"."}),
+        json!({"tool":"security_scan","action":"doctor","profile":"standard"}),
+        json!({"tool":"security_scan","action":"doctor","offline":false}),
+        json!({"tool":"security_scan","action":"doctor","image":"registry/app"}),
+        json!({"tool":"security_scan","action":"doctor","target":"http://127.0.0.1:80"}),
+        json!({"tool":"security_scan","action":"image"}),
+        json!({"tool":"security_scan","action":"image","image":null}),
+        json!({"tool":"security_scan","action":"web"}),
+        json!({"tool":"security_scan","action":"web","target":null}),
+        json!({"tool":"security_scan","action":"web","target":"http://127.0.0.1:80","offline":true}),
+        json!({"tool":"security_scan","action":"web","target":"http://127.0.0.1:80","offline":false}),
+        json!({"tool":"security_scan","action":"web","target":"http://127.0.0.1:80","path":"."}),
+        json!({"tool":"security_scan","action":"web","target":"http://127.0.0.1:80","profile":"quick"}),
+        json!({"tool":"security_scan","action":"update_databases"}),
+        json!({"tool":"security_scan","action":"update_databases","offline":true}),
+        json!({"tool":"security_scan","action":"update_databases","offline":null}),
+        json!({"tool":"security_scan","action":"update_databases","offline":false,"path":"."}),
+        json!({"tool":"security_scan","action":"update_databases","offline":false,"profile":"quick"}),
+    ] {
+        assert!(
+            parse_call(&call.to_string(), &config).is_err(),
+            "accepted {call}"
+        );
+    }
+    let image = format!("registry.example/app@sha256:{}", "a".repeat(64));
+    for (key, value) in [
+        ("path", json!(".")),
+        ("profile", json!("standard")),
+        ("target", json!("http://127.0.0.1:80")),
+    ] {
+        let mut call = json!({"tool":"security_scan","action":"image","image":image});
+        call[key] = value;
+        assert!(
+            parse_call(&call.to_string(), &config).is_err(),
+            "accepted {call}"
+        );
+    }
+}
+
+#[test]
+fn security_scan_rejects_wrong_types_and_out_of_range_timeouts() {
+    let config = AgentConfig::default();
+    for timeout in [10, 540] {
+        let call = json!({"tool":"security_scan","action":"scan","timeout_seconds":timeout});
+        assert!(parse_call(&call.to_string(), &config).is_ok());
+    }
+    for timeout in [
+        json!(0),
+        json!(9),
+        json!(541),
+        json!(-1),
+        json!(10.5),
+        json!("540"),
+        json!(true),
+    ] {
+        let call = json!({"tool":"security_scan","action":"scan","timeout_seconds":timeout});
+        assert!(
+            parse_call(&call.to_string(), &config).is_err(),
+            "accepted {call}"
+        );
+    }
+    for (key, value) in [
+        ("action", Value::Null),
+        ("action", json!(1)),
+        ("path", json!(1)),
+        ("path", json!("")),
+        ("path", json!(" \t")),
+        ("path", json!("a\0b")),
+        ("path", json!("a".repeat(4097))),
+        ("profile", json!([])),
+        ("offline", json!("false")),
+        ("offline", json!(0)),
+    ] {
+        let mut call = json!({"tool":"security_scan","action":"scan"});
+        call[key] = value;
+        assert!(
+            parse_call(&call.to_string(), &config).is_err(),
+            "accepted {call}"
+        );
+    }
+}
+
+#[test]
+fn security_scan_image_requires_an_explicit_registry_and_lowercase_sha256_digest() {
+    let config = AgentConfig::default();
+    let digest = "a".repeat(64);
+    for image in [
+        format!("registry.example/team/app@sha256:{digest}"),
+        format!("localhost:5000/app-one_v2.3@sha256:{digest}"),
+        format!("registry/app@sha256:{digest}"),
+    ] {
+        let call = json!({"tool":"security_scan","action":"image","image":image});
+        assert!(parse_call(&call.to_string(), &config).is_ok(), "{image}");
+    }
+    for image in [
+        "registry.example/app:latest".to_string(),
+        format!("app@sha256:{digest}"),
+        format!("registry.example/app:tag@sha256:{digest}"),
+        format!("https://registry.example/app@sha256:{digest}"),
+        format!("user:password@registry.example/app@sha256:{digest}"),
+        format!("registry.example/app@sha256:{}", "A".repeat(64)),
+        format!("registry.example/app@sha256:{}", "a".repeat(63)),
+        format!("registry.example/app@sha256:{}", "a".repeat(65)),
+        format!("registry.example/app@sha256:{}g", "a".repeat(63)),
+        format!("registry.example/App@sha256:{digest}"),
+        format!("registry.example/app__name@sha256:{digest}"),
+        format!("registry..example/app@sha256:{digest}"),
+        format!("-registry.example/app@sha256:{digest}"),
+        format!("registry.example-/app@sha256:{digest}"),
+        format!("registry.example:0/app@sha256:{digest}"),
+        format!("registry.example:65536/app@sha256:{digest}"),
+        format!("registry.example:abc/app@sha256:{digest}"),
+        format!("registry.example/../app@sha256:{digest}"),
+        format!("registry.example/app@sha256:{digest} "),
+        format!("registry.example/app@sha256:{digest};id"),
+        format!("registry.example/{}@sha256:{digest}", "a".repeat(512)),
+    ] {
+        let call = json!({"tool":"security_scan","action":"image","image":image});
+        assert!(
+            parse_call(&call.to_string(), &config).is_err(),
+            "accepted {image}"
+        );
+    }
+}
+
+#[test]
+fn security_scan_web_accepts_only_literal_loopback_http_root_origins() {
+    let config = AgentConfig::default();
+    for target in [
+        "http://127.0.0.1:1",
+        "http://127.0.0.1:65535/",
+        "http://[::1]:8080",
+        "http://[::1]:80/",
+    ] {
+        let call = json!({"tool":"security_scan","action":"web","target":target});
+        assert!(parse_call(&call.to_string(), &config).is_ok(), "{target}");
+    }
+    for target in [
+        "http://localhost:8080",
+        "http://example.com:8080",
+        "https://127.0.0.1:8080",
+        "HTTP://127.0.0.1:8080",
+        "http://127.1:8080",
+        "http://2130706433:8080",
+        "http://127.0.0.2:8080",
+        "http://[::ffff:127.0.0.1]:8080",
+        "http://127.0.0.1",
+        "http://[::1]",
+        "http://127.0.0.1:0",
+        "http://127.0.0.1:65536",
+        "http://127.0.0.1:+80",
+        "http://127.0.0.1:000080",
+        "http://127.0.0.1:80/path",
+        "http://127.0.0.1:80//",
+        "http://127.0.0.1:80/..",
+        "http://127.0.0.1:80?",
+        "http://127.0.0.1:80/#",
+        "http://127.0.0.1:80/#fragment",
+        "http://user@127.0.0.1:80",
+        "http://127.0.0.1:80@evil.example",
+        "http://127.0.0.1:80\\evil.example",
+        "http://127.0.0.1:80\n",
+        " http://127.0.0.1:80",
+        "http://127.0.0.1:80/%2e%2e",
+    ] {
+        let call = json!({"tool":"security_scan","action":"web","target":target});
+        assert!(
+            parse_call(&call.to_string(), &config).is_err(),
+            "accepted {target}"
+        );
+    }
+}
+
+#[test]
+fn security_scan_rejects_duplicate_json_arguments() {
+    let config = AgentConfig::default();
+    parse_call(r#"{"tool":"security_scan","action":"scan"}"#, &config).unwrap();
+    for call in [
+        r#"{"tool":"security_scan","action":"doctor","action":"scan"}"#,
+        r#"{"tool":"security_scan","action":"scan","offline":false,"offline":true}"#,
+        r#"{"tool":"security_scan","action":"scan","path":"one","path":"two"}"#,
+        r#"{"tool":"security_scan","tool":"security_scan","action":"doctor"}"#,
+    ] {
+        assert!(parse_call(call, &config).is_err(), "accepted {call}");
+    }
+}
+
+#[tokio::test]
+async fn security_scan_dispatches_one_quoted_json_argument_with_bounded_box_timeouts() {
+    let h = harness(
+        vec![
+            json!({"tool":"security_scan","action":"scan"}),
+            json!({"tool":"security_scan","action":"scan","path":"it's here; $(id) `whoami`","profile":"secrets","offline":false,"timeout_seconds":10}),
+            json!({"tool":"security_scan","action":"doctor","timeout_seconds":30}),
+            json!({"tool":"security_scan","action":"web","target":"http://[::1]:8080/"}),
+            json!({"tool":"security_scan","action":"image","image":"registry.example/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}),
+            json!({"tool":"security_scan","action":"update_databases","offline":false}),
+            json!({"tool":"security_scan","action":"scan","path":null,"profile":null,"offline":null,"timeout_seconds":null}),
+            reply("Scanned"),
+        ],
+        SessionLimits::default(),
+    );
+    let id = h.run("Run the security checks").await;
+    let requests = h.boxes.exec_requests.lock().unwrap().clone();
+    let expected = [
+        (
+            r#"/usr/bin/python3 -I /opt/box/bin/security-scan '{"action":"scan","offline":true,"path":".","profile":"standard","timeout_seconds":540}'"#,
+            570,
+        ),
+        (
+            r#"/usr/bin/python3 -I /opt/box/bin/security-scan '{"action":"scan","offline":false,"path":"it'\''s here; $(id) `whoami`","profile":"secrets","timeout_seconds":10}'"#,
+            40,
+        ),
+        (
+            r#"/usr/bin/python3 -I /opt/box/bin/security-scan '{"action":"doctor","timeout_seconds":30}'"#,
+            60,
+        ),
+        (
+            r#"/usr/bin/python3 -I /opt/box/bin/security-scan '{"action":"web","target":"http://[::1]:8080/","timeout_seconds":540}'"#,
+            570,
+        ),
+        (
+            r#"/usr/bin/python3 -I /opt/box/bin/security-scan '{"action":"image","image":"registry.example/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","offline":true,"timeout_seconds":540}'"#,
+            570,
+        ),
+        (
+            r#"/usr/bin/python3 -I /opt/box/bin/security-scan '{"action":"update_databases","offline":false,"timeout_seconds":540}'"#,
+            570,
+        ),
+        (
+            r#"/usr/bin/python3 -I /opt/box/bin/security-scan '{"action":"scan","offline":true,"path":".","profile":"standard","timeout_seconds":540}'"#,
+            570,
+        ),
+    ];
+    assert_eq!(
+        requests.len(),
+        expected.len(),
+        "all checks must dispatch to the box"
+    );
+    for (request, (command, timeout)) in requests.iter().zip(expected) {
+        assert_eq!(request.command, command);
+        assert_eq!(request.timeout_seconds, Some(timeout));
+        assert_eq!(request.cwd, None);
+        assert_eq!(request.stdin, None);
+    }
+    assert!(h.results(&id).iter().all(|result| result["ok"] == true));
+    assert!(h.model.calls()[0].0.contains(r#"{"tool":"security_scan""#));
+}
+
+#[tokio::test]
+async fn security_scan_can_be_disabled_without_allocating_a_box() {
+    let h = harness(
+        vec![
+            json!({"tool":"agent_config","action":"update","config":{"disabled_tools":["security_scan"]}}),
+            json!({"tool":"security_scan","action":"doctor"}),
+            reply("Disabled"),
+        ],
+        SessionLimits::default(),
+    );
+    let id = h.run("Disable security checks").await;
+    let results = h.results(&id);
+    assert_eq!(results[0]["ok"], true);
+    assert_eq!(results[1]["ok"], false);
+    assert!(results[1]["output"].as_str().unwrap().contains("disabled"));
+    assert_eq!(h.boxes.creates.load(Ordering::SeqCst), 0);
+    assert!(h.boxes.exec_requests.lock().unwrap().is_empty());
+    assert!(!h.model.calls()[1].0.contains(r#"{"tool":"security_scan""#));
+}
+
+#[tokio::test]
+async fn security_scan_audit_skill_is_indexed_and_loads_as_one_skill_document() {
+    let h = harness(
+        vec![
+            json!({"tool":"skill","action":"list"}),
+            json!({"tool":"skill","action":"load","name":"security-audit"}),
+            reply("Loaded"),
+        ],
+        SessionLimits::default(),
+    );
+    let id = h.run("Load security audit guidance").await;
+    let results = h.results(&id);
+    assert_eq!(results[1]["ok"], true);
+    let index: Vec<Value> = serde_json::from_str(results[0]["output"].as_str().unwrap()).unwrap();
+    let entries: Vec<_> = index
+        .iter()
+        .filter(|entry| entry["name"] == "security-audit")
+        .collect();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0]["builtin"], true);
+    assert!(h.model.calls()[0].0.contains("- security-audit:"));
+    let boxes = h.boxes.boxes.lock().unwrap();
+    let copied = boxes["box-1"]
+        .get(".skills/security-audit/SKILL.md")
+        .unwrap();
+    let (name, description, body) = parse_skill_md(std::str::from_utf8(copied).unwrap()).unwrap();
+    assert_eq!(name, "security-audit");
+    assert_eq!(description, entries[0]["description"].as_str().unwrap());
+    assert!(
+        !body.starts_with("---"),
+        "embedded asset must be a body, not nested front matter"
+    );
 }
 
 #[tokio::test]

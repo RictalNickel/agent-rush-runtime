@@ -1,0 +1,9 @@
+check-for-app-update: false
+java:
+  use-network: false
+  use-maven-local-repository: false
+javascript:
+  search-remote-licenses: false
+python:
+  search-remote-licenses: false
+  guess-unpinned-requirements: false

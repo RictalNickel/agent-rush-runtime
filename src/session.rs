@@ -15,9 +15,10 @@ use crate::{
     session_store::{MAX_MESSAGE_BYTES, SessionEvent, SessionStatus, SessionView},
     skills::builtin_skills,
     tools::{
-        AgentConfigPatch, ConfigAction, MAX_COMMAND_BYTES, McpAction, SkillAction, SkillIndexEntry,
-        ToolCall, apply_edit, clip_strings, effort, expand_template, json_span, parse_call,
-        shell_quote, system_prompt, truncate_bytes, truncate_text,
+        AgentConfigPatch, ConfigAction, DEFAULT_SECURITY_SCAN_TIMEOUT_SECONDS, MAX_COMMAND_BYTES,
+        McpAction, SecurityAction, SecurityProfile, SkillAction, SkillIndexEntry, ToolCall,
+        apply_edit, clip_strings, effort, expand_template, json_span, parse_call, shell_quote,
+        system_prompt, truncate_bytes, truncate_text,
     },
 };
 use anyhow::{Context, Result, anyhow, bail, ensure};
@@ -1497,6 +1498,42 @@ impl Inner {
             ToolCall::ConvertFile { input, output } => {
                 let command = format!("convert {} {}", shell_quote(&input), shell_quote(&output));
                 self.shell(owner, id, command, None, Some(MAX_EXEC_TIMEOUT_SECONDS))
+                    .await
+            }
+            ToolCall::SecurityScan {
+                action,
+                path,
+                profile,
+                image,
+                target,
+                offline,
+                timeout_seconds,
+            } => {
+                let timeout = timeout_seconds.unwrap_or(DEFAULT_SECURITY_SCAN_TIMEOUT_SECONDS);
+                let mut payload = json!({"action":action,"timeout_seconds":timeout});
+                match action {
+                    SecurityAction::Doctor => {}
+                    SecurityAction::Scan => {
+                        payload["path"] = json!(path.as_deref().unwrap_or("."));
+                        payload["profile"] = json!(profile.unwrap_or(SecurityProfile::Standard));
+                        payload["offline"] = json!(offline.unwrap_or(true));
+                    }
+                    SecurityAction::Image => {
+                        payload["image"] = json!(image.context("image action requires image")?);
+                        payload["offline"] = json!(offline.unwrap_or(true));
+                    }
+                    SecurityAction::Web => {
+                        payload["target"] = json!(target.context("web action requires target")?);
+                    }
+                    SecurityAction::UpdateDatabases => {
+                        payload["offline"] = json!(false);
+                    }
+                }
+                let command = format!(
+                    "/usr/bin/python3 -I /opt/box/bin/security-scan {}",
+                    shell_quote(&payload.to_string())
+                );
+                self.shell(owner, id, command, None, Some(timeout + 30))
                     .await
             }
             ToolCall::Custom { name, args } => {

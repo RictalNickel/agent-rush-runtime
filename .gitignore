@@ -16,3 +16,5 @@ voice/ref.wav
 test-results/
 playwright-report/
 /target/
+/security-image-build.json
+/.security/

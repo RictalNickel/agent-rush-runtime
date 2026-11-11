@@ -1,0 +1,17 @@
+{
+  "servers": [
+    {
+      "name": "security-intel",
+      "url": "http://127.0.0.1:8767/mcp",
+      "headers": {
+        "Authorization": "Bearer REPLACE_WITH_SECURITY_INTEL_TOKEN"
+      },
+      "allowed_tools": [
+        "cve_context",
+        "osv_vulnerability",
+        "password_prefix",
+        "artifact_reputation"
+      ]
+    }
+  ]
+}
