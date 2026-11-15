@@ -53,7 +53,7 @@ Follow the specification's binding requirements and exact catalog/request fields
 - [x] Review cross-component correctness and repair findings.
 - [x] Run Rust/Python/catalog/dependency/real-tool checks available here.
 - [x] Document all executed validation and deployment prerequisites.
-- [ ] Commit, upload all source/locks/docs/tests and open a draft PR; verify remote tree.
+- [x] Commit, upload all source/locks/docs/tests and open a draft PR; verify remote tree.
 
 ## Progress ledger
 
@@ -66,3 +66,4 @@ Follow the specification's binding requirements and exact catalog/request fields
 - Reviewed: runtime/native/installer/finance/catalog reviews repaired concrete defects; reviewed dependency overrides patched high npm advisory chains. BackstopJS and Checkov are optional with retained advisories.
 - Not executed here: Docker/BuildKit image builds, gVisor host qualification, paid/live provider queries, device/emulator and cloud/database account setup. These remain explicit deployment gates rather than completion claims.
 - Integration ruling: upload the authorized feature branch and draft PR against the existing security feature branch; preserve the checkout and do not merge or deploy an unqualified image.
+- Published: [draft PR #3](https://github.com/RictalNickel/agent-rush-runtime/pull/3), stacked on security PR #2. The 312-file implementation commit `8734f52808f85095b265e1072e76b3a7011ae6ca` has tree `6d3505242711955bc01053466f7a9839393736ac`, exactly matching the verified local implementation. GitHub confirms the expected head/base and a clean merge; deployment gates above remain outstanding.
