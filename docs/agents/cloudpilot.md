@@ -22,7 +22,7 @@ Reviewed infrastructure changes, rendered manifests, schema/policy findings, ver
 
 ## Runtime discipline
 
-Use `specialist` with this agent ID. Start with `describe` and `doctor`; select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
+Use `specialist` with this agent ID. Start with `describe` and `doctor` scoped to the intended `workflow` or `operation`; choose one selector, never both. This probes only the tools needed for that task. Use an unscoped profile `doctor` for image audits or a full availability inventory. Select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
 
 Use the exact input paths and typed parameters required by the operation. Declare project-code execution, network and workspace mutation only when the task authorizes those effects. These declarations are request checks, not an operating-system security boundary. Project tests, plugins and configs can perform additional actions; review their scope. Do not invent free-form shell, executable, environment or CLI-argument fields.
 
@@ -54,7 +54,7 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
@@ -65,19 +65,25 @@ A workflow stops at a failed or incomplete step. It preserves the result and doe
 
 ### Discovery and readiness
 
+Discover and probe only the intended workflow:
+
 ```json
 {
   "action": "describe",
-  "agent": "cloudpilot"
+  "agent": "cloudpilot",
+  "workflow": "infra-preflight"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "cloudpilot"
+  "agent": "cloudpilot",
+  "workflow": "infra-preflight"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -89,7 +95,7 @@ Executable paths come from trusted tool IDs under `/opt/box/agents/bin/`. Suffix
 
 Scan local Terraform, Kubernetes and Dockerfile configuration.
 
-Command: `/opt/box/agents/bin/checkov --directory {path} --output json --quiet --skip-download --download-external-modules false --framework terraform kubernetes dockerfile`
+Command: `/opt/box/agents/bin/checkov --directory '{path}' --output json --quiet --skip-download --download-external-modules false --framework terraform kubernetes dockerfile`
 
 Effects: project_code. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -99,7 +105,7 @@ Project config/custom checks can execute Python. Disables external-module downlo
 
 Lint a local Helm chart and its checked-in subcharts.
 
-Command: `/opt/box/agents/bin/helm lint {path} --strict --with-subcharts`
+Command: `/opt/box/agents/bin/helm lint '{path}' --strict --with-subcharts`
 
 Effects: project_code. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -109,7 +115,7 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Render a local Helm chart without a cluster install.
 
-Command: `/opt/box/agents/bin/helm template boxoro {path}`
+Command: `/opt/box/agents/bin/helm template boxoro '{path}'`
 
 Effects: project_code. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -119,7 +125,7 @@ No dependency-update, install, upgrade, hooks or kubeconfig argument is accepted
 
 Validate Kubernetes resource structure against pinned server-version schemas.
 
-Command: `/opt/box/agents/bin/kubeconform -strict -summary -output json -kubernetes-version {kubernetes_version} {input}`
+Command: `/opt/box/agents/bin/kubeconform -strict -summary -output json -kubernetes-version '{kubernetes_version}' '{input}'`
 
 Effects: network. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -134,7 +140,7 @@ Schema retrieval requires network/cache. The chosen version must match the targe
 
 Check infrastructure source formatting without initialization or apply.
 
-Command: `/opt/box/agents/bin/opentofu fmt -check -recursive {path}`
+Command: `/opt/box/agents/bin/opentofu fmt -check -recursive '{path}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[3]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -144,7 +150,7 @@ Formatting only; does not evaluate providers, estimate costs, plan or apply infr
 
 Scan infrastructure files for misconfiguration.
 
-Command: `/opt/box/agents/bin/trivy config --config  --ignorefile  --disable-telemetry --skip-version-check --skip-check-update --include-non-failures --format json --exit-code 1 {path}`
+Command: `/opt/box/agents/bin/trivy config --config '' --ignorefile '' --disable-telemetry --skip-version-check --skip-check-update --include-non-failures --format json --exit-code 1 '{path}'`
 
 Effects: network. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -170,7 +176,7 @@ Uses embedded checks when the private check cache is empty; check-bundle updates
 | `kustomize-render` | Render a local Kubernetes overlay without exec plugins. | network |
 | `yaml-lint` | Validate YAML syntax and style. | none declared |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 

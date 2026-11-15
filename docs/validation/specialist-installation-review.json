@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "reviewed_on": "2026-11-15",
+  "source_baseline": "c40250453c66fe320d64e40acda782cbff2a5c85",
+  "scope": "host installer checks; Docker build and container qualification not run",
+  "runtime": {
+    "python": "3.12.14",
+    "node": "24.22.3",
+    "npm": "11.19.1"
+  },
+  "hashing_fixture": {
+    "input_bytes": 33554432,
+    "sha256": "05f052c8f6da8ee5228ec291820b559c4be183773b9e97a6b82e30dacff85dd3",
+    "before": {
+      "peak_traced_python_bytes": 33559866,
+      "elapsed_seconds": 0.11843352199866786
+    },
+    "after": {
+      "peak_traced_python_bytes": 2103198,
+      "elapsed_seconds": 0.022652943000139203
+    },
+    "method": "32 writes of a 1 MiB ASCII x block; tracemalloc around resolve-locks.digest; identical input and digest",
+    "limitation": "Single host runs. Measures Python allocations for hashing, not process RSS. Elapsed times are sensitive to filesystem caches and scheduling."
+  },
+  "offline_installation": {
+    "fresh_prefix": true,
+    "cache": "existing trusted npm and content-addressed binary downloads",
+    "installer_arguments": ["--family", "suite", "--tools", "prettier,buf,hadolint", "--offline"],
+    "lock_sha256": "4543b98d111f673c5bf075eb77028c47cfe0b57cad2277f575bb0496022ca0bf",
+    "exit_code": 0,
+    "elapsed_seconds": 2.3894097630000033,
+    "probes": {
+      "prettier": {"exit_code": 0, "stdout": "3.10.1", "stderr": ""},
+      "buf": {"exit_code": 0, "stdout": "1.75.0", "stderr": ""},
+      "hadolint": {"exit_code": 0, "stdout": "Haskell Dockerfile Linter 2.15.1", "stderr": ""}
+    },
+    "limitation": "No cold-install comparison and no Docker image timing."
+  },
+  "regression_tests": {
+    "command": "python3 -m unittest qa.test_agents_install qa.test_agents_install_review -v",
+    "passed": 14,
+    "failed": 0,
+    "reproduced_before_fix": [
+      "modified Python package and unlocked dependency survived a repeat hashed install",
+      "interrupted release download left a partial reusable cache entry"
+    ],
+    "integrity_checks": [
+      "modified cached binary rejected",
+      "modified offline Python wheel rejected",
+      "lock-file hash and path validation",
+      "safe archive member validation",
+      "versioned npm lifecycle script approval"
+    ]
+  },
+  "static_checks": {
+    "shell_syntax": "passed",
+    "hadolint_errors": 0,
+    "hadolint_existing_messages": ["DL3002", "DL3066"]
+  },
+  "docker_build": "not_run",
+  "container_smoke": "not_run"
+}

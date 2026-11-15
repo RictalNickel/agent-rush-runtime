@@ -16,13 +16,15 @@ Explain structural risks in terms of concrete change cost, ownership and behavio
 
 Map entrypoints, modules and dependency direction before proposing boundaries. Use language-aware type/lint tools and dependency graphs, then inspect the affected code to validate findings. Treat complexity and duplication reports as evidence for review, not automatic design verdicts. Identify cycles, implicit state, error propagation and tests that constrain the refactor. Respect project conventions and compare behavior before and after. Config/plugins execute project code, so review them and ensure the isolated tool environment matches installed dependencies.
 
+The dependency-cycle recipe includes JS/JSX/TS/TSX/MJS/CJS files. Point it at the relevant source subtree and review alias/configuration coverage; an empty cycle list is not a source-coverage count.
+
 ## Deliverable
 
 An architecture map, evidence-backed issues, a bounded refactor proposal or patch, compatibility risks and the exact behavioral checks used to validate it.
 
 ## Runtime discipline
 
-Use `specialist` with this agent ID. Start with `describe` and `doctor`; select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
+Use `specialist` with this agent ID. Start with `describe` and `doctor` scoped to the intended `workflow` or `operation`; choose one selector, never both. This probes only the tools needed for that task. Use an unscoped profile `doctor` for image audits or a full availability inventory. Select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
 
 Use the exact input paths and typed parameters required by the operation. Declare project-code execution, network and workspace mutation only when the task authorizes those effects. These declarations are request checks, not an operating-system security boundary. Project tests, plugins and configs can perform additional actions; review their scope. Do not invent free-form shell, executable, environment or CLI-argument fields.
 
@@ -54,7 +56,7 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
@@ -64,19 +66,25 @@ A workflow stops at a failed or incomplete step. It preserves the result and doe
 
 ### Discovery and readiness
 
+Discover and probe only the intended workflow:
+
 ```json
 {
   "action": "describe",
-  "agent": "code-architect"
+  "agent": "code-architect",
+  "workflow": "python-architecture"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "code-architect"
+  "agent": "code-architect",
+  "workflow": "python-architecture"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -88,7 +96,7 @@ Executable paths come from trusted tool IDs under `/opt/box/agents/bin/`. Suffix
 
 Validate module boundaries with a supplied rule config.
 
-Command: `/opt/box/agents/bin/dependency-cruiser --config {config} --output-type json {path}`
+Command: `/opt/box/agents/bin/dependency-cruiser --config '{config}' --output-type json '{path}'`
 
 Effects: project_code. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -102,7 +110,7 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Report duplicate code with an explicit maximum percentage.
 
-Command: `/opt/box/agents/bin/jscpd --reporters json --output {artifacts}/jscpd --threshold {threshold} {path}`
+Command: `/opt/box/agents/bin/jscpd --reporters json --output '{artifacts}/jscpd' --threshold '{threshold}' '{path}'`
 
 Effects: project_code, mutation. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -116,17 +124,17 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Find JavaScript/TypeScript dependency cycles.
 
-Command: `/opt/box/agents/bin/madge --circular --json {path}`
+Command: `/opt/box/agents/bin/madge --circular --json --extensions js,jsx,ts,tsx,mjs,cjs '{path}'`
 
 Effects: project_code. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
-A report can be emitted even when cycles exist; inspect the returned cycle list. Alias/TS config support and unresolved dependencies limit coverage.
+Explicit extensions include JavaScript, JSX, TypeScript, TSX and ESM/CommonJS variants when a directory is supplied. Qualified cycles exit 1. Scope the source directory; aliases, project configuration, unresolved imports and parser coverage still require review. An empty cycle list alone does not prove that every intended source file was analyzed.
 
 ### `mypy-check`
 
 Check Python types using the project configuration.
 
-Command: `/opt/box/agents/bin/mypy --no-incremental --cache-dir=/dev/null --show-error-codes {path}`
+Command: `/opt/box/agents/bin/mypy --no-incremental --cache-dir=/dev/null --show-error-codes '{path}'`
 
 Effects: project_code. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -136,7 +144,7 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Report Python cyclomatic complexity as JSON.
 
-Command: `/opt/box/agents/bin/radon cc --json {path}`
+Command: `/opt/box/agents/bin/radon cc --json '{path}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -146,7 +154,7 @@ Descriptive metric only; no arbitrary numeric threshold is silently treated as a
 
 Lint Python without automatic fixes.
 
-Command: `/opt/box/agents/bin/ruff check --no-cache --no-fix --output-format json {path}`
+Command: `/opt/box/agents/bin/ruff check --no-cache --no-fix --output-format json '{path}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -174,7 +182,7 @@ The result covers only the supplied inputs and this registered check. Missing de
 | `graphviz-render` | Render a supplied DOT graph as SVG. | mutation |
 | `semgrep-scan` | Run community static analysis with a supplied local rule file. | none declared |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 

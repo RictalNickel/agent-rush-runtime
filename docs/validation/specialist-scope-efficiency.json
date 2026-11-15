@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "agent": "testforge",
+  "selection": {
+    "operation": "pytest-test"
+  },
+  "catalog_sha256": "e48f056007c95cd9766ebd0689f0c738459f5f6bea219b621e0d3cfc17758213",
+  "repetitions": 3,
+  "descriptions": {
+    "profile": {
+      "response_bytes": 29110,
+      "operations": 23,
+      "tools": 15
+    },
+    "selected_task": {
+      "response_bytes": 2402,
+      "operations": 1,
+      "tools": 1
+    }
+  },
+  "doctor_observations": {
+    "profile": [
+      {
+        "seconds": 3.129515,
+        "checks": 15,
+        "gate": "incomplete",
+        "status_counts": {
+          "missing": 6,
+          "passed": 9
+        }
+      },
+      {
+        "seconds": 1.36374,
+        "checks": 15,
+        "gate": "incomplete",
+        "status_counts": {
+          "missing": 6,
+          "passed": 9
+        }
+      },
+      {
+        "seconds": 1.486499,
+        "checks": 15,
+        "gate": "incomplete",
+        "status_counts": {
+          "missing": 6,
+          "passed": 9
+        }
+      }
+    ],
+    "selected_task": [
+      {
+        "seconds": 0.095986,
+        "checks": 1,
+        "gate": "pass",
+        "status_counts": {
+          "passed": 1
+        }
+      },
+      {
+        "seconds": 0.083065,
+        "checks": 1,
+        "gate": "pass",
+        "status_counts": {
+          "passed": 1
+        }
+      },
+      {
+        "seconds": 0.090773,
+        "checks": 1,
+        "gate": "pass",
+        "status_counts": {
+          "passed": 1
+        }
+      }
+    ]
+  },
+  "median_seconds": {
+    "profile": 1.486499,
+    "selected_task": 0.090773
+  },
+  "limitations": [
+    "Different scopes: selected-task readiness does not establish full-profile readiness.",
+    "Host elapsed measurements are sensitive to caches and concurrent workload; this is not a Docker or production benchmark.",
+    "Missing/unavailable tools remain visible in each observation; only present tools actually execute probes."
+  ]
+}

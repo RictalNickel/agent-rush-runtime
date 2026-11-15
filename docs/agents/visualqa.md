@@ -22,7 +22,7 @@ Baseline/candidate/diff artifacts, reproducible capture settings, issue location
 
 ## Runtime discipline
 
-Use `specialist` with this agent ID. Start with `describe` and `doctor`; select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
+Use `specialist` with this agent ID. Start with `describe` and `doctor` scoped to the intended `workflow` or `operation`; choose one selector, never both. This probes only the tools needed for that task. Use an unscoped profile `doctor` for image audits or a full availability inventory. Select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
 
 Use the exact input paths and typed parameters required by the operation. Declare project-code execution, network and workspace mutation only when the task authorizes those effects. These declarations are request checks, not an operating-system security boundary. Project tests, plugins and configs can perform additional actions; review their scope. Do not invent free-form shell, executable, environment or CLI-argument fields.
 
@@ -51,7 +51,7 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
@@ -62,19 +62,25 @@ A workflow stops at a failed or incomplete step. It preserves the result and doe
 
 ### Discovery and readiness
 
+Discover and probe only the intended workflow:
+
 ```json
 {
   "action": "describe",
-  "agent": "visualqa"
+  "agent": "visualqa",
+  "workflow": "capture"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "visualqa"
+  "agent": "visualqa",
+  "workflow": "capture"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -86,7 +92,7 @@ Executable paths come from trusted tool IDs under `/opt/box/agents/bin/`. Suffix
 
 Compare a reviewed browser scenario suite to existing baselines.
 
-Command: `/opt/box/agents/bin/backstopjs test --config={config}`
+Command: `/opt/box/agents/bin/backstopjs test '--config={config}'`
 
 Effects: project_code, network, mutation. Tool timeout: 300 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -100,7 +106,7 @@ No baseline approval/overwrite command is registered. Scenario URLs, browser scr
 
 Compare two raster images with explicit pixel and layout findings.
 
-Command: `/opt/box/agents/bin/odiff {baseline} {candidate} {artifacts}/odiff.png --threshold {threshold} --fail-on-layout --parsable-stdout`
+Command: `/opt/box/agents/bin/odiff '{baseline}' '{candidate}' '{artifacts}/odiff.png' --threshold '{threshold}' --fail-on-layout --parsable-stdout`
 
 Effects: mutation. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[21, 22]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -116,7 +122,7 @@ Qualified with odiff-bin 4.5.0: matching images exit 0, different dimensions exi
 
 Compare two PNG images and emit a pixel diff.
 
-Command: `/opt/box/agents/bin/pixelmatch {baseline} {candidate} {artifacts}/pixel-diff.png {threshold}`
+Command: `/opt/box/agents/bin/pixelmatch '{baseline}' '{candidate}' '{artifacts}/pixel-diff.png' '{threshold}'`
 
 Effects: mutation. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[65, 66]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -132,7 +138,7 @@ Baseline and candidate must have controlled viewport, fonts, browser and data. D
 
 Capture a full-page Chromium screenshot of a loopback app.
 
-Command: `/opt/box/agents/bin/playwright screenshot --browser chromium --full-page --wait-for-timeout 1000 {target} {artifacts}/screenshot.png`
+Command: `/opt/box/agents/bin/playwright screenshot --browser chromium --full-page --wait-for-timeout 1000 '{target}' '{artifacts}/screenshot.png'`
 
 Effects: project_code, network, mutation. Tool timeout: 90 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -162,7 +168,7 @@ Screenshot is evidence, not an automatic visual pass. Page JavaScript may make a
 | `imagemagick-compare` | Compute RMSE and a difference image for two PNG inputs. | mutation |
 | `sharp-inspect` | Decode a local image and print bounded metadata without saving changes. | none declared |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 

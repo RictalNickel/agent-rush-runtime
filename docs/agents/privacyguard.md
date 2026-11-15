@@ -22,7 +22,7 @@ Redacted findings with file/location and rationale, suggested or authorized fixe
 
 ## Runtime discipline
 
-Use `specialist` with this agent ID. Start with `describe` and `doctor`; select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
+Use `specialist` with this agent ID. Start with `describe` and `doctor` scoped to the intended `workflow` or `operation`; choose one selector, never both. This probes only the tools needed for that task. Use an unscoped profile `doctor` for image audits or a full availability inventory. Select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
 
 Use the exact input paths and typed parameters required by the operation. Declare project-code execution, network and workspace mutation only when the task authorizes those effects. These declarations are request checks, not an operating-system security boundary. Project tests, plugins and configs can perform additional actions; review their scope. Do not invent free-form shell, executable, environment or CLI-argument fields.
 
@@ -54,7 +54,7 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
@@ -64,19 +64,25 @@ A workflow stops at a failed or incomplete step. It preserves the result and doe
 
 ### Discovery and readiness
 
+Discover and probe only the intended workflow:
+
 ```json
 {
   "action": "describe",
-  "agent": "privacyguard"
+  "agent": "privacyguard",
+  "workflow": "local-review"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "privacyguard"
+  "agent": "privacyguard",
+  "workflow": "local-review"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -88,7 +94,7 @@ Executable paths come from trusted tool IDs under `/opt/box/agents/bin/`. Suffix
 
 Check Python ASTs for common security mistakes.
 
-Command: `/opt/box/agents/bin/bandit --recursive {path} --format json --quiet`
+Command: `/opt/box/agents/bin/bandit --recursive '{path}' --format json --quiet`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -98,7 +104,7 @@ The runtime qualifies JSON errors and scanned source counts: parsing/scanner err
 
 Scan local files for secrets with full redaction.
 
-Command: `/opt/box/agents/bin/gitleaks dir {path} --no-banner --no-color --redact=100 --report-format json --report-path {artifacts}/gitleaks.json --max-target-megabytes 10`
+Command: `/opt/box/agents/bin/gitleaks dir '{path}' --no-banner --no-color --redact=100 --report-format json --report-path '{artifacts}/gitleaks.json' --max-target-megabytes 10`
 
 Effects: mutation. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -108,7 +114,7 @@ Files larger than 10 MiB are skipped and must be reported as a coverage limitati
 
 Audit an already pinned requirements file without executing pip.
 
-Command: `/opt/box/agents/bin/pip-audit --requirement {input} --format json --no-deps --disable-pip --progress-spinner off`
+Command: `/opt/box/agents/bin/pip-audit --requirement '{input}' --format json --no-deps --disable-pip --progress-spinner off`
 
 Effects: network. Tool timeout: 180 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -122,7 +128,7 @@ All dependency names/versions must already be pinned; skips dependency resolutio
 
 Report redacted heuristic sensitive-data pattern counts.
 
-Command: `/opt/box/agents/bin/boxoro-analysis privacy-scan {path}`
+Command: `/opt/box/agents/bin/boxoro-analysis privacy-scan '{path}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -132,7 +138,7 @@ Email, phone, IP and secret-shaped patterns are heuristic. A clean result cannot
 
 Run community static analysis with a supplied local rule file.
 
-Command: `/opt/box/agents/bin/semgrep scan --config {rules} --metrics off --disable-version-check --json --error {path}`
+Command: `/opt/box/agents/bin/semgrep scan --config '{rules}' --metrics off --disable-version-check --json --error '{path}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -161,7 +167,7 @@ Rules are explicitly supplied local YAML; no registry auto configuration, hosted
 | `checkov-scan` | Scan local Terraform, Kubernetes and Dockerfile configuration. | project_code |
 | `json-type` | Validate JSON and report its top-level type. | none declared |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 

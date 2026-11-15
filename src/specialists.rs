@@ -86,7 +86,7 @@ pub fn skills() -> Vec<crate::skills::Skill> {
 pub fn prompt(id: &str) -> String {
     let profile = &catalog()["agents"][id];
     format!(
-        "\nSelected specialist: {id} — {}. {}\nLoad specialist-{id}; use specialist describe and doctor before choosing operations. The worker image is fixed by the operator; profile selection does not install tools, grant MCP access or change permissions. Report missing coverage explicitly.\n",
+        "\nSelected specialist: {id} — {}. {}\nLoad specialist-{id}; choose the intended task, then scope specialist describe and doctor with its operation or workflow selector. Use unscoped discovery for a full profile audit. The worker image is fixed by the operator; profile selection does not install tools, grant MCP access or change permissions. Report missing coverage explicitly.\n",
         profile["name"].as_str().unwrap_or(id),
         profile["description"].as_str().unwrap_or("")
     )

@@ -43,8 +43,8 @@ class Request:
         effects = {"allow_project_code", "allow_network", "allow_mutation"}
         allowed = {
             "list": {"timeout_seconds"},
-            "describe": {"agent", "timeout_seconds"},
-            "doctor": {"agent", "timeout_seconds"},
+            "describe": {"agent", "operation", "workflow", "timeout_seconds"},
+            "doctor": {"agent", "operation", "workflow", "timeout_seconds"},
             "run": common | effects | {"operation", "parameters"},
             "workflow": common | effects | {"workflow", "parameters"},
         }
@@ -56,6 +56,8 @@ class Request:
         arguments = {key: item for key, item in value.items() if key != "action" and item is not None}
         if set(arguments) - allowed[action]:
             raise ValueError("request field is not valid for this action")
+        if "operation" in arguments and "workflow" in arguments:
+            raise ValueError("operation and workflow selectors are mutually exclusive")
         for name in ("agent", "operation", "workflow"):
             if name in arguments and (not isinstance(arguments[name], str) or not ID.fullmatch(arguments[name]) or len(arguments[name]) > 128):
                 raise ValueError("invalid specialist identifier")

@@ -219,19 +219,24 @@ def install_tool(key: str, item: dict, root: Path, prefix: Path, cache: Path,
     if kind == "python":
         requirements = locked_file(root, item["requirements"], item["requirements_sha256"])
         environment = prefix / "python" / key
-        call([python, "-m", "venv", str(environment)])
+        # pip does not recheck installed files against --require-hashes and a
+        # reused venv can retain dependencies removed from the reviewed lock.
+        call([python, "-m", "venv", "--clear", str(environment)])
         argv = [str(environment / "bin/python"), "-m", "pip", "--isolated", "install",
-                "--disable-pip-version-check", "--no-cache-dir", "--require-hashes"]
+                "--disable-pip-version-check", "--require-hashes"]
+        wheel_cache = ["--cache-dir", str(cache / "pip")]
         source_build = item.get("allow_source", False)
         if source_build:
             build_requirements = locked_file(root, item["build_requirements"], item["build_requirements_sha256"])
-            build_argv = argv + ["--only-binary=:all:", "-r", str(build_requirements)]
+            build_argv = argv + wheel_cache + ["--only-binary=:all:", "-r", str(build_requirements)]
             if offline:
                 build_argv.extend(["--no-index", "--find-links", str(cache / "wheels")])
             call(build_argv)
-            argv.append("--no-build-isolation")
+            # Only downloaded wheels are reused. Locally built wheels are not
+            # covered by the lock's artifact hashes, so rebuild source opt-ins.
+            argv.extend(["--no-build-isolation", "--no-cache-dir"])
         else:
-            argv.append("--only-binary=:all:")
+            argv.extend(wheel_cache + ["--only-binary=:all:"])
         argv.extend(["-r", str(requirements)])
         if offline:
             argv.extend(["--no-index", "--find-links", str(cache / "wheels")])

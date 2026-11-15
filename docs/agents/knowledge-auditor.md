@@ -22,7 +22,7 @@ Corpus manifest, broken/ambiguous references, duplicate groups, extraction gaps,
 
 ## Runtime discipline
 
-Use `specialist` with this agent ID. Start with `describe` and `doctor`; select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
+Use `specialist` with this agent ID. Start with `describe` and `doctor` scoped to the intended `workflow` or `operation`; choose one selector, never both. This probes only the tools needed for that task. Use an unscoped profile `doctor` for image audits or a full availability inventory. Select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
 
 Use the exact input paths and typed parameters required by the operation. Declare project-code execution, network and workspace mutation only when the task authorizes those effects. These declarations are request checks, not an operating-system security boundary. Project tests, plugins and configs can perform additional actions; review their scope. Do not invent free-form shell, executable, environment or CLI-argument fields.
 
@@ -54,7 +54,7 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
@@ -65,19 +65,25 @@ A workflow stops at a failed or incomplete step. It preserves the result and doe
 
 ### Discovery and readiness
 
+Discover and probe only the intended workflow:
+
 ```json
 {
   "action": "describe",
-  "agent": "knowledge-auditor"
+  "agent": "knowledge-auditor",
+  "workflow": "corpus-integrity"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "knowledge-auditor"
+  "agent": "knowledge-auditor",
+  "workflow": "corpus-integrity"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -89,7 +95,7 @@ Executable paths come from trusted tool IDs under `/opt/box/agents/bin/`. Suffix
 
 Inventory bounded regular files with sizes and SHA-256 hashes.
 
-Command: `/opt/box/agents/bin/boxoro-analysis inventory {path}`
+Command: `/opt/box/agents/bin/boxoro-analysis inventory '{path}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -99,7 +105,7 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Check local Markdown links/headings and duplicate file hashes.
 
-Command: `/opt/box/agents/bin/boxoro-analysis knowledge-audit {path}`
+Command: `/opt/box/agents/bin/boxoro-analysis knowledge-audit '{path}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -109,7 +115,7 @@ Lexical local-corpus audit only. No HTTP fetch, semantic contradiction detection
 
 Extract English OCR text from a local image.
 
-Command: `/opt/box/agents/bin/tesseract {input} stdout -l eng`
+Command: `/opt/box/agents/bin/tesseract '{input}' stdout -l eng`
 
 Effects: none declared. Tool timeout: 180 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -123,7 +129,7 @@ OCR text can be wrong and may contain private data. Confidence/language/layout r
 
 Inspect page count, dimensions and PDF metadata.
 
-Command: `/opt/box/agents/bin/pdfinfo {input}`
+Command: `/opt/box/agents/bin/pdfinfo '{input}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -137,7 +143,7 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Check PDF structure and stream integrity.
 
-Command: `/opt/box/agents/bin/qpdf --check {input}`
+Command: `/opt/box/agents/bin/qpdf --check '{input}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[2, 3]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -151,7 +157,7 @@ qpdf structural checks do not assess accessible reading order, visual layout or 
 
 Extract article text and metadata from a local HTML directory.
 
-Command: `/opt/box/agents/bin/trafilatura --input-dir {path} --output-dir {artifacts}/extracted --json --no-comments`
+Command: `/opt/box/agents/bin/trafilatura --input-dir '{path}' --output-dir '{artifacts}/extracted' --json --no-comments`
 
 Effects: mutation. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -176,8 +182,9 @@ Local extraction only; no URL-input file or crawl command. Extraction can omit m
 | `pandoc-docx` | Convert supplied Markdown to Word for review. | network, mutation |
 | `lychee-links` | Check links in a local document while excluding private addresses. | network |
 | `corpus-files` | List nonignored candidate corpus/source files. | none declared |
+| `duckdb-columns` | Read DuckDB column names, types, nullability and defaults without write access. | none declared |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 

@@ -1,13 +1,13 @@
 # Specialist operating guides
 
-Each guide documents the embedded operating skill, tool packages, fixed operations, workflows, dependencies and limits. Selecting a specialist changes guidance; it does not change the worker sandbox or grant an external account.
+Each guide documents the embedded operating skill, tool packages, fixed operations, workflows, dependencies and limits. Selecting a specialist changes guidance; it does not change the worker sandbox or grant an external account. Start with `describe` and `doctor` scoped to the intended operation or workflow; reserve full-profile probes for availability audits.
 
 | Specialist | Family | Tools | Workflows |
 | --- | --- | ---: | --- |
 | [Agent Foundry](agent-foundry.md) | `python` | 15 | `preflight`, `test`, `scaffold` |
 | [TestForge](testforge.md) | `python` | 15 | `python-gate`, `browser-gate`, `api-contract` |
-| [API Architect](api-architect.md) | `browser` | 14 | `lint-contract`, `breaking-change`, `protobuf` |
-| [Performance Lab](performance-lab.md) | `python` | 13 | `http-baseline`, `python-profile`, `memory-report` |
+| [API Architect](api-architect.md) | `browser` | 14 | `lint-contract`, `breaking-change`, `protobuf`, `bundle-contract`, `protobuf-compatibility`, `graphql-compatibility` |
+| [Performance Lab](performance-lab.md) | `python` | 13 | `http-baseline`, `python-profile`, `memory-report`, `memory-profile` |
 | [ReleasePilot](releasepilot.md) | `platform` | 15 | `source-release-check`, `container-check`, `workflow-check` |
 | [CloudPilot](cloudpilot.md) | `platform` | 15 | `infra-preflight`, `kubernetes-check`, `chart-check`, `checkov-qualified` |
 | [OpsWatch](opswatch.md) | `platform` | 13 | `alert-rules`, `config-check`, `incident-evidence` |
@@ -15,15 +15,15 @@ Each guide documents the embedded operating skill, tool packages, fixed operatio
 | [Accessibility](accessibility.md) | `browser` | 12 | `page-audit`, `markup`, `browser-regressions`, `axe-qualified` |
 | [AI Eval Lab](ai-eval-lab.md) | `python` | 14 | `retrieval-metrics`, `model-eval`, `eval-tests` |
 | [Code Architect](code-architect.md) | `python` | 15 | `python-architecture`, `dependency-check`, `duplication` |
-| [DataWorks](dataworks.md) | `data` | 14 | `csv-quality`, `sql-quality`, `json-contract` |
-| [DocSmith](docsmith.md) | `documents` | 15 | `markdown-quality`, `build-mkdocs`, `pdf-check`, `prose-style` |
+| [DataWorks](dataworks.md) | `data` | 14 | `csv-quality`, `sql-quality`, `json-contract`, `csv-statistics`, `pipeline-inventory` |
+| [DocSmith](docsmith.md) | `documents` | 15 | `markdown-quality`, `build-mkdocs`, `pdf-check`, `prose-style`, `markdown-file` |
 | [VisualQA](visualqa.md) | `browser` | 12 | `capture`, `compare`, `regression-suite`, `odiff-baseline` |
 | [PrivacyGuard](privacyguard.md) | `python` | 15 | `local-review`, `dependency-audit`, `static-security` |
-| [LocaleQA](localeqa.md) | `browser` | 14 | `json-parity`, `gettext-quality`, `icu-catalog`, `translation-metrics` |
+| [LocaleQA](localeqa.md) | `browser` | 14 | `json-parity`, `gettext-quality`, `icu-catalog`, `translation-metrics`, `i18next-coverage`, `i18next-unused` |
 | [RestoreOps](restoreops.md) | `platform` | 13 | `archive-review`, `compare-restore`, `restic-structure` |
 | [SiteHealth](sitehealth.md) | `browser` | 14 | `page-health`, `links`, `documentation-links` |
 | [MobileLab](mobilelab.md) | `mobile` | 15 | `apk-static`, `source-audit`, `mobile-web` |
 | [Knowledge Auditor](knowledge-auditor.md) | `documents` | 15 | `corpus-integrity`, `pdf-evidence`, `local-html`, `ocr-evidence` |
 | [Finance Lab](finance-lab.md) | `finance` | 1 | `readiness` |
 
-See [runtime](../SPECIALIST_RUNTIME.md), [research and source register](../AGENT_TOOL_RESEARCH.md), and [Finance Lab architecture](../FINANCE_AGENT.md).
+See [runtime](../SPECIALIST_RUNTIME.md), [tool fit and fixture review](../SPECIALIST_TOOL_REVIEW.md), [research and source register](../AGENT_TOOL_RESEARCH.md), and [Finance Lab architecture](../FINANCE_AGENT.md).

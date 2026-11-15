@@ -16,6 +16,9 @@ except OSError as error:
 else:
     raise AssertionError("installation is writable")
 
+for cache in (Path("/tmp/boxoro-agent-downloads"), Path("/var/cache/boxoro-specialists")):
+    assert not cache.exists() or not any(cache.iterdir()), "build download cache leaked into image: " + str(cache)
+
 if family == "finance-service":
     # Import the real extension set and execute deterministic local analytics.
     # Network remains disabled for the entire container.

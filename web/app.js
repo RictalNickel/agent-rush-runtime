@@ -834,7 +834,7 @@ async function send() {
       const specialist = !$('#specialist-pick').hidden && ui.specialists.find(agent => agent.id === $('#specialist-select').value);
       if (specialist) {
         body.title = clip(text, 80);
-        body.message = `Use the specialist-${specialist.id} skill for this session. Load its instructions and use the specialist describe and doctor actions for ${specialist.id} before choosing operations. Check actual tool availability and report any missing prerequisites.\n\nTask:\n${text}`;
+        body.message = `Use the specialist-${specialist.id} skill for this session. Load its instructions, choose the intended operation or workflow, then use scoped specialist describe and doctor actions for ${specialist.id}. Use unscoped discovery if a full profile audit is needed. Check actual tool availability and report any missing prerequisites.\n\nTask:\n${text}`;
       }
       const created = await api('/v1/sessions', { method: 'POST', body: JSON.stringify(body) });
       upsertSession(created.session);

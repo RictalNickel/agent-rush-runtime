@@ -1,4 +1,4 @@
-"""Authenticated loopback MCP adapter with a fresh bounded OpenBB child per call."""
+"""Authenticated MCP adapter with cached metadata and fresh bounded query children."""
 import dataclasses
 import hmac
 import http.client
@@ -17,12 +17,17 @@ from pathlib import Path
 
 from . import __version__
 from .common import MAX_OUTPUT_BYTES, FinanceError, encode, error, fields, read_json
-from .openbb_bridge import CREDENTIAL_ENV, DEFAULT_NAMESPACES, execute_tool, redact
+from .openbb_bridge import (
+    CREDENTIAL_ENV, DEFAULT_NAMESPACES, Catalog, execute_tool, metadata_tool, redact, reject_sensitive_arguments,
+    validate_tool_arguments,
+)
 
 PROTOCOL_VERSION = "2025-06-18"
 MAX_BODY = 512 * 1024
 MAX_HEADERS = 16 * 1024
 MAX_RPC_RESPONSE = 4 * 1024 * 1024
+MAX_CATALOG_BYTES = 16 * 1024 * 1024
+MAX_WORKER_BODY = 2 * MAX_BODY + 4096
 TOOL_SCHEMAS = {
     "openbb_status": {"type": "object", "properties": {}, "additionalProperties": False},
     "openbb_catalog": {"type": "object", "additionalProperties": False, "properties": {
@@ -170,10 +175,15 @@ def bounded_process(argv, payload, environ, *, timeout, max_output=MAX_OUTPUT_BY
                     stream.close()
 
 
-def run_isolated(name, arguments, settings, *, timeout):
-    payload = encode({"name": name, "arguments": arguments})
-    if len(payload) > MAX_BODY:
+def run_isolated(name, arguments, settings, *, timeout, contract=None):
+    request = {"name": name, "arguments": arguments}
+    if len(encode(request)) > MAX_BODY:
         return failure("input_limit", "Tool arguments exceed 512 KiB.", incomplete=False)
+    if contract is not None:
+        if name != "openbb_query" or len(encode(contract)) > MAX_BODY:
+            return failure("unsupported_schema", "The internal query contract exceeds its limit.")
+        request["contract"] = contract
+    payload = encode(request)
     environment = {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "PYTHONNOUSERSITE": "1",
                    "HOME": settings.state_directory, "PYTHONHASHSEED": "0",
                    "TMPDIR": str(Path(settings.state_directory) / "tmp"), "TZ": "UTC",
@@ -182,11 +192,66 @@ def run_isolated(name, arguments, settings, *, timeout):
                    "OPENBB_ALLOW_ON_COMMAND_OUTPUT": "false", "OPENBB_ALLOW_MUTABLE_EXTENSIONS": "false",
                    "FINANCE_OPENBB_NAMESPACES": ",".join(settings.namespaces), "FINANCE_OPENBB_URL_HOSTS": settings.url_hosts,
                    "OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1", "MPLBACKEND": "Agg"}
-    environment.update({key: value for key, value in settings.provider_credentials if value})
+    bootstrap = name == "_catalog_snapshot"
+    if not bootstrap:
+        environment.update({key: value for key, value in settings.provider_credentials if value})
     script = Path(__file__).resolve().parent.parent / "finance_server.py"
     result = bounded_process([sys.executable, "-I", str(script), "--worker"], payload, environment,
-                             timeout=min(timeout, settings.deadline_seconds))
+                             timeout=min(timeout, settings.deadline_seconds),
+                             max_output=MAX_CATALOG_BYTES if bootstrap else MAX_OUTPUT_BYTES)
+    if bootstrap:
+        return result  # Schema-only child has neither provider credentials nor the service token.
     return redact(result, [settings.token, *(value for _, value in settings.provider_credentials)])
+
+
+class CatalogExecutor:
+    """One bounded metadata bootstrap per immutable service deployment.
+
+    Only compiled schemas are retained, in memory. Provider results, credentials,
+    SDK objects and numerical state never enter this cache. The lock serializes
+    cold discovery; waiting and bootstrap both consume the caller's deadline.
+    """
+    def __init__(self, settings):
+        self.settings = settings
+        self.lock = threading.Lock()
+        self.loaded = None
+
+    def __call__(self, name, arguments, settings, *, timeout):
+        if settings is not self.settings:
+            error("invalid_configuration", "Catalog executors belong to one service instance.", incomplete=True)
+        validate_tool_arguments(name, arguments)
+        deadline = time.monotonic() + min(timeout, settings.deadline_seconds)
+        if not self.lock.acquire(timeout=max(0, deadline - time.monotonic())):
+            return failure("timeout", "The OpenBB operation exceeded its deadline waiting for the catalog.")
+        try:
+            if self.loaded is None:
+                snapshot = run_isolated("_catalog_snapshot", {}, settings, timeout=max(0, deadline - time.monotonic()))
+                if snapshot.get("gate") != "pass":
+                    return snapshot  # A failure is retryable, never cached as valid coverage.
+                catalog = Catalog.from_snapshot(snapshot, namespaces=settings.namespaces)
+                self.loaded = (catalog, snapshot["openbb_core_version"], snapshot["installation_sha256"])
+            loaded = self.loaded
+        finally:
+            self.lock.release()
+        if time.monotonic() >= deadline:
+            return failure("timeout", "The OpenBB operation exceeded its deadline.")
+        catalog, version, fingerprint = loaded
+        if name != "openbb_query":
+            return metadata_tool(name, arguments, catalog, version, fingerprint, credentials=dict(settings.provider_credentials))
+        operation = catalog.describe(arguments["command"])
+        reject_sensitive_arguments(arguments.get("parameters", {}), url_hosts=settings.url_hosts)
+        reject_sensitive_arguments(arguments.get("body"), url_hosts=settings.url_hosts)
+        if operation["requires_network"] and not arguments.get("allow_network", False):
+            error("network_required", "Provider queries require allow_network=true.")
+        contract = catalog.query_contract(arguments["command"], version, fingerprint)
+        result = run_isolated(name, arguments, settings, timeout=max(0, deadline - time.monotonic()), contract=contract)
+        if result.get("code") == "catalog_stale" and self.lock.acquire(timeout=max(0, deadline - time.monotonic())):
+            try:
+                if self.loaded is loaded:
+                    self.loaded = None
+            finally:
+                self.lock.release()
+        return result
 
 
 def prepare_state(settings):
@@ -228,6 +293,7 @@ def prepare_state(settings):
 
 
 def worker():
+    bootstrap = False
     try:
         os.umask(0o077)
         import resource
@@ -235,13 +301,18 @@ def worker():
         resource.setrlimit(resource.RLIMIT_NOFILE, (128, 128))
         resource.setrlimit(resource.RLIMIT_CPU, (180, 180))
         # Native numerical libraries reserve virtual memory; bound actual memory at the service/container level.
-        payload = sys.stdin.buffer.read(MAX_BODY + 1)
-        if len(payload) > MAX_BODY:
+        payload = sys.stdin.buffer.read(MAX_WORKER_BODY + 1)
+        if len(payload) > MAX_WORKER_BODY:
             error("input_limit", "Tool arguments exceed 512 KiB.")
         request = read_json(payload)
-        fields(request, {"name", "arguments"}, {"name", "arguments"})
-        if request["name"] not in TOOL_SCHEMAS or not isinstance(request["arguments"], dict):
+        fields(request, {"name", "arguments", "contract"}, {"name", "arguments"})
+        bootstrap = request["name"] == "_catalog_snapshot"
+        if request["name"] not in {*TOOL_SCHEMAS, "_catalog_snapshot"} or not isinstance(request["arguments"], dict):
             error("unknown_tool", "Select a documented OpenBB data tool.")
+        if len(encode({key: request[key] for key in ("name", "arguments")})) > MAX_BODY:
+            error("input_limit", "Tool arguments exceed 512 KiB.")
+        if "contract" in request and (request["name"] != "openbb_query" or len(encode(request["contract"])) > MAX_BODY):
+            error("unsupported_schema", "The internal query contract exceeds its limit.", incomplete=True)
         namespaces = tuple(os.environ["FINANCE_OPENBB_NAMESPACES"].split(","))
         if not namespaces or any(name not in DEFAULT_NAMESPACES for name in namespaces):
             error("invalid_configuration", "The configured namespace allowlist is invalid.")
@@ -249,7 +320,7 @@ def worker():
         with open(os.devnull, "w") as sink:
             try:
                 os.dup2(sink.fileno(), 1)
-                result = execute_tool(request["name"], request["arguments"], namespaces)
+                result = execute_tool(request["name"], request["arguments"], namespaces, contract=request.get("contract"))
             finally:
                 sys.stdout.flush()
                 os.dup2(saved_stdout, 1)
@@ -258,12 +329,13 @@ def worker():
         result = failure(exc.code, str(exc), incomplete=exc.incomplete)
     except Exception:  # noqa: BLE001 - redact all third-party backend exceptions at the process boundary.
         result = failure("provider_unavailable", "OpenBB could not complete the request; check installed packages, credentials and provider availability.")
-    result = redact(result, [os.environ.get(name, "") for name in CREDENTIAL_ENV])
+    if not bootstrap:
+        result = redact(result, [os.environ.get(name, "") for name in CREDENTIAL_ENV])
     try:
         raw = encode(result)
     except (ValueError, OverflowError):
         raw = encode(failure("unsupported_response", "OpenBB returned unsupported or non-finite data."))
-    if len(raw) > MAX_OUTPUT_BYTES:
+    if len(raw) > (MAX_CATALOG_BYTES if bootstrap else MAX_OUTPUT_BYTES):
         raw = encode(failure("response_limit", "OpenBB returned too much data; narrow the query."))
     sys.stdout.buffer.write(raw)
 
@@ -475,7 +547,7 @@ class FinanceServer(http.server.ThreadingHTTPServer):
 
 
 def make_server(settings, *, port=None, executor=None):
-    return FinanceServer(settings, settings.port if port is None else port, executor or run_isolated)
+    return FinanceServer(settings, settings.port if port is None else port, executor or CatalogExecutor(settings))
 
 
 def main(argv=None):

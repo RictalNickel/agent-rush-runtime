@@ -4,11 +4,18 @@
 ARG BOXORO_WORKSPACE_IMAGE
 FROM ${BOXORO_WORKSPACE_IMAGE} AS base
 USER root
+# Runtime/catalog edits must not reinstall the independently pinned Node layer.
+COPY agents/install.py agents/install-node.py agents/node.lock.json /opt/box/agents/
+# This cache belongs to the trusted builder, never to a workspace or image layer.
+# Its key separates platform, Python/Node major versions and cache policy. Locked
+# sharing serializes writers across concurrent family builds; hashes still gate
+# every reused artifact, and source-built Python wheels are not cached.
+RUN --mount=type=cache,id=boxoro-specialists-linux-amd64-py312-node24-v1,target=/var/cache/boxoro-specialists,sharing=locked \
+    /usr/bin/python3 /opt/box/agents/install-node.py --cache /var/cache/boxoro-specialists/binaries
 COPY agents /opt/box/agents
 COPY box-tools/specialist box-tools/specialist-analysis box-tools/finance /opt/box/bin/
 COPY finance /opt/finance
-RUN /usr/bin/python3 /opt/box/agents/install-node.py \
- && chmod 0755 /opt/box/bin/specialist /opt/box/bin/specialist-analysis /opt/box/bin/finance \
+RUN chmod 0755 /opt/box/bin/specialist /opt/box/bin/specialist-analysis /opt/box/bin/finance \
  && install -d /opt/box/agents/bin \
  && ln -sf /opt/box/bin/specialist-analysis /opt/box/agents/bin/boxoro-analysis \
  && ln -sf /opt/box/bin/finance /opt/box/agents/bin/finance \
@@ -23,44 +30,52 @@ RUN printf '%s\n' 'export PATH=/opt/box/node/bin:/opt/box/agents/bin:/opt/securi
 WORKDIR /workspace
 
 FROM base AS core
-RUN bash /opt/box/agents/build-family.sh core
+RUN --mount=type=cache,id=boxoro-specialists-linux-amd64-py312-node24-v1,target=/var/cache/boxoro-specialists,sharing=locked \
+    BOXORO_AGENT_CACHE=/var/cache/boxoro-specialists bash /opt/box/agents/build-family.sh core
 USER 1000:1000
 CMD ["sleep", "infinity"]
 
 FROM base AS python
-RUN bash /opt/box/agents/build-family.sh python
+RUN --mount=type=cache,id=boxoro-specialists-linux-amd64-py312-node24-v1,target=/var/cache/boxoro-specialists,sharing=locked \
+    BOXORO_AGENT_CACHE=/var/cache/boxoro-specialists bash /opt/box/agents/build-family.sh python
 USER 1000:1000
 CMD ["sleep", "infinity"]
 
 FROM base AS browser
-RUN bash /opt/box/agents/build-family.sh browser
+RUN --mount=type=cache,id=boxoro-specialists-linux-amd64-py312-node24-v1,target=/var/cache/boxoro-specialists,sharing=locked \
+    BOXORO_AGENT_CACHE=/var/cache/boxoro-specialists bash /opt/box/agents/build-family.sh browser
 USER 1000:1000
 CMD ["sleep", "infinity"]
 
 FROM base AS platform
-RUN bash /opt/box/agents/build-family.sh platform
+RUN --mount=type=cache,id=boxoro-specialists-linux-amd64-py312-node24-v1,target=/var/cache/boxoro-specialists,sharing=locked \
+    BOXORO_AGENT_CACHE=/var/cache/boxoro-specialists bash /opt/box/agents/build-family.sh platform
 USER 1000:1000
 CMD ["sleep", "infinity"]
 
 FROM base AS data
-RUN bash /opt/box/agents/build-family.sh data
+RUN --mount=type=cache,id=boxoro-specialists-linux-amd64-py312-node24-v1,target=/var/cache/boxoro-specialists,sharing=locked \
+    BOXORO_AGENT_CACHE=/var/cache/boxoro-specialists bash /opt/box/agents/build-family.sh data
 USER 1000:1000
 CMD ["sleep", "infinity"]
 
 FROM base AS documents
-RUN bash /opt/box/agents/build-family.sh documents
+RUN --mount=type=cache,id=boxoro-specialists-linux-amd64-py312-node24-v1,target=/var/cache/boxoro-specialists,sharing=locked \
+    BOXORO_AGENT_CACHE=/var/cache/boxoro-specialists bash /opt/box/agents/build-family.sh documents
 USER 1000:1000
 CMD ["sleep", "infinity"]
 
 # Android static analysis and adb client. An emulator is a separate host service;
 # no KVM device or privileged Docker socket is granted to this workspace image.
 FROM base AS mobile
-RUN bash /opt/box/agents/build-family.sh mobile
+RUN --mount=type=cache,id=boxoro-specialists-linux-amd64-py312-node24-v1,target=/var/cache/boxoro-specialists,sharing=locked \
+    BOXORO_AGENT_CACHE=/var/cache/boxoro-specialists bash /opt/box/agents/build-family.sh mobile
 USER 1000:1000
 CMD ["sleep", "infinity"]
 
 FROM base AS finance
-RUN bash /opt/box/agents/build-family.sh finance \
+RUN --mount=type=cache,id=boxoro-specialists-linux-amd64-py312-node24-v1,target=/var/cache/boxoro-specialists,sharing=locked \
+    BOXORO_AGENT_CACHE=/var/cache/boxoro-specialists bash /opt/box/agents/build-family.sh finance \
  && /usr/bin/python3 -m venv /opt/finance/venv \
  && /opt/finance/venv/bin/pip install --no-cache-dir --require-hashes --only-binary=:all: -r /opt/finance/requirements-advanced.lock \
  && /opt/finance/venv/bin/pip check
@@ -68,7 +83,8 @@ USER 1000:1000
 CMD ["sleep", "infinity"]
 
 FROM base AS suite
-RUN bash /opt/box/agents/build-family.sh suite \
+RUN --mount=type=cache,id=boxoro-specialists-linux-amd64-py312-node24-v1,target=/var/cache/boxoro-specialists,sharing=locked \
+    BOXORO_AGENT_CACHE=/var/cache/boxoro-specialists bash /opt/box/agents/build-family.sh suite \
  && /usr/bin/python3 -m venv /opt/finance/venv \
  && /opt/finance/venv/bin/pip install --no-cache-dir --require-hashes --only-binary=:all: -r /opt/finance/requirements-advanced.lock \
  && /opt/finance/venv/bin/pip check

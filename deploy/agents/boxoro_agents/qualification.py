@@ -6,6 +6,7 @@ parsing is bounded and cannot import plugins, resolve URLs or execute code.
 
 import hashlib
 import os
+import re
 import stat
 import xml.etree.ElementTree as ET
 
@@ -160,12 +161,93 @@ def trivy_config(check, process, artifacts, workspace):
         check["status"] = "findings"
 
 
+def text_reports(process):
+    if len(process.stdout) + len(process.stderr) > MAX_REPORT:
+        raise ValueError("Native text reports exceed the 8 MiB qualification limit.")
+    try:
+        return process.stdout.decode("utf-8"), process.stderr.decode("utf-8")
+    except UnicodeError as error:
+        raise ValueError("Native text reports must use UTF-8.") from error
+
+
+def markdownlint(check, process, artifacts, workspace):
+    output, _errors = text_reports(process)
+    scanned = re.findall(r"(?m)^Linting: ([0-9]+) files?\r?$", output)
+    summaries = re.findall(r"(?m)^Summary: ([0-9]+) issues? in ([0-9]+) files?\r?$", output)
+    if len(scanned) != 1 or len(summaries) != 1:
+        raise ValueError("markdownlint did not report one complete file-count and issue summary.")
+    files = int(scanned[0])
+    issues, affected = map(int, summaries[0])
+    check["qualification"].update(scanned_files=files, findings=issues, files_with_findings=affected)
+    if not files:
+        raise ValueError("markdownlint matched no Markdown files; use the file recipe for a single file.")
+    if affected > files or bool(issues) != bool(affected) or (check["status"] == "findings" and not issues):
+        raise ValueError("markdownlint's exit or summary does not establish completed lint findings.")
+    if issues:
+        check["status"] = "findings"
+
+
+def i18next(check, process, artifacts, workspace):
+    output, errors = text_reports(process)
+    if not re.search(r"(?m)^.*Analysis complete\.\r?$", errors):
+        raise ValueError("i18next did not complete its localization analysis; configuration and execution errors are incomplete coverage.")
+    parse_errors = ("Skipping file due to error:", "Skipping file in constants pre-scan due to error:",
+                    "Failed to process file")
+    plugin_error = re.search(r"(?m)^Plugin [^\r\n]+ (?:onVisitNode|extractKeysFromExpression|extractContextFromExpression) failed:", errors)
+    if re.search(r"(?m)^(?:⚠ )?Some source files could not be parsed", output) or any(marker in errors for marker in parse_errors) or plugin_error:
+        raise ValueError("i18next could not complete source parsing or extraction plugins; localization coverage is incomplete.")
+    if check["operation"] == "i18next-status":
+        keys = re.findall(r"(?m)^.*Keys Found:[ \t]*([0-9]+)[ \t]*\r?$", output)
+        if len(keys) != 1 or not int(keys[0]):
+            raise ValueError("i18next did not report a positive translation-key count.")
+        check["qualification"]["translation_keys"] = int(keys[0])
+        return
+    found = re.findall(r"(?m)^Summary: Found ([0-9]+) unused key\(s\)\. No files were modified\.\r?$", output)
+    clean = re.findall(r"(?m)^Summary: 🎉 No unused keys found\.\r?$", output)
+    if len(found) + len(clean) != 1:
+        raise ValueError("i18next did not produce one recognized unused-key summary.")
+    unused = int(found[0]) if found else 0
+    check["qualification"]["unused_keys"] = unused
+    if (found and not unused) or (check["status"] == "findings" and not unused):
+        raise ValueError("i18next's nonzero exit is not supported by unused-key findings.")
+    if unused:
+        check["status"] = "findings"
+
+
+def buf_breaking(check, process, artifacts, workspace):
+    output, errors = text_reports(process)
+    report = output + "\n" + errors
+    if report.count("\n") > 10000:
+        raise ValueError("Buf compatibility evidence exceeds the diagnostic-count limit.")
+    diagnostics = []
+    for line in report.splitlines():
+        if not line.strip():
+            continue
+        value = strict_json(line)
+        if not isinstance(value, dict) or not isinstance(value.get("type"), str) or not value["type"] or not isinstance(value.get("message"), str):
+            raise ValueError("Buf did not produce its expected compatibility diagnostic objects.")
+        diagnostics.append(value)
+    compilation_errors = sum(item["type"] == "COMPILE" for item in diagnostics)
+    check["qualification"].update(diagnostics=len(diagnostics), compilation_errors=compilation_errors)
+    if compilation_errors:
+        raise ValueError("Buf could not compile the candidate or baseline; compatibility was not established.")
+    if check["status"] == "findings" and not diagnostics:
+        raise ValueError("Buf's compatibility exit is not supported by diagnostic evidence.")
+    if diagnostics:
+        check["status"] = "findings"
+
+
 VALIDATORS = {
     ("bandit-scan", "bandit"): bandit,
     ("vitest-test", "vitest"): vitest,
     ("pytest-test", "pytest"): pytest,
     ("playwright-test", "playwright"): playwright,
     ("trivy-config", "trivy"): trivy_config,
+    ("markdownlint-check", "markdownlint"): markdownlint,
+    ("markdownlint-file", "markdownlint"): markdownlint,
+    ("i18next-status", "i18next"): i18next,
+    ("i18next-unused", "i18next"): i18next,
+    ("buf-breaking", "buf"): buf_breaking,
 }
 
 

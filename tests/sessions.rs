@@ -1043,7 +1043,7 @@ async fn security_scan_dispatches_one_quoted_json_argument_with_bounded_box_time
 async fn specialist_dispatches_fixed_helper_and_preserves_effect_declarations() {
     let h = harness(
         vec![
-            json!({"tool":"specialist","action":"doctor","agent":"testforge","timeout_seconds":20}),
+            json!({"tool":"specialist","action":"doctor","agent":"testforge","operation":"pytest-test","timeout_seconds":20}),
             json!({"tool":"specialist","action":"run","agent":"testforge","operation":"pytest-test",
             "path":"it's here; $(id)","allow_project_code":true,"allow_mutation":true,"timeout_seconds":40}),
             reply("Checked"),
@@ -1059,6 +1059,8 @@ async fn specialist_dispatches_fixed_helper_and_preserves_effect_declarations() 
             .starts_with("/usr/bin/python3 -I /opt/box/bin/specialist '")
     );
     assert_eq!(requests[0].timeout_seconds, Some(50));
+    assert!(requests[0].command.contains(r#""operation":"pytest-test""#));
+    assert!(!requests[0].command.contains("allow_project_code"));
     assert!(requests[1].command.contains(r#""allow_network":false"#));
     assert!(requests[1].command.contains(r#""allow_project_code":true"#));
     assert!(requests[1].command.contains(r#"it'\''s here; $(id)"#));

@@ -10,6 +10,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -51,7 +52,26 @@ def metadata(url: str):
 
 
 def digest(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    result = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            result.update(block)
+    return result.hexdigest()
+
+
+def verify_asset(path: Path, asset: dict) -> str:
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError("release cache entry must be a regular file")
+    size = path.stat().st_size
+    if size > 512 * 1024 * 1024:
+        raise RuntimeError("binary artifact exceeds 512MiB ceiling")
+    if asset.get("size") is not None and size != asset["size"]:
+        raise RuntimeError("release API size disagrees with downloaded binary")
+    actual = digest(path)
+    expected = asset.get("digest", "")
+    if expected and expected != "sha256:" + actual:
+        raise RuntimeError("release API digest disagrees with downloaded binary")
+    return actual
 
 
 def locked_file(item: dict, key: str, path: Path) -> None:
@@ -192,20 +212,28 @@ def resolve_binary(key: str, tool: dict, cache: Path) -> dict:
     url_key = hashlib.sha256(asset["browser_download_url"].encode()).hexdigest()[:20]
     path = cache / (url_key + "-" + asset["name"])
     request = urllib.request.Request(asset["browser_download_url"], headers={"User-Agent": "Boxoro-toolchain-lock/1"})
+    if path.is_symlink():
+        raise RuntimeError("release cache cannot contain symlinks")
     if not path.exists():
-        with urllib.request.urlopen(request, timeout=120) as response, path.open("wb") as output:
-            count = 0
-            while data := response.read(1024 * 1024):
-                count += len(data)
-                if count > 512 * 1024 * 1024:
-                    raise RuntimeError("binary artifact exceeds 512MiB ceiling")
-                output.write(data)
-    actual = digest(path)
+        fd, temporary = tempfile.mkstemp(prefix="download-", dir=cache)
+        pending = Path(temporary)
+        try:
+            with os.fdopen(fd, "wb") as output, urllib.request.urlopen(request, timeout=120) as response:
+                count = 0
+                while data := response.read(1024 * 1024):
+                    count += len(data)
+                    if count > 512 * 1024 * 1024:
+                        raise RuntimeError("binary artifact exceeds 512MiB ceiling")
+                    output.write(data)
+            actual = verify_asset(pending, asset)
+            # Failed or unverified downloads must never become reusable cache
+            # entries: a later maintainer retry needs a fresh complete response.
+            os.replace(pending, path)
+        finally:
+            pending.unlink(missing_ok=True)
+    else:
+        actual = verify_asset(path, asset)
     expected = asset.get("digest", "")
-    if expected and expected != "sha256:" + actual:
-        raise RuntimeError("release API digest disagrees with downloaded binary")
-    if asset.get("size") is not None and path.stat().st_size != asset["size"]:
-        raise RuntimeError("release API size disagrees with downloaded binary")
     archive = "tar" if re.search(r"\.tar\.(gz|xz)$", path.name) else "zip" if path.name.endswith(".zip") else "gz" if path.name.endswith(".gz") else "raw"
     member = None
     if archive in ("tar", "zip"):
@@ -221,7 +249,11 @@ def resolve_binary(key: str, tool: dict, cache: Path) -> dict:
         member = matches[0]
     # Installer cache is addressed by content digest.
     cached = cache / actual
-    if not cached.exists():
+    if cached.is_symlink():
+        raise RuntimeError("artifact cache cannot contain symlinks")
+    if cached.exists():
+        verify_asset(cached, {"digest": "sha256:" + actual, "size": path.stat().st_size})
+    else:
         cached.hardlink_to(path)
     return {"kind": "binary", "package": repository, "version": release["tag_name"],
             "executable": install["executable"], "url": asset["browser_download_url"],

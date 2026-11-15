@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-11-15T13:30:46.229817+00:00",
+  "baseline_commit": "c40250453c66fe320d64e40acda782cbff2a5c85",
+  "baseline_remote_commit": "cba870c2751508f2253c6eeb189122b88b440a2f",
+  "baseline_tree": "d070db17843cdee806ecf1e81024cc840ec586d5",
+  "catalog_sha256": "e48f056007c95cd9766ebd0689f0c738459f5f6bea219b621e0d3cfc17758213",
+  "candidate_file_sha256": {
+    "deploy/agents/boxoro_agents/catalog.py": "f5c4ebccdd6ee817919dda59551abd2a94cb3842c3cf6ead3ea3f5929c06a4f4",
+    "deploy/agents/boxoro_agents/policy.py": "f55c0e821368bb2991c636de56b720788456340c8e1f1c3cb9eeed29b53d8ddf",
+    "deploy/agents/boxoro_agents/qualification.py": "9ea9702e545b911b7c9363dcea54ccef26c9a1f1a077e0d780f1dfb6e196c05d",
+    "deploy/agents/boxoro_agents/reports.py": "efe1336605140429242d2ac20a607e74b6039b50124091e7651d19e6ff62476e",
+    "deploy/agents/boxoro_agents/runner.py": "e615066afb8ea360debeb2e7343359d13f4b3ef16f74daa54733b4c203c8b3df",
+    "deploy/agents/build-family.sh": "760491fe126ef7ad35b76f6c175163716e25644e2ef5849f25aec5f710bc1959",
+    "deploy/agents/catalog.json": "e48f056007c95cd9766ebd0689f0c738459f5f6bea219b621e0d3cfc17758213",
+    "deploy/agents/install.py": "69638de79a5e69ec89851f98c869386740e8dab7be037e2116bcb90b6652b245",
+    "deploy/agents/resolve-locks.py": "c46bc74a9c126541209184d0605260e121811fbdc7c45149c53423c487ab89dd",
+    "deploy/finance/boxoro_finance/openbb_bridge.py": "573fc6557862f7cbca53d6f7efccf72a79eccd25258beed4fae276efe3e5d0b9",
+    "deploy/finance/boxoro_finance/service.py": "b1cfe22a5edbcb7dbf5a413c42534ffeffa7a25b78edfc63c0a872c7eb7bcf56",
+    "deploy/specialists.Dockerfile": "b36d895dbb409b233a4c04a931185fa68e8af87ddd7ab6a00c532ce100d4b90e",
+    "deploy/specialists.Dockerfile.dockerignore": "9c84f72e7d200827633cf9c334e6a58636f3d0fc32ea08e48783e3ce51707871",
+    "qa/benchmark_specialist_scope.py": "35811e4b271c47b3948d12b0cea9fc66492447435e8cfecfe7e2393742287209",
+    "qa/specialist-image-smoke.py": "450118a9dc0f20f35314de95a4a75a19e0db3660b1efc85fc0108ff71757b88b",
+    "qa/test_agents_efficiency.py": "1dae73c9e58a6443f6c19b63d0ade87bffc8b16220258730f7b0283ce9bb5834",
+    "qa/test_agents_install.py": "adb7e98739ce9b69a92da48786773163b0179c4d32b58223211e112c2660d719",
+    "qa/test_agents_install_review.py": "ed8f4600aa665f2c581294bb9cbd759a632f7ee6b440cbe39aa50fffe3b67a9e",
+    "qa/test_agents_tool_recipes.py": "73a6e39ff5ee1e370d6a92694ce2a1cad21684b6e05bb3de5d3d05db89fa7e57",
+    "qa/test_finance_catalog_cache.py": "88910ebca9d4e987935f9f322e9a238d4741e5948ca28b9d2c4aeb9fcdc139ac",
+    "qa/test_finance_sdk.py": "b3baebe742d0eeebb0c4c1d6bf20407578ed1e4043e1f0576a8e780758f84550",
+    "src/specialists.rs": "4719407b27883b49779230ce1792643fdd2bd2e868d51f3be14f801b64f20c09",
+    "src/tools.rs": "24657646b2439aeea2210d9a0a1abae9be9a805655fce6d19de9e9cca59f8eee",
+    "tests/sessions.rs": "df0f72b40aad2378b6e69ff7020e219e870d36a6c70694c14ed595be47ea57ac",
+    "tests/specialists.rs": "23e34cc0a2df720b9c68e8beef507338c958aad94469480bde61820b2bda40b9",
+    "web/app.js": "8075fc9fd59b2675a5d23ceabb72d593820131639f0a073a4521f6b0a40f20a7"
+  },
+  "catalog_counts": {
+    "agents": 21,
+    "tools": 167,
+    "operations": 156,
+    "workflows": 77,
+    "connectors": 10,
+    "availability": {
+      "image": 118,
+      "optional": 34,
+      "host": 11,
+      "external": 4
+    }
+  },
+  "checks": [
+    {
+      "name": "Rust unit and integration",
+      "command": "cargo test --locked --tests -- --skip exec_wrapper_keeps_the_command_out_of_process_arguments",
+      "exit_code": 0,
+      "passed": 258,
+      "failed": 0,
+      "ignored": 9,
+      "filtered": 1,
+      "limits": "Nine existing tests require qualified Docker/runsc/host resources. One existing wrapper test uses absent /tmp; its production behavior was not changed."
+    },
+    {
+      "name": "Combined Python with actual specialist recipes",
+      "command": "BOXORO_TEST_SPECIALIST_TOOLS=1 python3 -m unittest discover -s qa -p 'test_*.py' -v",
+      "exit_code": 0,
+      "tests": 217,
+      "passed": 213,
+      "skipped": 4,
+      "seconds": 34.576,
+      "skip_reasons": [
+        "Two statsmodels-dependent tests need the advanced environment.",
+        "QuantLib needs the advanced environment.",
+        "Real OpenBB SDK smoke is opt-in and was executed separately."
+      ],
+      "included_suites": {
+        "actual_cli_recipes": 19,
+        "installer_tests": 14
+      }
+    },
+    {
+      "name": "Rust formatting",
+      "command": "cargo fmt --all --check",
+      "exit_code": 0
+    },
+    {
+      "name": "Rust Clippy",
+      "command": "cargo clippy --locked --all-targets -- -D warnings",
+      "exit_code": 0
+    },
+    {
+      "name": "Rust build",
+      "command": "cargo build --locked",
+      "exit_code": 0
+    },
+    {
+      "name": "Browser UI",
+      "command": "node node_modules/@playwright/test/cli.js test",
+      "cwd": "qa",
+      "exit_code": 0,
+      "tests": 12,
+      "passed": 12,
+      "seconds": 37.6,
+      "limits": "Actual Rust server and Chromium with fixture session API; no connected worker or live external account."
+    },
+    {
+      "name": "Changed Python lint",
+      "command": "ruff check --isolated --select E4,E7,E9,F deploy/agents/boxoro_agents deploy/agents/install.py deploy/agents/resolve-locks.py deploy/finance/boxoro_finance qa/test_agents_efficiency.py qa/test_agents_tool_recipes.py qa/test_agents_install.py qa/test_agents_install_review.py qa/test_finance_catalog_cache.py qa/test_finance_sdk.py qa/benchmark_specialist_scope.py qa/specialist-image-smoke.py",
+      "exit_code": 0
+    },
+    {
+      "name": "Shell syntax",
+      "command": "bash -n deploy/agents/build-family.sh scripts/build-specialist-image.sh scripts/build-full-agent-image.sh",
+      "exit_code": 0
+    },
+    {
+      "name": "JavaScript syntax",
+      "command": "node --check web/app.js",
+      "exit_code": 0
+    },
+    {
+      "name": "Dockerfile lint",
+      "command": "hadolint --failure-threshold error deploy/specialists.Dockerfile",
+      "exit_code": 0,
+      "existing_diagnostics": [
+        "DL3002 warning",
+        "DL3066 info"
+      ]
+    },
+    {
+      "name": "Independent closure review",
+      "passed_focused_tests": 11,
+      "additional_real_fixture": "i18next-unused extraction-plugin failure remained incomplete",
+      "remaining_concrete_findings": 0
+    },
+    {
+      "name": "Dependency lock stability",
+      "changed_lock_files": []
+    },
+    {
+      "name": "Measurement consistency",
+      "source_hashes_match": true
+    },
+    {
+      "name": "Changed Markdown local file targets",
+      "checked_files": 34,
+      "missing_targets": 0,
+      "limits": "Local file targets checked; external URLs and every heading anchor were not crawled."
+    },
+    {
+      "name": "Redacted follow-up patch secret scan",
+      "command": "git diff --cached --binary --full-index | gitleaks stdin --redact --no-banner --ignore-gitleaks-allow --report-format json --report-path <private-scratch-report> --timeout 30",
+      "exit_code": 0,
+      "matches": 0,
+      "limits": "Pattern-based scan; does not prove that no credential exists."
+    }
+  ],
+  "environment": {
+    "temporary_root": "/workspace/scratch/8e5bc6612c2b/.tmp",
+    "specialist_python_native_bin": "/workspace/scratch/8e5bc6612c2b/specialist-tools/bin",
+    "specialist_javascript_bin": "/workspace/scratch/8e5bc6612c2b/specialist-js-tools/bin",
+    "node": "/workspace/scratch/8e5bc6612c2b/specialist-node/bin/node",
+    "browser": "/workspace/scratch/8e5bc6612c2b/browsers/chrome-headless-shell-linux64/chrome-headless-shell",
+    "docker_daemon_available": false
+  },
+  "finance_backend_evidence": "finance-efficiency-2026-11-15.json",
+  "counting_note": "Focused recipe, installation, finance and review suites overlap combined tests. Counts are not additive.",
+  "limits": [
+    "No image build/publish/deploy or actual worker/gVisor/egress qualification.",
+    "No live providers, paid data, external MCP accounts or device/cloud/database provisioning.",
+    "Dependency versions and locks unchanged; existing advisory decisions remain documented."
+  ]
+}

@@ -64,13 +64,55 @@ def select_operations(request, catalog):
     return [(name, catalog.operation(request.agent, name)) for name in workflows[request.workflow]]
 
 
-def execution_plan(request, catalog, workspace, project):
+def selected_scope(request, catalog):
+    """Resolve a task's exact capabilities without executing project code."""
+    agent = catalog.agent(request.agent)
+    if request.operation:
+        operations = {request.operation: catalog.operation(request.agent, request.operation)}
+        kind, identifier = "operation", request.operation
+    elif request.workflow:
+        operations = dict(select_operations(request, catalog))
+        kind, identifier = "workflow", request.workflow
+    else:
+        operations = {name: op for name, op in catalog.operations.items() if op["tool"] in agent["tools"]}
+        kind, identifier = "agent", request.agent
+    selected = agent["tools"] if kind == "agent" else list(dict.fromkeys(op["tool"] for op in operations.values()))
+    scope = {"kind": kind, "id": identifier, "tools": list(selected), "operations": list(operations),
+             "excluded_tools": [name for name in agent["tools"] if name not in selected]}
+    return scope, operations
+
+
+def describe(request, catalog, agent, scope, operations):
+    scoped = scope["kind"] != "agent"
+    definition = agent
+    if scoped:
+        definition = {key: agent[key] for key in ("name", "description", "family", "resources", "limitations") if key in agent}
+        definition["tools"] = scope["tools"]
+        definition["workflows"] = {request.workflow: agent["workflows"][request.workflow]} if request.workflow else {}
+    result = {
+        "schema_version": 1, "action": "describe", "agent": request.agent, "gate": "pass",
+        "scope": scope, "definition": definition,
+        "tools": {name: catalog.tools[name] for name in scope["tools"]}, "operations": operations,
+        "connectors": {} if scoped else {name: catalog.connectors[name] for name in agent.get("connectors", [])},
+        "checks": [], "reports": {},
+        "limitations": agent.get("limitations", []) + ["Catalog definitions do not certify installed tools or connected services."],
+    }
+    if scoped:
+        result["required_effects"] = sorted({effect for operation in operations.values() for effect in operation.get("effects", [])})
+        result["limitations"].append("This response covers only the selected task; use an unscoped describe for the full profile, skill and connectors.")
+    return result
+
+
+def execution_plan(request, catalog, workspace, project, target):
     selected = select_operations(request, catalog)
     known = set().union(*(operation.get("parameters", {}).keys() for _name, operation in selected))
     if set(request.parameters) - known:
         raise ValueError("unknown workflow or operation parameter")
     plan = []
     for name, operation in selected:
+        target_type = operation.get("target_type", "any")
+        if (target_type == "directory" and not target.is_dir()) or (target_type == "file" and not target.is_file()):
+            raise ValueError(name + " requires a " + target_type + " target")
         definitions = operation.get("parameters", {})
         supplied = {key: value for key, value in request.parameters.items() if key in definitions}
         values = validate_parameters(supplied, definitions, workspace, project)
@@ -160,8 +202,7 @@ def run_operation(name, operation, values, request, catalog, workspace, target, 
     return check
 
 
-def doctor(request, catalog, workspace, tool_bin, output, state, deadline):
-    selected = catalog.agent(request.agent)["tools"] if request.agent else list(catalog.tools)
+def doctor(catalog, selected, workspace, tool_bin, output, state, deadline):
     checks = []
     for index, tool_id in enumerate(selected):
         tool = catalog.tools[tool_id]
@@ -200,13 +241,14 @@ def run_request(value, *, workspace=Path("/workspace"), tool_bin=Path("/opt/box/
         return {"schema_version": 1, "action": "list", "gate": "pass", "agents": [{"id": name, **{key: agent[key] for key in ("name", "description", "family")}, "tools": len(agent["tools"]), "workflows": list(agent.get("workflows", {}))} for name, agent in catalog.agents.items()], "checks": [], "reports": {}, "limitations": ["This is a catalog index; use doctor to verify this worker's installations."]}
     if request.agent:
         agent = catalog.agent(request.agent)
+    scope, operations = selected_scope(request, catalog)
     if request.action == "describe":
-        return {"schema_version": 1, "action": "describe", "agent": request.agent, "gate": "pass", "definition": agent, "tools": {name: catalog.tools[name] for name in agent["tools"]}, "operations": {name: operation for name, operation in catalog.operations.items() if operation["tool"] in agent["tools"]}, "connectors": {name: catalog.connectors[name] for name in agent.get("connectors", [])}, "checks": [], "reports": {}, "limitations": agent.get("limitations", []) + ["Catalog definitions do not certify installed tools or connected services."]}
+        return describe(request, catalog, agent, scope, operations)
     workspace = Path(workspace).resolve(strict=True)
     tool_bin = Path(tool_bin).absolute()
     target = workspace_path(workspace, request.path)
     project = target if target.is_dir() else target.parent
-    plan = execution_plan(request, catalog, workspace, project) if request.action != "doctor" else []
+    plan = execution_plan(request, catalog, workspace, project, target) if request.action != "doctor" else []
     deadline = time.monotonic() + request.timeout_seconds
     root = secure_directory(workspace / ".specialists")
     reports_root = secure_directory(root / "reports")
@@ -222,7 +264,8 @@ def run_request(value, *, workspace=Path("/workspace"), tool_bin=Path("/opt/box/
         "agent": request.agent,
         "started_at": utc_now(),
         "catalog_sha256": catalog.sha256,
-        "installed_manifest": installed_manifest(catalog_path, catalog.agent(request.agent)["tools"] if request.agent else list(catalog.tools)),
+        "installed_manifest": installed_manifest(catalog_path, scope["tools"]),
+        "scope": scope,
         "checks": [],
         "reports": {},
         "limitations": list(LIMITATIONS),
@@ -232,9 +275,11 @@ def run_request(value, *, workspace=Path("/workspace"), tool_bin=Path("/opt/box/
         result["limitations"] += catalog.agent(request.agent).get("limitations", [])
     try:
         if request.action == "doctor":
-            result["checks"] = doctor(request, catalog, workspace, tool_bin, output, state, deadline)
+            result["checks"] = doctor(catalog, scope["tools"], workspace, tool_bin, output, state, deadline)
             result["limitations"].append("Doctor verifies installed command probes; project-specific imports, browsers, databases, device hosts, credentials and service readiness can still require separate qualification.")
             result["limitations"].append("A successful library or CLI probe with zero runnable operations is not a registered command adapter. Missing optional peers do not prevent individual installed operations from running.")
+            if scope["kind"] != "agent":
+                result["limitations"].append("This readiness result covers only the selected operation/workflow tools; excluded tools and the rest of the profile were not checked.")
         else:
             for index, (name, operation, values) in enumerate(plan):
                 folder = str(index + 1).zfill(3) + "-" + name

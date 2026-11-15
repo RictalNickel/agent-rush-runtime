@@ -522,12 +522,26 @@ impl ToolCall {
                     "specialist path, parameters and effect declarations are only valid for run/workflow"
                 );
                 ensure!(
-                    matches!(action, SpecialistAction::Run) || operation.is_none(),
-                    "operation is only valid for run"
+                    matches!(
+                        action,
+                        SpecialistAction::Run
+                            | SpecialistAction::Describe
+                            | SpecialistAction::Doctor
+                    ) || operation.is_none(),
+                    "operation is only valid for run, describe or doctor"
                 );
                 ensure!(
-                    matches!(action, SpecialistAction::Workflow) || workflow.is_none(),
-                    "workflow is only valid for workflow"
+                    matches!(
+                        action,
+                        SpecialistAction::Workflow
+                            | SpecialistAction::Describe
+                            | SpecialistAction::Doctor
+                    ) || workflow.is_none(),
+                    "workflow is only valid for workflow, describe or doctor"
+                );
+                ensure!(
+                    operation.is_none() || workflow.is_none(),
+                    "operation and workflow selectors are mutually exclusive"
                 );
                 if matches!(action, SpecialistAction::List) {
                     ensure!(agent.is_none(), "list does not take an agent");
@@ -536,14 +550,14 @@ impl ToolCall {
                         .as_deref()
                         .context("specialist action requires agent")?;
                     ensure!(crate::specialists::known(id), "unknown specialist {id:?}");
-                    if matches!(action, SpecialistAction::Run) {
+                    if matches!(action, SpecialistAction::Run) || operation.is_some() {
                         let operation = operation.as_deref().context("run requires operation")?;
                         ensure!(
                             crate::specialists::operation_allowed(id, operation),
                             "operation is not registered for this specialist"
                         );
                     }
-                    if matches!(action, SpecialistAction::Workflow) {
+                    if matches!(action, SpecialistAction::Workflow) || workflow.is_some() {
                         let workflow = workflow
                             .as_deref()
                             .context("workflow requires workflow name")?;
@@ -918,7 +932,7 @@ const TOOL_DOCS: &[(&str, &str)] = &[
     ),
     (
         "specialist",
-        r#"{"tool":"specialist","action":"describe","agent":"testforge"} actions: list{}, describe{agent}, doctor{agent}, run{agent,operation,path?,parameters?,allow_project_code?,allow_network?,allow_mutation?,timeout_seconds?}, workflow{agent,workflow,path?,parameters?,allow_project_code?,allow_network?,allow_mutation?,timeout_seconds?}. Use list to discover 21 specialist profiles and describe for fixed operation schemas. Load specialist-AGENT first. doctor checks actual tools, not documentation alone. Run takes typed scalar parameters, no arbitrary shell/flags/env; effects require explicit true declarations derived from the user's authorized task. These declarations are not OS sandbox restrictions: project code can access the box. Defaults path '.', declarations false, timeout 540 (10-540). Reports distinguish failed checks from incomplete coverage. Profile selection does not change worker image or MCP permissions. Finance uses local analytics and a separate operator-configured OpenBB MCP; never pass credentials in parameters."#,
+        r#"{"tool":"specialist","action":"describe","agent":"testforge","workflow":"python-gate"} actions: list{}, describe{agent,operation?,workflow?}, doctor{agent,operation?,workflow?}, run{agent,operation,path?,parameters?,allow_project_code?,allow_network?,allow_mutation?,timeout_seconds?}, workflow{agent,workflow,path?,parameters?,allow_project_code?,allow_network?,allow_mutation?,timeout_seconds?}. Use list to discover 21 specialist profiles. Load specialist-AGENT first. Prefer describe and doctor scoped to the intended operation OR workflow (mutually exclusive); this returns only its contracts and probes its required tools. Unscoped calls inspect the whole profile. Scoped success does not certify excluded tools. Run takes typed scalar parameters, no arbitrary shell/flags/env; effects require explicit true declarations derived from the user's authorized task. These declarations are not OS sandbox restrictions: project code can access the box. Defaults path '.', declarations false, timeout 540 (10-540). Reports distinguish failed checks from incomplete coverage. Profile selection does not change worker image or MCP permissions. Finance uses local analytics and a separate operator-configured OpenBB MCP; never pass credentials in parameters."#,
     ),
     (
         "skill",

@@ -16,13 +16,15 @@ Produce defensible measurements and isolate bottlenecks. Compare like-for-like w
 
 Record the target, version, workload, warmup, concurrency, duration and acceptance threshold before measuring. Default load traffic must use an isolated authorized service and conservative limits. Review load scripts because they can override endpoints and methods. Use repeat runs and separate warmup from samples; report sample count and variance. Start with in-process profiling; py-spy attachment and hardware counters need a qualified host. Use Lighthouse as a lab report and a separate budget assertion for pass/fail. Tie any optimization to fresh equivalent before/after evidence.
 
+Use memory-profile to capture a reviewed Python script with Memray, then copy its verified capture artifact to an ordinary workspace file and supply that path to memory-report. Internal report storage cannot be used directly as an input path. The fixed Hyperfine startup recipe measures the analysis helper only; application performance needs a representative workload.
+
 ## Deliverable
 
 A benchmark recipe, raw JSON/profile artifacts, workload and environment record, measured bottleneck explanation, comparison with uncertainty and a practical regression budget.
 
 ## Runtime discipline
 
-Use `specialist` with this agent ID. Start with `describe` and `doctor`; select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
+Use `specialist` with this agent ID. Start with `describe` and `doctor` scoped to the intended `workflow` or `operation`; choose one selector, never both. This probes only the tools needed for that task. Use an unscoped profile `doctor` for image audits or a full availability inventory. Select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
 
 Use the exact input paths and typed parameters required by the operation. Declare project-code execution, network and workspace mutation only when the task authorizes those effects. These declarations are request checks, not an operating-system security boundary. Project tests, plugins and configs can perform additional actions; review their scope. Do not invent free-form shell, executable, environment or CLI-argument fields.
 
@@ -52,29 +54,36 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
 | `http-baseline` | `autocannon-get` |
 | `python-profile` | `pyinstrument-profile` |
 | `memory-report` | `memray-summary` |
+| `memory-profile` | `memray-profile` |
 
 ### Discovery and readiness
+
+Discover and probe only the intended workflow:
 
 ```json
 {
   "action": "describe",
-  "agent": "performance-lab"
+  "agent": "performance-lab",
+  "workflow": "http-baseline"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "performance-lab"
+  "agent": "performance-lab",
+  "workflow": "http-baseline"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -86,7 +95,7 @@ Executable paths come from trusted tool IDs under `/opt/box/agents/bin/`. Suffix
 
 Measure a short GET load against a loopback service.
 
-Command: `/opt/box/agents/bin/autocannon --connections {connections} --duration {seconds} --json --method GET {target}`
+Command: `/opt/box/agents/bin/autocannon --connections '{connections}' --duration '{seconds}' --json --method GET '{target}'`
 
 Effects: network. Tool timeout: 60 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -98,11 +107,25 @@ Effects: network. Tool timeout: 60 seconds. Success codes: `[0]`; finding codes:
 
 Latency/throughput capture only; no application-specific SLO is automatically enforced. GET endpoints must be safe and the target isolated.
 
+### `memray-profile`
+
+Capture allocations while executing a reviewed Python script.
+
+Command: `/opt/box/agents/bin/memray run --output '{artifacts}/memray.bin' '{script}'`
+
+Effects: project_code, network, mutation. Tool timeout: 180 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
+
+| Parameter | Contract |
+| --- | --- |
+| `script` | string; path; required |
+
+Executes the reviewed Python script using the isolated Memray environment; project dependencies must be available. A nonzero workload exit is incomplete even if a capture was written; the capture remains diagnostic evidence, not a successful benchmark or memory-budget finding. To run memray-summary, copy the verified memray.bin artifact to an ordinary workspace file first; internal .specialists report paths are not accepted as operation inputs.
+
 ### `memray-summary`
 
 Summarize a supplied Memray allocation profile.
 
-Command: `/opt/box/agents/bin/memray summary {input}`
+Command: `/opt/box/agents/bin/memray summary '{input}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -116,15 +139,15 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Capture a sampling profile of a reviewed Python script.
 
-Command: `/opt/box/agents/bin/pyinstrument --renderer html --outfile {artifacts}/profile.html {script}`
+Command: `/opt/box/agents/bin/pyinstrument --renderer html --outfile '{artifacts}/profile.html' '{script}'`
 
-Effects: project_code, network, mutation. Tool timeout: 180 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
+Effects: project_code, network, mutation. Tool timeout: 180 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
 | Parameter | Contract |
 | --- | --- |
 | `script` | string; path; required |
 
-The result covers only the supplied inputs and this registered check. Missing dependencies or unsupported inputs are incomplete, not a passing quality claim.
+Executes the reviewed Python script in the isolated Pyinstrument environment; the project dependencies must be available. Nonzero workload exits, including missing imports, are incomplete rather than performance findings. The HTML profile is diagnostic evidence; no latency or CPU threshold is enforced.
 
 ### Additional fixed utilities
 
@@ -145,10 +168,9 @@ The result covers only the supplied inputs and this registered check. Missing de
 | `k6-load` | Execute a reviewed small bounded k6 script. | project_code, network, mutation |
 | `hyperfine-startup` | Measure the fixed built-in analysis CLI startup cost. | mutation |
 | `vegeta-report` | Summarize an existing Vegeta result file as JSON. | none declared |
-| `memray-profile` | Capture allocations while executing a reviewed Python script. | project_code, network, mutation |
 | `lighthouse-audit` | Capture Lighthouse lab metrics from a loopback page. | project_code, network, mutation |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 

@@ -27,12 +27,46 @@ fn specialist_tool_accepts_catalog_queries_and_rejects_arbitrary_execution() {
         json!({"tool":"specialist","action":"run","agent":"testforge","operation":"pytest-test","parameters":{"value":"a\0b"}}),
         json!({"tool":"specialist","action":"run","agent":"testforge","operation":"pytest-test","parameters":[]}),
         json!({"tool":"specialist","action":"run","agent":"testforge","operation":"pytest-test","allow_network":"true"}),
-        json!({"tool":"specialist","action":"doctor","agent":"testforge","operation":"pytest-test"}),
+        json!({"tool":"specialist","action":"doctor","agent":"testforge","operation":"pytest-test","workflow":"python-gate"}),
     ] {
         assert!(
             parse_call(&value.to_string(), &config).is_err(),
             "accepted {value}"
         );
+    }
+}
+
+#[test]
+fn specialist_discovery_can_focus_on_an_owned_operation_or_workflow() {
+    let config = AgentConfig::default();
+    for action in ["describe", "doctor"] {
+        for selection in [
+            json!({"operation":"pytest-test"}),
+            json!({"workflow":"python-gate"}),
+        ] {
+            let mut call = json!({"tool":"specialist","action":action,"agent":"testforge"});
+            call.as_object_mut()
+                .unwrap()
+                .extend(selection.as_object().unwrap().clone());
+            assert!(
+                parse_call(&call.to_string(), &config).is_ok(),
+                "rejected {call}"
+            );
+        }
+        for selection in [
+            json!({"operation":"finance-risk"}),
+            json!({"workflow":"unknown"}),
+            json!({"operation":"pytest-test","workflow":"python-gate"}),
+        ] {
+            let mut call = json!({"tool":"specialist","action":action,"agent":"testforge"});
+            call.as_object_mut()
+                .unwrap()
+                .extend(selection.as_object().unwrap().clone());
+            assert!(
+                parse_call(&call.to_string(), &config).is_err(),
+                "accepted {call}"
+            );
+        }
     }
 }
 

@@ -22,7 +22,7 @@ Issue list with route/state, impact, reproduction and rule references; remediate
 
 ## Runtime discipline
 
-Use `specialist` with this agent ID. Start with `describe` and `doctor`; select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
+Use `specialist` with this agent ID. Start with `describe` and `doctor` scoped to the intended `workflow` or `operation`; choose one selector, never both. This probes only the tools needed for that task. Use an unscoped profile `doctor` for image audits or a full availability inventory. Select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
 
 Use the exact input paths and typed parameters required by the operation. Declare project-code execution, network and workspace mutation only when the task authorizes those effects. These declarations are request checks, not an operating-system security boundary. Project tests, plugins and configs can perform additional actions; review their scope. Do not invent free-form shell, executable, environment or CLI-argument fields.
 
@@ -51,7 +51,7 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
@@ -62,19 +62,25 @@ A workflow stops at a failed or incomplete step. It preserves the result and doe
 
 ### Discovery and readiness
 
+Discover and probe only the intended workflow:
+
 ```json
 {
   "action": "describe",
-  "agent": "accessibility"
+  "agent": "accessibility",
+  "workflow": "page-audit"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "accessibility"
+  "agent": "accessibility",
+  "workflow": "page-audit"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -86,7 +92,7 @@ Executable paths come from trusted tool IDs under `/opt/box/agents/bin/`. Suffix
 
 Fail on automated accessibility violations on a loopback page.
 
-Command: `/opt/box/agents/bin/axe-cli {target} --exit --stdout`
+Command: `/opt/box/agents/bin/axe-cli '{target}' --exit --stdout`
 
 Effects: network, project_code. Tool timeout: 180 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -100,7 +106,7 @@ Requires matching ChromeDriver/browser. Automated rules cover only part of acces
 
 Check static HTML syntax without rewriting it.
 
-Command: `/opt/box/agents/bin/html-tidy -errors -quiet {input}`
+Command: `/opt/box/agents/bin/html-tidy -errors -quiet '{input}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1, 2]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -114,7 +120,7 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Validate static HTML semantics and structure.
 
-Command: `/opt/box/agents/bin/html-validate --formatter json {input}`
+Command: `/opt/box/agents/bin/html-validate --formatter json '{input}'`
 
 Effects: project_code. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -128,7 +134,7 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Run accessibility rules on a loopback page with JSON output.
 
-Command: `/opt/box/agents/bin/pa11y --config /opt/box/agents/boxoro_agents/browser-config/pa11y.json --reporter json --timeout 30000 {target}`
+Command: `/opt/box/agents/bin/pa11y --config /opt/box/agents/boxoro_agents/browser-config/pa11y.json --reporter json --timeout 30000 '{target}'`
 
 Effects: network, project_code. Tool timeout: 90 seconds. Success codes: `[0]`; finding codes: `[2]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -142,7 +148,7 @@ Pa11y exit 2 denotes accessibility findings; exit 1 is an execution problem. Chr
 
 Run the project browser suite with one worker and JSON output.
 
-Command: `/opt/box/agents/bin/playwright test --workers=1 --reporter=json --output={artifacts}/playwright`
+Command: `/opt/box/agents/bin/playwright test --workers=1 --reporter=json '--output={artifacts}/playwright'`
 
 Effects: project_code, network, mutation. Tool timeout: 300 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -165,7 +171,7 @@ The runtime qualifies the JSON report: at least one test must execute, and missi
 | `lighthouse-audit` | Capture Lighthouse lab metrics from a loopback page. | project_code, network, mutation |
 | `pa11y-suite` | Run a reviewed accessibility suite configuration. | project_code, network, mutation |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 

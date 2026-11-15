@@ -36,6 +36,18 @@ class AgentInstallTests(unittest.TestCase):
         with self.assertRaises(install.InstallError):
             install.locked_file(self.root, "requirements.lock", digest)
 
+    def test_cached_binary_is_rechecked_before_each_reuse(self):
+        install = installer()
+        digest = hashlib.sha256(b"good").hexdigest()
+        path = self.root / digest
+        path.write_bytes(b"good")
+        item = {"url": "https://github.com/example/tool/releases/download/v1/tool",
+                "sha256": digest, "size": 4}
+        self.assertEqual(install.artifact(item, self.root, True), path)
+        path.write_bytes(b"evil")
+        with self.assertRaisesRegex(install.InstallError, "cached binary digest"):
+            install.artifact(item, self.root, True)
+
     def test_lock_path_cannot_escape_or_follow_a_symlink(self):
         install = installer()
         outside = self.root / "outside"

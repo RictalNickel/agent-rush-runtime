@@ -14,7 +14,7 @@ Keep consumer-facing contracts explicit and testable across OpenAPI, GraphQL and
 
 ## Working method
 
-Locate the authoritative specification and exact released consumer baseline. Resolve local schema references and identify remote references before network use. Lint structure and organization rules, then compare the intended baseline and candidate for breaking changes. For a live contract test use a disposable loopback API and the registered GET-only recipe. Separate specification issues, implementation mismatches and policy decisions. A mock server, JVM generator or remote registry needs its separately documented prerequisites; do not treat a successful lint as proof the API implementation is correct.
+Locate the authoritative specification and exact released consumer baseline. Resolve local schema references and identify remote references before network use. Lint structure and organization rules, then compare the intended baseline and candidate for breaking changes using the matching OpenAPI, GraphQL or Protobuf operation. Use a Redocly bundle when a multi-file specification needs one reviewable artifact. Review Buf check plugins as executable project code. For a live contract test use a disposable loopback API and the registered GET-only recipe. Separate specification issues, implementation mismatches and policy decisions. A mock server, JVM generator or remote registry needs its separately documented prerequisites; do not treat a successful lint as proof the API implementation is correct.
 
 ## Deliverable
 
@@ -22,7 +22,7 @@ Versioned specification changes, compatibility findings with affected operations
 
 ## Runtime discipline
 
-Use `specialist` with this agent ID. Start with `describe` and `doctor`; select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
+Use `specialist` with this agent ID. Start with `describe` and `doctor` scoped to the intended `workflow` or `operation`; choose one selector, never both. This probes only the tools needed for that task. Use an unscoped profile `doctor` for image audits or a full availability inventory. Select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
 
 Use the exact input paths and typed parameters required by the operation. Declare project-code execution, network and workspace mutation only when the task authorizes those effects. These declarations are request checks, not an operating-system security boundary. Project tests, plugins and configs can perform additional actions; review their scope. Do not invent free-form shell, executable, environment or CLI-argument fields.
 
@@ -53,29 +53,38 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
 | `lint-contract` | `spectral-lint` → `redocly-lint` |
 | `breaking-change` | `oasdiff-breaking` |
 | `protobuf` | `buf-lint` |
+| `bundle-contract` | `redocly-bundle` |
+| `protobuf-compatibility` | `buf-breaking` |
+| `graphql-compatibility` | `graphql-diff` |
 
 ### Discovery and readiness
+
+Discover and probe only the intended workflow:
 
 ```json
 {
   "action": "describe",
-  "agent": "api-architect"
+  "agent": "api-architect",
+  "workflow": "lint-contract"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "api-architect"
+  "agent": "api-architect",
+  "workflow": "lint-contract"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -83,21 +92,51 @@ A run request selects an operation, a workspace path and only its declared param
 
 Executable paths come from trusted tool IDs under `/opt/box/agents/bin/`. Suffixes below are fixed templates. A parameter never becomes a model-selected executable, shell command or arbitrary argument array. `{artifacts}` is the private report directory created by the runtime.
 
+### `buf-breaking`
+
+Check Protobuf compatibility against an explicitly supplied local baseline.
+
+Command: `/opt/box/agents/bin/buf breaking '{candidate}' --against '{baseline}' --error-format json --disable-symlinks`
+
+Effects: project_code, network. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[100]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
+
+| Parameter | Contract |
+| --- | --- |
+| `baseline` | string; path; required |
+| `candidate` | string; path; required |
+
+Both inputs must be reviewed local paths. Compare the released baseline with the candidate in that order. Buf configuration determines breaking rules; FILE is the upstream default. Check plugins may execute project-selected programs and module/policy references may fetch data. Rule findings exit 100; COMPILE diagnostics mean compatibility was not evaluated and are incomplete, as are configuration/plugin failures. No registry upload or code generation is invoked.
+
 ### `buf-lint`
 
 Lint local Protobuf definitions.
 
-Command: `/opt/box/agents/bin/buf lint {path} --error-format json`
+Command: `/opt/box/agents/bin/buf lint '{path}' --error-format json --disable-symlinks`
 
-Effects: network. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
+Effects: project_code, network. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[100]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
-Remote Buf modules may need network/cache. Plugins and generated code are separate operations; no remote plugin execution is registered here.
+Buf 1.75.0 emits lint and source-syntax diagnostics with exit 100; configuration and plugin execution errors exit 1 and remain incomplete. Local buf.yaml check plugins can execute project-selected programs even for lint; review plugins and policies before allowing project code. Remote module/policy references may use network/cache. Symlink traversal is disabled; no generation or publication command is registered.
+
+### `graphql-diff`
+
+Compare two supplied GraphQL schemas.
+
+Command: `/opt/box/agents/bin/graphql-inspector diff '{baseline}' '{candidate}'`
+
+Effects: project_code, network. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
+
+| Parameter | Contract |
+| --- | --- |
+| `baseline` | string; path; required |
+| `candidate` | string; path; required |
+
+Prefer plain SDL inputs. Custom loaders can execute code or fetch resources; breaking-change policy is the tool default.
 
 ### `oasdiff-breaking`
 
 Find breaking changes between two supplied API specifications.
 
-Command: `/opt/box/agents/bin/oasdiff breaking {baseline} {candidate} --format json --fail-on ERR`
+Command: `/opt/box/agents/bin/oasdiff breaking '{baseline}' '{candidate}' --format json --fail-on ERR`
 
 Effects: network. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -108,11 +147,25 @@ Effects: network. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes
 
 External $ref values may fetch resources. Compare the exact consumer baseline to the candidate; normalization cannot infer intended compatibility policy.
 
+### `redocly-bundle`
+
+Bundle an API description and its references into one reviewable JSON artifact.
+
+Command: `/opt/box/agents/bin/redocly bundle '{input}' --output '{artifacts}/openapi.bundle.json' --ext json`
+
+Effects: project_code, network, mutation. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
+
+| Parameter | Contract |
+| --- | --- |
+| `input` | string; path; required |
+
+Local references are resolved into the artifact; external references may make network requests. Redocly configuration, preprocessors and decorators can execute project code. No --force or removal of unused components is accepted. Unresolved references fail without producing a forced partial bundle. A bundle is a stable review input, not implementation validation or publication.
+
 ### `redocly-lint`
 
 Validate and lint a local OpenAPI definition.
 
-Command: `/opt/box/agents/bin/redocly lint {input} --format=json`
+Command: `/opt/box/agents/bin/redocly lint '{input}' --format=json`
 
 Effects: project_code, network. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -126,7 +179,7 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Lint a local API specification with an explicit rule set.
 
-Command: `/opt/box/agents/bin/spectral lint {input} --ruleset {rules} --format json --fail-severity warn`
+Command: `/opt/box/agents/bin/spectral lint '{input}' --ruleset '{rules}' --format json --fail-severity warn`
 
 Effects: project_code, network. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -155,10 +208,9 @@ The result covers only the supplied inputs and this registered check. Missing de
 | `playwright-screenshot` | Capture a full-page Chromium screenshot of a loopback app. | project_code, network, mutation |
 | `grpc-descriptor-list` | List services from a local protobuf descriptor set. | none declared |
 | `http-head-local` | Read headers from an explicitly named local HTTP service. | network |
-| `graphql-diff` | Compare two supplied GraphQL schemas. | project_code, network |
 | `curl-head` | Read HTTPS response headers with redirects disabled. | network |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 

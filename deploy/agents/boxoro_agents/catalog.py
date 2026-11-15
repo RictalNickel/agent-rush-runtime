@@ -99,6 +99,8 @@ class Catalog:
         for operation in self.operations.values():
             if operation.get("tool") not in self.tools:
                 raise ValueError("operation references an unknown tool")
+            if operation.get("target_type", "any") not in {"any", "file", "directory"}:
+                raise ValueError("operation target_type must be any, file or directory")
             parameters = operation.get("parameters", {})
             if not isinstance(parameters, dict) or len(parameters) > 32:
                 raise ValueError("operation parameters must be a bounded object")

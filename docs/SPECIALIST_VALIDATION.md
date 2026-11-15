@@ -2,6 +2,8 @@
 
 Validation date: **2026-11-15**. This records executed checks for the specialist-agent change based on the existing security branch. The source, locks, catalog, operating guides and qualification scripts are delivered together. A successful source-level or CLI check is not a claim that a production worker image or external account has been deployed.
 
+This is the **initial implementation validation** retained with its original counts. The subsequent [verification and efficiency review](SPECIALIST_REVIEW.md) records the current 156-operation catalog, additional regression/real-tool checks, measured improvements and the follow-up GitHub change.
+
 ## Verified inventory
 
 | Item | Observed result |

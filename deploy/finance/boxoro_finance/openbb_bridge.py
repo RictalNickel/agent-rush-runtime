@@ -60,23 +60,24 @@ def redact(value, secrets):
     return value
 
 
-def reject_sensitive_arguments(value):
+def reject_sensitive_arguments(value, *, url_hosts=None):
     if isinstance(value, dict):
         for key, item in value.items():
             if SENSITIVE.search(key):
                 error("forbidden_argument", "Credentials cannot be supplied as tool arguments.")
             if key.lower() in {"output", "output_path", "output_dir", "file_path", "filename", "directory", "save", "export", "overwrite", "proxy", "server_url", "base_url"}:
                 error("forbidden_argument", "File destinations, proxy settings and alternate servers are not query parameters.")
-            reject_sensitive_arguments(item)
+            reject_sensitive_arguments(item, url_hosts=url_hosts)
     elif isinstance(value, list):
         for item in value:
-            reject_sensitive_arguments(item)
+            reject_sensitive_arguments(item, url_hosts=url_hosts)
     elif isinstance(value, str) and ("://" in value or value.lstrip().lower().startswith(
             ("//", "\\\\", "http:", "https:", "file:", "ftp:", "s3:", "data:", "gopher:", "unix:"))):
         # URL-accepting endpoints remain discoverable, but require an operator-reviewed host list.
         try:
             parts = urlsplit(value)
-            allowed = {part.strip().lower() for part in os.environ.get("FINANCE_OPENBB_URL_HOSTS", "").split(",") if part.strip()}
+            configured = os.environ.get("FINANCE_OPENBB_URL_HOSTS", "") if url_hosts is None else url_hosts
+            allowed = {part.strip().lower() for part in configured.split(",") if part.strip()}
             if (parts.scheme != "https" or not parts.hostname or parts.hostname.lower() not in allowed
                     or parts.username or parts.password or parts.port not in (None, 443)
                     or "\\" in value or any(character.isspace() or ord(character) < 32 for character in value)
@@ -113,6 +114,7 @@ class Catalog:
         if not isinstance(schema, dict) or not isinstance(schema.get("paths"), dict):
             error("unsupported_schema", "OpenBB did not produce an OpenAPI command schema.", incomplete=True)
         self.commands = {}
+        self.namespaces = tuple(namespaces)
         self.schema_hash = hashlib.sha256(json.dumps(schema, ensure_ascii=True, allow_nan=False, sort_keys=True, separators=(",", ":")).encode("ascii")).hexdigest()
         for path, item in schema["paths"].items():
             if not isinstance(path, str) or not path.startswith("/api/v1/") or not isinstance(item, dict):
@@ -158,6 +160,69 @@ class Catalog:
                     "requires_network": pieces[0] not in ANALYTICAL_NAMESPACES or name == "quantitative.capm",
                 }
 
+    def snapshot(self, version, installation_sha256):
+        """Credential-free metadata for the trusted service's in-memory cache."""
+        return {"schema_version": 1, "status": "complete", "gate": "pass", "openbb_core_version": version,
+                "schema_sha256": self.schema_hash, "installation_sha256": installation_sha256,
+                "namespaces": list(self.namespaces), "commands": list(self.commands.values())}
+
+    @classmethod
+    def from_snapshot(cls, snapshot, *, namespaces):
+        """Accept only bounded metadata produced by our isolated bootstrap child.
+
+        This is an internal IPC format, never a workspace file or tool argument.
+        Recheck the dispatch policy so a malformed bootstrap cannot broaden it.
+        """
+        fields(snapshot, {"schema_version", "status", "gate", "openbb_core_version", "schema_sha256",
+                          "installation_sha256", "namespaces", "commands"},
+               {"schema_version", "status", "gate", "openbb_core_version", "schema_sha256",
+                "installation_sha256", "namespaces", "commands"})
+        if (snapshot["schema_version"] != 1 or snapshot["gate"] != "pass" or snapshot["status"] != "complete"
+                or snapshot["namespaces"] != list(namespaces)
+                or not isinstance(snapshot["openbb_core_version"], str) or not snapshot["openbb_core_version"].startswith("2.")
+                or any(not isinstance(snapshot[key], str) or not re.fullmatch(r"[a-f0-9]{64}", snapshot[key])
+                       for key in ("schema_sha256", "installation_sha256"))
+                or not isinstance(snapshot["commands"], list) or len(snapshot["commands"]) > 10000):
+            error("unsupported_schema", "The installed catalog snapshot is invalid.", incomplete=True)
+        catalog = cls.__new__(cls)
+        catalog.commands, catalog.namespaces, catalog.schema_hash = {}, tuple(namespaces), snapshot["schema_sha256"]
+        for operation in snapshot["commands"]:
+            keys = {"command", "namespace", "path", "method", "description", "parameters_schema", "body_schema",
+                    "body_required", "parameter_locations", "response_schema", "requires_network"}
+            fields(operation, keys, keys)
+            command, namespace, path, method = (operation[key] for key in ("command", "namespace", "path", "method"))
+            if (not isinstance(command, str) or not COMMAND_PATTERN.fullmatch(command) or command in catalog.commands
+                    or namespace not in namespaces or method not in ("GET", "POST")
+                    or method == "POST" and namespace not in ANALYTICAL_NAMESPACES
+                    or not isinstance(path, str) or not path.startswith("/api/v1/")):
+                error("unsupported_schema", "The installed catalog contains an unsupported operation.", incomplete=True)
+            pieces = path[len("/api/v1/"):].strip("/").split("/")
+            base = ".".join(part for part in pieces if not part.startswith("{"))
+            if (pieces[0] != namespace or len(pieces) < 2
+                    or any(not re.fullmatch(r"[a-z][a-z0-9_]*|\{[a-z][a-z0-9_]*\}", part) for part in pieces)
+                    or any(part in {"user", "system", "login", "logout", "install", "execute", "dispatch", "save", "export"} for part in pieces)
+                    or command not in (base, base + ".post" if method == "POST" else base)
+                    or operation["requires_network"] is not (namespace not in ANALYTICAL_NAMESPACES or command == "quantitative.capm")):
+                error("unsupported_schema", "The installed catalog violates the dispatch policy.", incomplete=True)
+            catalog.commands[command] = operation
+        return catalog
+
+    def query_contract(self, command, version, installation_sha256):
+        # Response schemas are useful to describe(), but never needed to execute.
+        operation = {key: value for key, value in self.describe(command).items() if key != "response_schema"}
+        return {"openbb_core_version": version, "schema_sha256": self.schema_hash,
+                "installation_sha256": installation_sha256, "operation": operation}
+
+    @classmethod
+    def from_contract(cls, contract, *, namespaces):
+        keys = {"openbb_core_version", "schema_sha256", "installation_sha256", "operation"}
+        fields(contract, keys, keys)
+        if not isinstance(contract["operation"], dict) or "response_schema" in contract["operation"]:
+            error("unsupported_schema", "The internal query contract is invalid.", incomplete=True)
+        return cls.from_snapshot({key: contract[key] for key in keys - {"operation"}} |
+                                 {"schema_version": 1, "status": "complete", "gate": "pass", "namespaces": list(namespaces),
+                                  "commands": [contract["operation"] | {"response_schema": {}}]}, namespaces=namespaces)
+
     def describe(self, command):
         if not isinstance(command, str) or not COMMAND_PATTERN.fullmatch(command) or command not in self.commands:
             error("unknown_command", "The command is not available in the allowed installed OpenBB catalog.")
@@ -179,7 +244,7 @@ class Catalog:
                              {"description": item["description"][:400]} for item in results[offset:offset + limit]],
                 "next_offset": offset + limit if offset + limit < len(results) else None}
 
-    def validate_query(self, request):
+    def validate_query(self, request, *, url_hosts=None):
         fields(request, {"command", "parameters", "body", "max_rows", "allow_network"}, {"command"})
         validate_structure(request)
         operation = self.describe(request["command"])
@@ -190,9 +255,9 @@ class Catalog:
             integer(request["max_rows"], "max_rows", 1, 10000)
         if "allow_network" in request and type(request["allow_network"]) is not bool:
             error("invalid_parameters", "allow_network must be a boolean.")
-        reject_sensitive_arguments(parameters)
+        reject_sensitive_arguments(parameters, url_hosts=url_hosts)
         body = request.get("body")
-        reject_sensitive_arguments(body)
+        reject_sensitive_arguments(body, url_hosts=url_hosts)
         try:
             import jsonschema
         except ImportError:
@@ -298,6 +363,61 @@ def load_openbb():
     return app, version
 
 
+def installation_fingerprint():
+    """Identify the immutable deployment without importing any installed SDK.
+
+    Distribution RECORD manifests also distinguish rebuilt wheels with the same
+    version. Deployments must replace the service, rather than edit package code
+    in place; no untrusted persisted catalog is read on startup.
+    """
+    packages = sorted((item.metadata["Name"], item.version, item.read_text("RECORD") or "")
+                      for item in importlib.metadata.distributions())
+    return hashlib.sha256(encode(packages)).hexdigest()
+
+
+def validate_tool_arguments(name, arguments):
+    """Reject inexpensive request errors before an OpenBB import/bootstrap."""
+    allowed = {"openbb_status": set(), "openbb_catalog": {"query", "namespace", "offset", "limit"},
+               "openbb_describe": {"command"}, "openbb_query": {"command", "parameters", "body", "max_rows", "allow_network"}}
+    if name not in allowed:
+        error("unknown_tool", "Select a documented OpenBB data tool.")
+    fields(arguments, allowed[name], {"command"} if name in ("openbb_describe", "openbb_query") else ())
+    validate_structure(arguments)
+    if "command" in arguments and (not isinstance(arguments["command"], str) or not COMMAND_PATTERN.fullmatch(arguments["command"])):
+        error("unknown_command", "The command is not available in the allowed installed OpenBB catalog.")
+    if name == "openbb_catalog":
+        if not isinstance(arguments.get("query", ""), str) or len(arguments.get("query", "")) > 200:
+            error("invalid_parameters", "query must be at most 200 characters.")
+        if arguments.get("namespace") is not None and arguments["namespace"] not in DEFAULT_NAMESPACES:
+            error("invalid_parameters", "Select an approved namespace.")
+        integer(arguments.get("offset", 0), "offset", 0, 100000)
+        integer(arguments.get("limit", 20), "limit", 1, 100)
+    if name == "openbb_query":
+        if not isinstance(arguments.get("parameters", {}), dict):
+            error("invalid_parameters", "parameters must be a JSON object.")
+        integer(arguments.get("max_rows", 1000), "max_rows", 1, 10000)
+        if type(arguments.get("allow_network", False)) is not bool:
+            error("invalid_parameters", "allow_network must be a boolean.")
+
+
+def metadata_tool(name, arguments, catalog, version, installation_sha256, *, credentials):
+    validate_tool_arguments(name, arguments)
+    result = {"status": "complete", "gate": "pass", "schema_sha256": catalog.schema_hash,
+              "installation_sha256": installation_sha256}
+    if name == "openbb_status":
+        return result | {"openbb_core_version": version, "openbb_generation": 5,
+                         "command_count": len(catalog.commands),
+                         "namespaces": sorted({item["namespace"] for item in catalog.commands.values()}),
+                         "provider_setup": {key.removesuffix("_API_KEY").removesuffix("_APP_TOKEN").lower(): bool(credentials.get(key))
+                                            for key in CREDENTIAL_ENV},
+                         "license": "Apache-2.0 software; provider data terms apply separately"}
+    if name == "openbb_catalog":
+        return result | catalog.search(**arguments)
+    if name == "openbb_describe":
+        return result | catalog.describe(arguments["command"])
+    error("unknown_tool", "Select a documented OpenBB metadata tool.")
+
+
 def preserve_envelope(app, operation):
     """Keep OBBject metadata mutated after construction in exclude-unset routes.
 
@@ -377,32 +497,43 @@ async def dispatch_asgi(app, operation, parameters, body):
         error("unsupported_response", "The command did not return a finite JSON result; streaming responses are not supported.", incomplete=True)
 
 
-def execute_tool(name, arguments, namespaces=DEFAULT_NAMESPACES):
-    app, version = load_openbb()
-    catalog = Catalog(app.openapi(), namespaces=namespaces)
-    if name == "openbb_status":
+def execute_tool(name, arguments, namespaces=DEFAULT_NAMESPACES, *, contract=None):
+    if name == "_catalog_snapshot":
         fields(arguments, set())
-        return {"status": "complete", "gate": "pass", "openbb_core_version": version, "openbb_generation": 5,
-                "command_count": len(catalog.commands), "schema_sha256": catalog.schema_hash,
-                "namespaces": sorted({item["namespace"] for item in catalog.commands.values()}),
-                "provider_setup": {name.removesuffix("_API_KEY").removesuffix("_APP_TOKEN").lower(): bool(os.environ.get(name)) for name in CREDENTIAL_ENV},
-                "license": "Apache-2.0 software; provider data terms apply separately"}
-    if name == "openbb_catalog":
-        fields(arguments, {"query", "namespace", "offset", "limit"})
-        return {"status": "complete", "gate": "pass", **catalog.search(**arguments)}
-    if name == "openbb_describe":
-        fields(arguments, {"command"}, {"command"})
-        return {"status": "complete", "gate": "pass", "schema_sha256": catalog.schema_hash, **catalog.describe(arguments["command"])}
+        if contract is not None or any(os.environ.get(key) for key in CREDENTIAL_ENV):
+            error("invalid_configuration", "Catalog bootstrap must have no provider credentials.", incomplete=True)
+        with network_scope(False):
+            app, version = load_openbb()
+            return Catalog(app.openapi(), namespaces=namespaces).snapshot(version, installation_fingerprint())
+    validate_tool_arguments(name, arguments)
+    fingerprint = installation_fingerprint()
+    app = None
+    if contract is not None:
+        if name != "openbb_query":
+            error("invalid_parameters", "Only query workers accept an internal operation contract.")
+        catalog = Catalog.from_contract(contract, namespaces=namespaces)
+        if contract["installation_sha256"] != fingerprint:
+            error("catalog_stale", "Installed packages changed; rebuild the service catalog.", incomplete=True)
+        version = contract["openbb_core_version"]
+    else:
+        app, version = load_openbb()
+        catalog = Catalog(app.openapi(), namespaces=namespaces)
     if name != "openbb_query":
-        error("unknown_tool", "Select a documented OpenBB data tool.")
+        return metadata_tool(name, arguments, catalog, version, fingerprint, credentials=os.environ)
     operation, parameters, body = catalog.validate_query(arguments)
     allow_network = arguments.get("allow_network", False)
     if operation["requires_network"] and not allow_network:
         error("network_required", "Provider queries require allow_network=true.")
+    if app is None:
+        # Schema validation stays in the resource-bounded child, before the costly SDK import.
+        app, installed_version = load_openbb()
+        if installed_version != version:
+            error("catalog_stale", "Installed OpenBB changed; rebuild the service catalog.", incomplete=True)
     with network_scope(allow_network):
         value = asyncio.run(dispatch_asgi(app, operation, parameters, body))
     result = normalize_result(value, command=arguments["command"], max_rows=arguments.get("max_rows", 1000),
                               secrets=[os.environ.get(name, "") for name in CREDENTIAL_ENV])
     result["openbb_core_version"] = version
     result["schema_sha256"] = catalog.schema_hash
+    result["installation_sha256"] = fingerprint
     return result

@@ -95,6 +95,21 @@ For `quantlib-bond`, dates are ISO calendar dates in 1901–2199; require issue 
 
 VaR uses a linearly interpolated historical quantile. Expected shortfall averages observed returns at or below that cutoff; both loss measures have a floor of zero. Sparse tails can be unstable; `tail_observations` reports how many observations support the estimate. Undefined risk ratios are null. Forecasts, optimized allocations, and backtests require out-of-sample evaluation appropriate to the intended use.
 
+### Choosing a practical workflow
+
+Use OpenBB to discover and retrieve a specific dataset, then use the fixed local operations for repeated calculations on that same documented input. Running those operations from a CSV/JSON file records its input hash and avoids paying the all-provider startup cost for each scenario. Keep the provider envelope alongside any exported research data: the local CLI records the supplied file and calculation, and cannot reconstruct omitted source metadata.
+
+| Research question | Useful sequence | Required judgment |
+| --- | --- | --- |
+| How concentrated is a portfolio's historical risk? | Retrieve a bounded, aligned price/return sample; use `returns`, `risk`, `portfolio`, and `correlation` on explicit columns. | Choose adjusted prices or total returns, align dates/currencies, and state the rebalancing assumption. Correlation takes the supplied values, so supply returns when return correlation is intended. |
+| Which market or macro factors explain a return series? | Discover an installed Fama–French, FRED, or other relevant source; align its units and frequency with the target; run local `factor`. | Match excess-return definitions, publication dates, and data vintages. Coefficients describe association and do not establish causality. |
+| How would a change in yield affect a bond? | Reuse a `quantlib-bond` request with explicit valuation date, settlement, calendar, and day count; vary `yield_rate` across documented scenarios. | Use `bonds` only when the simpler coupon-date convention is appropriate. Neither adapter prices callable/defaultable features. |
+| How sensitive is a valuation to assumptions? | Reuse `valuation`, `cashflow`, or `options` requests while changing the named discount/growth, cash-flow, volatility, or price assumptions. | Preserve the source of each assumption and keep units consistent; these are scenario calculations, not refreshed market valuations. |
+| Does an allocation or rule survive outside its fitting sample? | Fit `optimize` on a training file; copy the resulting weights into `portfolio` on a separate holdout file. Run `backtest` on a clearly identified sample and report the benchmark and costs. | The fixed tools do not select train/test splits, rebalance fitted weights out of sample, or remove survivorship bias automatically. |
+| Does a forecast add useful information? | Run `forecast` on a training series and compare its horizon with withheld observations; contrast with an explicitly chosen simple baseline. | A completed ARIMA fit does not establish predictive value; model-conditional intervals exclude model-selection uncertainty. |
+
+For example, one documented price file supports both `finance risk --input research/prices.csv --column close` and `finance backtest --input research/prices.csv --column close --fast 20 --slow 50 --cost-bps 10`. Multi-asset weights, factor columns, and bond conventions fit naturally in a reviewed JSON request file. Reuse the input file deliberately for comparisons; retrieve a new source sample when the research question requires newer observations.
+
 ### Reproducible examples
 
 Checked-in examples are [risk CSV](../deploy/finance/examples/risk.csv), [DCF request](../deploy/finance/examples/valuation.json), and [QuantLib request](../deploy/finance/examples/quantlib-bond.json). The DCF example has enterprise value approximately 1,340.9091, equity value 1,240.9091, and per-share equity value 124.0909 under its explicit assumptions.
@@ -119,13 +134,13 @@ The generic runner treats invalid/error exits as unsuccessful execution, not as 
 
 The service runs outside agent boxes. Its immutable environment contains current provider packages, and its private service home contains only service-managed configuration/cache. It receives a JSON command and data, never a workspace path, arbitrary Python expression, CLI command, package name, or alternate server address. Provider secrets remain in this trusted process environment.
 
-The installed OpenBB FastAPI application supplies the OpenAPI contract. The bridge resolves finite local schema references, selects approved provider `GET` routes and analytical `POST` routes, and validates exact parameter/body schemas before dispatching through an in-process ASGI transport. It does not guess Python attributes, generate source code, or run the stock OpenBB MCP command-dispatch/install tools. Current OpenBB defines data processing with POST; rejecting every POST would remove valid analytics. The upstream architecture and extension model are documented in [OpenBB architecture](https://docs.openbb.co/odp/python/concepts/architecture).
+The installed OpenBB FastAPI application supplies the OpenAPI contract. A bounded, credential-free, network-disabled bootstrap child resolves finite local schema references and selects approved provider `GET` routes and analytical `POST` routes. The service retains that compiled metadata in memory, checks request shape and policy, and passes one selected internal operation contract to each fresh query worker. The worker validates exact parameter/body schemas before importing the SDK and dispatching through an in-process ASGI transport, keeping third-party schema validation within the process resource/deadline boundary. It does not guess Python attributes, generate source code, or run the stock OpenBB MCP command-dispatch/install tools. Current OpenBB defines data processing with POST; rejecting every POST would remove valid analytics. The upstream architecture and extension model are documented in [OpenBB architecture](https://docs.openbb.co/odp/python/concepts/architecture).
 
 ### Four MCP tools
 
 | Tool | Purpose |
 | --- | --- |
-| `openbb_status` | Installed core version, schema fingerprint, command count, namespaces, and credential-presence booleans |
+| `openbb_status` | Installed core version, schema/package fingerprints, command count, namespaces, and credential-presence booleans |
 | `openbb_catalog` | Search descriptions or page commands using `query`, `namespace`, `offset`, `limit` |
 | `openbb_describe` | Exact method, query/path schema, body schema, response schema, and network requirement for one dotted command |
 | `openbb_query` | Execute one discovered command with `parameters`, optional `body`, optional `max_rows`, and explicit `allow_network` |
@@ -201,11 +216,27 @@ The service implements MCP protocol `2025-06-18`, matching the runtime client. `
 
 Provider credential variables are documented in [OpenBB providers](OPENBB_PROVIDERS.md). They are read at service start. Worker environments omit unrelated cloud keys, model-provider keys, proxy settings, and the MCP bearer token. Service-managed OpenBB user settings have empty credential fields, metadata enabled, fixed private directories, suppressed logging, and no output callbacks or mutable extensions. Local `.env` and TOML files in that configuration directory are rejected. Do not put keys in its JSON settings: startup deliberately refreshes those files.
 
-Each call starts a fresh installed worker, with a process-group deadline, CPU/open-file limits, bounded input/output, and discarded stderr. This avoids cross-request numerical global state and limits a stalled provider. Cold all-provider imports measured about **42 seconds** in the development environment; startup cost recurs per data/catalog call. That measurement is not a deployment performance guarantee. Search/paginate deliberately and use the local CLI for repeated small calculations.
+Each **data query** starts a fresh installed worker, with a process-group deadline, CPU/open-file limits, bounded input/output, and discarded stderr. This avoids cross-request numerical global state and limits a stalled provider. The HTTP service never imports the OpenBB SDK. Instead, its first request builds the catalog in one isolated child; concurrent cold discovery shares that work within each request's deadline. Failed bootstrap attempts are not cached. Later status/search/describe requests use metadata alone, and query workers skip generation/expansion of the full OpenAPI schema.
+
+The cache contains only installed schemas and command descriptions, with no provider response, credential, or SDK object. It is bounded to a 16 MiB bootstrap transfer, lives only in service memory, and is discarded on restart. No saved catalog or caller-supplied operation contract is accepted through MCP. The snapshot carries the schema SHA-256 and an installation fingerprint over package names, versions, and wheel `RECORD` manifests. Every fresh query worker checks that installation fingerprint before loading the SDK; a mismatch returns `catalog_stale` and invalidates the service cache for a later retry. Deploy updated immutable packages by replacing/restarting the service; edits to installed package source in place are unsupported.
+
+The all-provider environment still has a substantial cold cost. `FINANCE_OPENBB_NAMESPACES` narrows permission and catalog coverage; it does not selectively unload installed provider packages. For an empty catalog, `openbb_query` shares one total request deadline across catalog bootstrap and fresh-worker query execution, including any wait for concurrent bootstrap. Plan for that first request's combined work and use the local CLI for repeated small calculations. The [verification command](#dependency-profiles-and-verification) can emit actual authenticated HTTP timings with `BOXORO_BENCH_OPENBB=1`; measurements depend on the host and are not a deployment performance guarantee.
+
+Measured on 2026-11-15 using the checked-in lock, all 1,138 commands, no provider credentials, and the offline summary fixture above:
+
+| Measurement | Before metadata reuse | With metadata reuse |
+| --- | --- | --- |
+| Cold `openbb_status`, authenticated HTTP | 39.863 s | 37.528 s |
+| Warm status / catalog / describe, authenticated HTTP | Each call started another full SDK/schema worker | 1.61 / 2.05 / 1.65 ms |
+| Fresh-worker offline summary, authenticated HTTP | 38.483 s | 27.802 s |
+| Query-worker peak RSS, initial cache measurement | 1,085 MiB | 867 MiB |
+| HTTP parent peak RSS, initial cache measurement | 19 MiB | 63 MiB |
+
+The fresh query was about 28% faster in the final HTTP comparison (an earlier cache run measured about 30%). The tradeoff is additional metadata memory in the parent; the one-time bootstrap still reaches roughly 1,085 MiB in its child. RSS was sampled on the initial cache implementation, before moving exact schema validation exclusively into the worker; the final HTTP smoke was rerun after that refinement. These are individual development-host measurements, not distribution-wide latency or capacity guarantees. The [machine-readable receipt](validation/finance-efficiency-2026-11-15.json) separates HTTP timings, executor timings, memory methods, source revisions, and test outcomes. Profiling attributed about 9.9 seconds to full OpenAPI generation and 1.4 seconds to catalog expansion before the change. Run `openbb_status` once after deployment as an installed-readiness check so catalog bootstrap does not consume the first provider query's deadline. `tools/list` alone checks the MCP transport and does not warm the installed catalog.
 
 The service retains the unpatched `diskcache==5.6.3` transitive dependency, affected by CVE-2025-69872. Exploitation requires write access to a cache that is later deserialized. Startup requires a private service-owned state root, rejects cache-directory symlinks, and sets cache/temp/data/export directories to mode 0700; workers use umask 0077. Keep that state unavailable to agent boxes and other service identities, and never restore an untrusted cache. This is a deployment mitigation, not an upstream fix. See the [exact retained advisory and source review](OPENBB_PROVIDERS.md#retained-diskcache-advisory). Apply a filesystem/volume quota to persistent service state; per-request limits do not bound its lifetime disk growth.
 
-Tool requests are limited to 512 KiB; worker output is limited to 2 MiB; the final duplicated text/structured MCP envelope is limited to the runtime's 4 MiB ceiling. `max_rows` defaults to 1,000, maximum 10,000. Truncation sets `status:partial`, `gate:incomplete`, and `truncated:true`; it never appears as complete coverage. Larger upstream responses can fail before truncation, so constrain dates/symbols upstream. Streaming responses and file uploads are excluded.
+Tool requests are limited to 512 KiB; query-worker output is limited to 2 MiB; the final duplicated text/structured MCP envelope is limited to the runtime's 4 MiB ceiling. The private schema bootstrap has its own 16 MiB output limit and is not an exposed tool. Internal per-query operation contracts are bounded to 512 KiB and never count as caller parameters. `max_rows` defaults to 1,000, maximum 10,000. Truncation sets `status:partial`, `gate:incomplete`, and `truncated:true`; it never appears as complete coverage. Larger upstream responses can fail before truncation, so constrain dates/symbols using the provider parameters shown by `openbb_describe`. `max_rows` limits the returned result and does not narrow the upstream fetch. Streaming responses and file uploads are excluded.
 
 The data policy excludes user/system settings, installation/execution helpers, unapproved namespaces, all mutation HTTP methods, and provider POST routes. Caller credentials, destination paths, proxies, and alternate servers are rejected. The socket guard denies non-public addresses, local sockets, datagrams, and non-HTTP(S) ports during provider dispatch. Native libraries can bypass Python monkeypatches; enforce required egress restrictions outside Python.
 
@@ -226,12 +257,13 @@ uv venv --python 3.12 .finance-openbb
 uv pip sync --python .finance-openbb/bin/python --require-hashes deploy/finance/requirements.lock
 uv venv --python 3.12 .finance-advanced
 uv pip sync --python .finance-advanced/bin/python --require-hashes deploy/finance/requirements-advanced.lock
-python3 -m unittest qa.test_finance qa.test_finance_openbb -v
+python3 -m unittest qa.test_finance qa.test_finance_openbb qa.test_finance_catalog_cache -v
 .finance-advanced/bin/python -m unittest qa.test_finance_advanced -v
 BOXORO_TEST_OPENBB=1 .finance-openbb/bin/python -m unittest qa.test_finance_sdk -v
+# Add BOXORO_BENCH_OPENBB=1 to print cold/warm authenticated HTTP request timings.
 ```
 
-The actual installed SDK smoke uses no provider credentials or provider network and verifies the numerical result plus real OBBject metadata. The regression suites cover known analytical results, one-bar backtest lag, initial drawdown, invalid values, constrained optimization, missing dependencies, path containment, MCP authentication/Host/Origin checks, schema validation, metadata preservation, redaction, deadlines, and response-size limits. Live provider entitlements, rate limits, source coverage, freshness, and container deployment must be verified in the intended operating environment. Package availability is never reported as successful live-market access.
+The actual installed SDK smoke uses the authenticated HTTP service with no provider credentials or provider network. It verifies cold/warm metadata discovery, shared schema/package fingerprints, and the numerical result plus real OBBject metadata from a fresh query worker. The regression suites cover known analytical results, one-bar backtest lag, initial drawdown, invalid values, constrained optimization, missing dependencies, path containment, MCP authentication/Host/Origin checks, schema validation, metadata preservation, redaction, deadlines, response-size limits, concurrent catalog bootstrap, failure retry, credential exclusion, and stale-installation rejection. Live provider entitlements, rate limits, source coverage, freshness, and container deployment must be verified in the intended operating environment. Package availability is never reported as successful live-market access.
 
 ## Primary references
 

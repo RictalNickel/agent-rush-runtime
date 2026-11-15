@@ -4,7 +4,7 @@ Research date: **2026-11-15**. This register describes the committed catalog, no
 
 ## Implemented catalog
 
-`deploy/agents/catalog.json` is the versioned source of truth for **21 profiles, 167 distinct tool entries, 151 fixed operations and 10 connector references**. Profiles reuse tools rather than creating per-agent duplicates. Every tool records its upstream source, license note, install coordinate, availability and probe. Every registered operation records a fixed argv suffix, typed parameters, effect declarations, exit-code interpretation and limits.
+`deploy/agents/catalog.json` is the versioned source of truth for **21 profiles, 167 distinct tool entries, 156 fixed operations and 10 connector references**. Profiles reuse tools rather than creating per-agent duplicates. Every tool records its upstream source, license note, install coordinate, availability and probe. Every registered operation records a fixed argv suffix, typed parameters, effect declarations, exit-code interpretation and limits. The [tool-fit review](SPECIALIST_TOOL_REVIEW.md) verifies concrete recipes and records additional uses of existing tools.
 
 The catalog classifies 118 entries as image recipes, 34 as optional packages/libraries, 11 as host integrations and 4 as external-service entries. A recipe is not an installation claim: inspect the resolved lock and run `doctor` on the exact worker. Import-only packages have an empty probe and remain optional until a reviewed adapter is installed. External MCP references are not active connections.
 

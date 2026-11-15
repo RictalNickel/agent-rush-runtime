@@ -6,7 +6,7 @@ Start with the [agent directory](agents/README.md), [tool research](AGENT_TOOL_R
 
 ## What is implemented
 
-- A native `specialist` tool with `list`, `describe`, `doctor`, `run` and `workflow` actions.
+- A native `specialist` tool with `list`, `describe`, `doctor`, `run` and `workflow` actions. Describe/readiness can be scoped to one operation or workflow to avoid unrelated metadata and probes.
 - 21 built-in `specialist-<id>` skills with responsibilities, procedures, output requirements and boundaries.
 - Authenticated discovery through `GET /v1/specialists`, `GET /v1/specialists/{id}`, and public MCP tools `list_specialists` / `describe_specialist`.
 - A specialist picker in the chat composer for new sessions. It adds the selected skill and readiness instruction to that session's first task; the original task remains its title. It does not change other sessions or the owner's saved configuration.
@@ -15,7 +15,7 @@ Start with the [agent directory](agents/README.md), [tool research](AGENT_TOOL_R
 - Eight reusable local analyses: file/hash inventory, strict JSON validation, CSV profiling, locale parity, retrieval metrics, redacted sensitive-pattern review, knowledge-corpus checks and Python agent scaffolding.
 - Locked image builds, tool provenance, browser configuration, Finance analytics, and an authenticated OpenBB MCP service.
 
-The catalog currently contains **167 tools, 151 registered operations and 10 connector records**. Of the tools, **118 are default image tools, 34 are optional, 11 require a separate host/service, and four represent external integrations**. A catalog record is not a claim that a service is connected. `doctor` distinguishes installed executables from missing optional packages and external prerequisites. The [dependency audit](SPECIALIST_DEPENDENCIES.md) records reviewed updates and retained advisories; successful resolution does not establish that every dependency is vulnerability-free.
+The catalog currently contains **167 tools, 156 registered operations and 10 connector records**. Of the tools, **118 are default image tools, 34 are optional, 11 require a separate host/service, and four represent external integrations**. A catalog record is not a claim that a service is connected. `doctor` distinguishes installed executables from missing optional packages and external prerequisites. The [dependency audit](SPECIALIST_DEPENDENCIES.md) records reviewed updates and retained advisories; successful resolution does not establish that every dependency is vulnerability-free. The [follow-up review](SPECIALIST_REVIEW.md) records corrected CLI behavior, useful workflows and measured efficiency changes.
 
 ## Agent directory
 
@@ -49,11 +49,19 @@ Shared tools appear in more than one profile. The count of tool entries per prof
 
 1. Deploy the updated Boxoro control plane and an appropriate worker image as described below.
 2. Sign in and choose a specialist in the new-session composer, or send a task such as: “Use the specialist-testforge skill, inspect the project, run doctor, then test the app and report remaining coverage gaps.”
-3. The agent loads the skill, calls `describe` for exact operations and parameters, and calls `doctor` against its actual worker.
+3. The agent loads the skill, selects the intended operation/workflow, then calls scoped `describe` for its exact contracts and scoped `doctor` against its actual worker. Full-profile discovery remains available for choosing an unfamiliar workflow or auditing an image.
 4. Authorize the task's intended actions in the conversation. The model supplies the operation's effect declarations when applicable. These declarations describe the command; they do not replace user authorization or enforce a separate sandbox.
 5. Review the summary and retrieve the private reports using the existing session files API or chat attachments.
 
-A failed optional check does not prevent a separately installed operation from running. `doctor` is comprehensive and may report `incomplete` when host or optional integrations are absent. Check its per-tool statuses and runnable operations before selecting a workflow.
+A failed optional check does not prevent a separately installed operation from running. Unscoped `doctor` is comprehensive and may report `incomplete` when host or optional integrations are absent. A scoped call checks only the selected tools and explicitly lists excluded tools; its pass does not certify the whole profile.
+
+```json
+{"tool":"specialist","action":"describe","agent":"testforge","workflow":"python-gate"}
+```
+
+```json
+{"tool":"specialist","action":"doctor","agent":"testforge","workflow":"python-gate"}
+```
 
 ### Native calls
 
@@ -155,6 +163,8 @@ The build uses Python3.12 and a separately checksum-pinned Node24 distribution. 
 - `/opt/box/agents/os-packages.tsv`: actual Ubuntu package inventory produced by the build.
 
 Ubuntu apt dependencies follow the reviewed Noble repositories; they are not individually frozen to a snapshot. The recorded inventory makes that variability explicit. The build is hash-locked for Python/npm/downloaded binaries, but is not a bit-for-bit reproducible apt snapshot build.
+
+Image builds use a trusted BuildKit download cache outside the committed image layers. Python installs recreate their venv before applying the lock so modified installed files or removed dependencies cannot survive an update. The pinned Node layer precedes unrelated runtime/catalog copies. Cache reuse depends on the same persistent builder and appropriate unchanged inputs; actual image builds remain a separate qualification gate. See the [installation review](SPECIALIST_INSTALLATION_REVIEW.md) for verified integrity behavior and measured host results.
 
 Refresh dependencies only in a maintainer checkout, review the resulting diff and rerun qualification:
 

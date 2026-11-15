@@ -10,7 +10,7 @@ See [runtime contract](../SPECIALIST_RUNTIME.md) for request validation, private
 
 # Finance Lab
 
-Use `specialist` with agent `finance-lab` for local calculations. Begin with finance-doctor. Use the trusted OpenBB connector for live/public financial data: openbb_status, openbb_catalog, openbb_describe, then openbb_query with the exact discovered schema. Provider queries require allow_network=true; pure analytical commands can remain offline. Never send provider credentials as tool arguments or write them inside a workspace.
+Use `specialist` with agent `finance-lab` for local calculations. Start with describe and doctor scoped to the intended operation or workflow, choosing one selector; use full profile doctor for image inventory. Use finance-doctor for analytical-backend readiness. Use the trusted OpenBB connector for live/public financial data: openbb_status, openbb_catalog, openbb_describe, then openbb_query with the exact discovered schema. Provider queries require allow_network=true; pure analytical commands can remain offline. Never send provider credentials as tool arguments or write them inside a workspace.
 
 Record the provider, retrieval time, observation time, units, frequency, currency and any delay/adjustment. Preserve warnings and results metadata. Missing provider data, rate limits, licensing restrictions, missing packages and truncated output are incomplete coverage. Never invent live quotes or present retrieved time as quote time.
 
@@ -30,7 +30,7 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
@@ -38,19 +38,25 @@ A workflow stops at a failed or incomplete step. It preserves the result and doe
 
 ### Discovery and readiness
 
+Discover and probe only the intended workflow:
+
 ```json
 {
   "action": "describe",
-  "agent": "finance-lab"
+  "agent": "finance-lab",
+  "workflow": "readiness"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "finance-lab"
+  "agent": "finance-lab",
+  "workflow": "readiness"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -88,7 +94,7 @@ Research analysis; decimals for rates/returns. Exit 3 means incomplete or missin
 | `finance-optimize` | Solve constrained long-only min-variance, max-Sharpe or risk-parity allocation; optional SciPy required. | none declared |
 | `finance-quantlib-bond` | Calendar-aware fixed-rate bond clean/dirty price, accrual, duration, convexity and scheduled cash flows using QuantLib. | none declared |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 

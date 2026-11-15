@@ -163,6 +163,7 @@ def write_reports(result, output, workspace):
         "- Run: " + result["id"],
         "- Action: " + result["action"],
         "- Specialist: " + (result.get("agent") or "all"),
+        "- Scope: " + result.get("scope", {}).get("kind", "agent") + " / " + result.get("scope", {}).get("id", result.get("agent") or "all"),
         "- Gate: **" + result["gate"] + "**",
         "- Started: " + result["started_at"],
         "- Completed: " + result["completed_at"],

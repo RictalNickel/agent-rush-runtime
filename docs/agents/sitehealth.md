@@ -22,7 +22,7 @@ Route-level findings, raw audit/link evidence, reproducible browser settings, pr
 
 ## Runtime discipline
 
-Use `specialist` with this agent ID. Start with `describe` and `doctor`; select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
+Use `specialist` with this agent ID. Start with `describe` and `doctor` scoped to the intended `workflow` or `operation`; choose one selector, never both. This probes only the tools needed for that task. Use an unscoped profile `doctor` for image audits or a full availability inventory. Select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
 
 Use the exact input paths and typed parameters required by the operation. Declare project-code execution, network and workspace mutation only when the task authorizes those effects. These declarations are request checks, not an operating-system security boundary. Project tests, plugins and configs can perform additional actions; review their scope. Do not invent free-form shell, executable, environment or CLI-argument fields.
 
@@ -53,7 +53,7 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
@@ -63,19 +63,25 @@ A workflow stops at a failed or incomplete step. It preserves the result and doe
 
 ### Discovery and readiness
 
+Discover and probe only the intended workflow:
+
 ```json
 {
   "action": "describe",
-  "agent": "sitehealth"
+  "agent": "sitehealth",
+  "workflow": "page-health"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "sitehealth"
+  "agent": "sitehealth",
+  "workflow": "page-health"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -87,7 +93,7 @@ Executable paths come from trusted tool IDs under `/opt/box/agents/bin/`. Suffix
 
 Capture Lighthouse lab metrics from a loopback page.
 
-Command: `/opt/box/agents/bin/lighthouse {target} --output=json --output-path={artifacts}/lighthouse.json --quiet --chrome-flags=--headless --disable-gpu --no-sandbox --disable-setuid-sandbox`
+Command: `/opt/box/agents/bin/lighthouse '{target}' --output=json '--output-path={artifacts}/lighthouse.json' --quiet '--chrome-flags=--headless --disable-gpu --no-sandbox --disable-setuid-sandbox'`
 
 Effects: project_code, network, mutation. Tool timeout: 180 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -101,7 +107,7 @@ This operation captures a report; it does not enforce performance/WCAG budgets. 
 
 Check a bounded loopback page crawl.
 
-Command: `/opt/box/agents/bin/linkinator {target} --recurse --concurrency 2 --timeout 5000 --format json`
+Command: `/opt/box/agents/bin/linkinator '{target}' --recurse --concurrency 2 --timeout 5000 --format json`
 
 Effects: network. Tool timeout: 180 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -115,7 +121,7 @@ Linked pages may reference external resources; caller must authorize the crawl s
 
 Check links in a local document while excluding private addresses.
 
-Command: `/opt/box/agents/bin/lychee --format json --max-concurrency 4 --timeout 10 --no-progress --exclude-private --exclude-mail {input}`
+Command: `/opt/box/agents/bin/lychee --format json --max-concurrency 4 --timeout 10 --no-progress --exclude-private --exclude-mail '{input}'`
 
 Effects: network. Tool timeout: 180 seconds. Success codes: `[0]`; finding codes: `[2]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -129,7 +135,7 @@ Private-address and mail links are intentionally excluded. Network/server/anti-b
 
 Run accessibility rules on a loopback page with JSON output.
 
-Command: `/opt/box/agents/bin/pa11y --config /opt/box/agents/boxoro_agents/browser-config/pa11y.json --reporter json --timeout 30000 {target}`
+Command: `/opt/box/agents/bin/pa11y --config /opt/box/agents/boxoro_agents/browser-config/pa11y.json --reporter json --timeout 30000 '{target}'`
 
 Effects: network, project_code. Tool timeout: 90 seconds. Success codes: `[0]`; finding codes: `[2]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -162,7 +168,7 @@ Pa11y exit 2 denotes accessibility findings; exit 1 is an execution problem. Chr
 | `certificate-inspect` | Inspect a local X.509 certificate. | none declared |
 | `dns-query` | Read a DNS record for an explicit host. | network |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 

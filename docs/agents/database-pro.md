@@ -16,13 +16,15 @@ Improve schema/query design while preserving data integrity and clear connection
 
 Identify the engine/version, schema ownership, migration history and data sensitivity. Inspect local SQLite/DuckDB metadata using fixed read-only queries, and lint supplied SQL with its actual dialect. Explain index and transaction proposals from query shape and available evidence; do not invent query-plan measurements. Validate an archive table of contents before planning a restore rehearsal. Database clients, migration tools and MCP Toolbox require explicitly scoped read-only credentials or a disposable test database. Arbitrary SQL and production migration execution are not available as default recipes.
 
+DuckDB schema review combines table inventory with column names, types, nullability and defaults. These fixed metadata queries do not read application rows or establish database integrity.
+
 ## Deliverable
 
 Schema/query review, concrete SQL or migration patch when requested, assumptions about cardinality and concurrency, evidence artifacts and a test/rollback plan for real database execution.
 
 ## Runtime discipline
 
-Use `specialist` with this agent ID. Start with `describe` and `doctor`; select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
+Use `specialist` with this agent ID. Start with `describe` and `doctor` scoped to the intended `workflow` or `operation`; choose one selector, never both. This probes only the tools needed for that task. Use an unscoped profile `doctor` for image audits or a full availability inventory. Select only operations listed for this profile. The `image` label means an image build recipe exists. A successful live doctor probe and the installed lock are the evidence that a command is available. Optional, host and external entries are not silently installed or connected.
 
 Use the exact input paths and typed parameters required by the operation. Declare project-code execution, network and workspace mutation only when the task authorizes those effects. These declarations are request checks, not an operating-system security boundary. Project tests, plugins and configs can perform additional actions; review their scope. Do not invent free-form shell, executable, environment or CLI-argument fields.
 
@@ -53,30 +55,36 @@ The catalog is the source of truth. `image` identifies a build recipe, not an as
 
 ## Recommended workflows
 
-A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them.
+A workflow stops at a failed or incomplete step. It preserves the result and does not claim that later skipped checks ran. Parameters are supplied only to steps that reference them. Generated artifacts are not automatically wired into later requests: copy a verified artifact into an ordinary workspace file with the existing authorized file tools before using it as an input; internal report storage is not an input root.
 
 | Workflow | Ordered operations |
 | --- | --- |
 | `sql-quality` | `sqlfluff-lint` |
 | `sqlite-schema` | `sqlite-schema` |
-| `duckdb-schema` | `duckdb-schema` |
+| `duckdb-schema` | `duckdb-schema` → `duckdb-columns` |
 | `backup-index` | `postgres-archive-list` |
 
 ### Discovery and readiness
 
+Discover and probe only the intended workflow:
+
 ```json
 {
   "action": "describe",
-  "agent": "database-pro"
+  "agent": "database-pro",
+  "workflow": "sql-quality"
 }
 ```
 
 ```json
 {
   "action": "doctor",
-  "agent": "database-pro"
+  "agent": "database-pro",
+  "workflow": "sql-quality"
 }
 ```
+
+For one utility, replace `workflow` with `operation` and the registered operation ID; do not supply both selectors. Omit both selectors only when a full profile catalog or availability audit is needed. Missing optional tools outside the selected task do not determine its readiness. A probe checks executable availability; the actual operation and project prerequisites still need validation.
 
 A run request selects an operation, a workspace path and only its declared parameters. Set effect declarations only when the actual task authorizes them. `allow_project_code`, `allow_network` and `allow_mutation` are explicit request checks; the existing worker sandbox remains the operating-system boundary.
 
@@ -84,11 +92,25 @@ A run request selects an operation, a workspace path and only its declared param
 
 Executable paths come from trusted tool IDs under `/opt/box/agents/bin/`. Suffixes below are fixed templates. A parameter never becomes a model-selected executable, shell command or arbitrary argument array. `{artifacts}` is the private report directory created by the runtime.
 
+### `duckdb-columns`
+
+Read DuckDB column names, types, nullability and defaults without write access.
+
+Command: `/opt/box/agents/bin/duckdb -readonly '{input}' -json -c 'SELECT table_catalog, table_schema, table_name, ordinal_position, column_name, data_type, is_nullable, column_default FROM information_schema.columns ORDER BY 1,2,3,4;'`
+
+Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
+
+| Parameter | Contract |
+| --- | --- |
+| `input` | string; path; required |
+
+Fixed information_schema query complements the table inventory with column-level evidence. No user SQL, row data, extension installation or schema mutation is accepted. Empty output describes an empty visible column inventory; it does not establish data quality or restore correctness.
+
 ### `duckdb-schema`
 
 Read local DuckDB table metadata without write access.
 
-Command: `/opt/box/agents/bin/duckdb -readonly {input} -json -c SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables ORDER BY 1,2,3;`
+Command: `/opt/box/agents/bin/duckdb -readonly '{input}' -json -c 'SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables ORDER BY 1,2,3;'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -102,7 +124,7 @@ Fixed system-catalog query only. No extension installation, user SQL, remote CSV
 
 Inspect a PostgreSQL archive table of contents without restoring.
 
-Command: `/opt/box/agents/bin/pg-restore --list {input}`
+Command: `/opt/box/agents/bin/pg-restore --list '{input}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -116,7 +138,7 @@ Archive readability is not proof of a working restore. Full restore rehearsal re
 
 Lint a SQL file with a raw templater and explicit dialect.
 
-Command: `/opt/box/agents/bin/sqlfluff lint --ignore-local-config --templater raw --dialect {dialect} --format json {input}`
+Command: `/opt/box/agents/bin/sqlfluff lint --ignore-local-config --templater raw --dialect '{dialect}' --format json '{input}'`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[1]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -131,7 +153,7 @@ The result covers only the supplied inputs and this registered check. Missing de
 
 Read the schema of a local SQLite database in read-only mode.
 
-Command: `/opt/box/agents/bin/sqlite -readonly {input} .schema`
+Command: `/opt/box/agents/bin/sqlite -readonly '{input}' .schema`
 
 Effects: none declared. Tool timeout: 120 seconds. Success codes: `[0]`; finding codes: `[]`. Other exits, unavailable tools, truncated output and timeouts remain incomplete.
 
@@ -157,7 +179,7 @@ Schema inventory only; not a successful restore or data-integrity certification.
 | `csvkit-profile` | Produce CSV descriptive statistics as JSON. | none declared |
 | `miller-count` | Count records in a supplied CSV file. | none declared |
 
-Use `describe` for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
+Use `describe` with an `operation` selector for each utility’s exact parameters, exit interpretation and notes. A descriptive report such as complexity, an SBOM or Lighthouse metrics does not automatically enforce a quality threshold.
 
 ## Integrations and prerequisites
 
