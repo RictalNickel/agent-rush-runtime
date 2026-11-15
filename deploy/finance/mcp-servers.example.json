@@ -1,0 +1,17 @@
+{
+  "servers": [
+    {
+      "name": "finance-openbb",
+      "url": "http://127.0.0.1:8768/mcp",
+      "headers": {
+        "Authorization": "Bearer REPLACE_WITH_FINANCE_OPENBB_TOKEN"
+      },
+      "allowed_tools": [
+        "openbb_status",
+        "openbb_catalog",
+        "openbb_describe",
+        "openbb_query"
+      ]
+    }
+  ]
+}

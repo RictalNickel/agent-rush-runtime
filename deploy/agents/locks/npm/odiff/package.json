@@ -1,0 +1,9 @@
+{
+  "name": "boxoro-tool-odiff",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "odiff-bin": "4.5.0"
+  },
+  "allowScripts": {}
+}

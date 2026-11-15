@@ -24,6 +24,7 @@ pub mod service;
 pub mod session;
 pub mod session_store;
 pub mod skills;
+pub mod specialists;
 pub mod tools;
 pub mod webhooks;
 pub mod worker;

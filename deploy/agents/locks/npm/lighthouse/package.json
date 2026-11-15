@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-lighthouse",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "lighthouse": "13.6.0"
+  }
+}

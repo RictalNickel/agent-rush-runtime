@@ -43,6 +43,8 @@ fn key_scoped_routes(id: &str) -> Vec<(&'static str, String)> {
         ("GET", format!("/v1/sessions/{id}/archive")),
         ("POST", format!("/v1/sessions/{id}/fork")),
         ("GET", "/v1/models".into()),
+        ("GET", "/v1/specialists".into()),
+        ("GET", "/v1/specialists/testforge".into()),
         ("GET", "/v1/usage".into()),
         ("GET", format!("/v1/sessions/{id}/files?path=a.txt")),
         ("PUT", format!("/v1/sessions/{id}/files?path=a.txt")),
@@ -62,6 +64,35 @@ fn key_scoped_routes(id: &str) -> Vec<(&'static str, String)> {
         ("POST", "/v1/voice/transcribe".into()),
         ("POST", "/v1/voice/speak".into()),
     ]
+}
+
+#[tokio::test]
+async fn specialist_catalog_is_authenticated_and_available_without_a_worker() {
+    let a = app_without_sessions();
+    let key = a.key("alice");
+    let (status, index) = call(&a.router, "GET", "/v1/specialists", Some(&key), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(index["agents"].as_array().unwrap().len(), 21);
+    let (status, profile) = call(
+        &a.router,
+        "GET",
+        "/v1/specialists/finance-lab",
+        Some(&key),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(profile["id"], "finance-lab");
+    assert!(profile["operations"].is_object());
+    let (status, _) = call(
+        &a.router,
+        "GET",
+        "/v1/specialists/nonexistent",
+        Some(&key),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]

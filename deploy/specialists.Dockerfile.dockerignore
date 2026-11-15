@@ -1,0 +1,4 @@
+# Host interpreter caches are not reviewed source or image installation inputs.
+**/__pycache__
+**/*.pyc
+**/*.pyo

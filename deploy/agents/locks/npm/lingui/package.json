@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-lingui",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@lingui/cli": "6.12.0"
+  }
+}

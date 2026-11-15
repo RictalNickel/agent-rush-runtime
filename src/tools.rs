@@ -31,6 +31,66 @@ const MAX_CALL_BYTES: usize = 512 * 1024;
 pub const MAX_COMMAND_BYTES: usize = 64 * 1024;
 /// Leave 30 seconds for runner cleanup/reporting within the worker's 600-second ceiling.
 pub const DEFAULT_SECURITY_SCAN_TIMEOUT_SECONDS: u32 = 540;
+pub const DEFAULT_SPECIALIST_TIMEOUT_SECONDS: u32 = 540;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpecialistAction {
+    List,
+    Describe,
+    Doctor,
+    Run,
+    Workflow,
+}
+
+/// Ordinary JSON maps keep only the last duplicate value. Preserve the strict
+/// specialist boundary before the request is reencoded for the workspace helper.
+fn unique_specialist_parameters<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<Map<String, Value>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    struct UniqueParameters;
+
+    impl<'de> serde::de::Visitor<'de> for UniqueParameters {
+        type Value = Option<Map<String, Value>>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("an optional parameter object with unique field names")
+        }
+
+        fn visit_none<E: serde::de::Error>(self) -> std::result::Result<Self::Value, E> {
+            Ok(None)
+        }
+
+        fn visit_unit<E: serde::de::Error>(self) -> std::result::Result<Self::Value, E> {
+            Ok(None)
+        }
+
+        fn visit_some<D: serde::Deserializer<'de>>(
+            self,
+            deserializer: D,
+        ) -> std::result::Result<Self::Value, D::Error> {
+            deserializer.deserialize_map(self)
+        }
+
+        fn visit_map<A: serde::de::MapAccess<'de>>(
+            self,
+            mut input: A,
+        ) -> std::result::Result<Self::Value, A::Error> {
+            let mut parameters = Map::new();
+            while let Some((name, value)) = input.next_entry::<String, Value>()? {
+                if parameters.insert(name, value).is_some() {
+                    return Err(serde::de::Error::custom("duplicate specialist parameter"));
+                }
+            }
+            Ok(Some(parameters))
+        }
+    }
+
+    deserializer.deserialize_option(UniqueParameters)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -83,6 +143,8 @@ pub enum SecurityProfile {
 #[derive(Debug, Clone, Default, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AgentConfigPatch {
+    /// An empty string clears the selected specialist.
+    pub specialist: Option<String>,
     pub system_addendum: Option<String>,
     pub disabled_tools: Option<Vec<String>>,
     pub custom_tools: Option<Vec<CustomTool>>,
@@ -92,6 +154,9 @@ pub struct AgentConfigPatch {
 }
 impl AgentConfigPatch {
     pub fn apply(self, mut config: AgentConfig) -> AgentConfig {
+        if let Some(id) = self.specialist {
+            config.specialist = Some(id).filter(|id| !id.is_empty());
+        }
         if let Some(v) = self.system_addendum {
             config.system_addendum = v;
         }
@@ -194,6 +259,27 @@ pub enum ToolCall {
         #[serde(default)]
         timeout_seconds: Option<u32>,
     },
+    Specialist {
+        action: SpecialistAction,
+        #[serde(default)]
+        agent: Option<String>,
+        #[serde(default)]
+        operation: Option<String>,
+        #[serde(default)]
+        workflow: Option<String>,
+        #[serde(default)]
+        path: Option<String>,
+        #[serde(default, deserialize_with = "unique_specialist_parameters")]
+        parameters: Option<Map<String, Value>>,
+        #[serde(default)]
+        allow_project_code: Option<bool>,
+        #[serde(default)]
+        allow_network: Option<bool>,
+        #[serde(default)]
+        allow_mutation: Option<bool>,
+        #[serde(default)]
+        timeout_seconds: Option<u32>,
+    },
     Skill {
         action: SkillAction,
         #[serde(default)]
@@ -249,6 +335,7 @@ impl ToolCall {
             ToolCall::WebFetch { .. } => "web_fetch",
             ToolCall::ConvertFile { .. } => "convert_file",
             ToolCall::SecurityScan { .. } => "security_scan",
+            ToolCall::Specialist { .. } => "specialist",
             ToolCall::Skill { .. } => "skill",
             ToolCall::AgentConfig { .. } => "agent_config",
             ToolCall::Mcp { .. } => "mcp",
@@ -404,6 +491,107 @@ impl ToolCall {
                         "security_scan update_databases requires explicit offline=false"
                     ),
                     SecurityAction::Doctor | SecurityAction::Scan => {}
+                }
+            }
+            ToolCall::Specialist {
+                action,
+                agent,
+                operation,
+                workflow,
+                path: work_path,
+                parameters,
+                allow_project_code,
+                allow_network,
+                allow_mutation,
+                timeout_seconds,
+            } => {
+                ensure!(
+                    timeout_seconds
+                        .is_none_or(|t| (10..=DEFAULT_SPECIALIST_TIMEOUT_SECONDS).contains(&t)),
+                    "specialist timeout_seconds must be 10-{DEFAULT_SPECIALIST_TIMEOUT_SECONDS}"
+                );
+                let execution =
+                    matches!(action, SpecialistAction::Run | SpecialistAction::Workflow);
+                ensure!(
+                    execution
+                        || (work_path.is_none()
+                            && parameters.is_none()
+                            && allow_project_code.is_none()
+                            && allow_network.is_none()
+                            && allow_mutation.is_none()),
+                    "specialist path, parameters and effect declarations are only valid for run/workflow"
+                );
+                ensure!(
+                    matches!(
+                        action,
+                        SpecialistAction::Run
+                            | SpecialistAction::Describe
+                            | SpecialistAction::Doctor
+                    ) || operation.is_none(),
+                    "operation is only valid for run, describe or doctor"
+                );
+                ensure!(
+                    matches!(
+                        action,
+                        SpecialistAction::Workflow
+                            | SpecialistAction::Describe
+                            | SpecialistAction::Doctor
+                    ) || workflow.is_none(),
+                    "workflow is only valid for workflow, describe or doctor"
+                );
+                ensure!(
+                    operation.is_none() || workflow.is_none(),
+                    "operation and workflow selectors are mutually exclusive"
+                );
+                if matches!(action, SpecialistAction::List) {
+                    ensure!(agent.is_none(), "list does not take an agent");
+                } else {
+                    let id = agent
+                        .as_deref()
+                        .context("specialist action requires agent")?;
+                    ensure!(crate::specialists::known(id), "unknown specialist {id:?}");
+                    if matches!(action, SpecialistAction::Run) || operation.is_some() {
+                        let operation = operation.as_deref().context("run requires operation")?;
+                        ensure!(
+                            crate::specialists::operation_allowed(id, operation),
+                            "operation is not registered for this specialist"
+                        );
+                    }
+                    if matches!(action, SpecialistAction::Workflow) || workflow.is_some() {
+                        let workflow = workflow
+                            .as_deref()
+                            .context("workflow requires workflow name")?;
+                        ensure!(
+                            crate::specialists::workflow_known(id, workflow),
+                            "workflow is not registered for this specialist"
+                        );
+                    }
+                }
+                if let Some(value) = work_path {
+                    path(value)?;
+                }
+                if let Some(parameters) = parameters {
+                    ensure!(
+                        parameters.len() <= 32
+                            && serde_json::to_vec(parameters)?.len() <= 16 * 1024,
+                        "parameters exceed the 32-field/16-KiB ceiling"
+                    );
+                    for (key, value) in parameters {
+                        ensure!(
+                            !key.is_empty() && key.len() <= 64 && !key.contains('\0'),
+                            "invalid parameter name"
+                        );
+                        ensure!(
+                            matches!(value, Value::String(_) | Value::Number(_) | Value::Bool(_)),
+                            "parameters must be scalar strings, numbers or booleans"
+                        );
+                        if let Some(value) = value.as_str() {
+                            ensure!(
+                                value.len() <= 4096 && !value.contains('\0'),
+                                "invalid parameter string"
+                            );
+                        }
+                    }
                 }
             }
             ToolCall::Reply { text, attachments } => {
@@ -566,7 +754,7 @@ pub fn parse_call(content: &str, config: &AgentConfig) -> Result<ToolCall> {
     );
     // Decode this security envelope from the original text so duplicate fields are
     // rejected rather than silently collapsed by the preliminary JSON Value parse.
-    let call: ToolCall = if name == "security_scan" {
+    let call: ToolCall = if matches!(name.as_str(), "security_scan" | "specialist") {
         serde_json::from_str(json_span(content))
     } else {
         serde_json::from_value(value)
@@ -743,12 +931,16 @@ const TOOL_DOCS: &[(&str, &str)] = &[
         r#"{"tool":"security_scan","action":"scan","path":".","profile":"standard","offline":true,"timeout_seconds":540} actions: doctor{timeout_seconds?}, scan{path?,profile?,offline?,timeout_seconds?}, image{image,offline?,timeout_seconds?}, web{target,timeout_seconds?}, update_databases{offline:false,timeout_seconds?}. Profiles: quick, standard, secrets, dependencies, sast, lint, supply_chain, iac, malware. Defaults: path '.', profile standard, offline true, timeout_seconds 540 (10-540). image requires registry/repo@sha256:64-lowercase-hex with no tag; web requires literal http://127.0.0.1:PORT or http://[::1]:PORT, root path only, no credentials/query/fragment. No arbitrary commands or scanner flags. Load security-audit first; doctor identifies missing scanners/databases. Scans run only in your box and report coverage and limitations; a missing or failed check is not a pass."#,
     ),
     (
+        "specialist",
+        r#"{"tool":"specialist","action":"describe","agent":"testforge","workflow":"python-gate"} actions: list{}, describe{agent,operation?,workflow?}, doctor{agent,operation?,workflow?}, run{agent,operation,path?,parameters?,allow_project_code?,allow_network?,allow_mutation?,timeout_seconds?}, workflow{agent,workflow,path?,parameters?,allow_project_code?,allow_network?,allow_mutation?,timeout_seconds?}. Use list to discover 21 specialist profiles. Load specialist-AGENT first. Prefer describe and doctor scoped to the intended operation OR workflow (mutually exclusive); this returns only its contracts and probes its required tools. Unscoped calls inspect the whole profile. Scoped success does not certify excluded tools. Run takes typed scalar parameters, no arbitrary shell/flags/env; effects require explicit true declarations derived from the user's authorized task. These declarations are not OS sandbox restrictions: project code can access the box. Defaults path '.', declarations false, timeout 540 (10-540). Reports distinguish failed checks from incomplete coverage. Profile selection does not change worker image or MCP permissions. Finance uses local analytics and a separate operator-configured OpenBB MCP; never pass credentials in parameters."#,
+    ),
+    (
         "skill",
         r#"{"tool":"skill","action":"load","name":"web-research"} actions: list, load{name}, save{name,description,body}, delete{name}"#,
     ),
     (
         "agent_config",
-        r#"{"tool":"agent_config","action":"update","config":{"system_addendum":"Prefer Python."},"reason":"user prefers Python"} actions: get, update{config,reason}, history, revert{version,reason}; config fields: system_addendum, disabled_tools, custom_tools [{name,description,command_template with {{arg}} placeholders}], mcp_servers, reasoning_effort (low|medium|high)"#,
+        r#"{"tool":"agent_config","action":"update","config":{"specialist":"testforge"},"reason":"user requests QA"} actions: get, update{config,reason}, history, revert{version,reason}; config fields: specialist (catalog ID; empty string clears), system_addendum, disabled_tools, custom_tools [{name,description,command_template with {{arg}} placeholders}], mcp_servers, reasoning_effort (low|medium|high)"#,
     ),
     (
         "mcp",
@@ -776,6 +968,9 @@ pub fn system_prompt(
 ) -> String {
     let enabled = |tool: &str| !config.disabled_tools.iter().any(|d| d == tool);
     let mut prompt = String::from(BASE_PROMPT);
+    if let Some(id) = &config.specialist {
+        prompt.push_str(&crate::specialists::prompt(id));
+    }
     prompt.push_str("\n\nTools (one example each):\n");
     for (name, doc) in TOOL_DOCS {
         if *name == "mcp" && mcp_available.is_empty() {

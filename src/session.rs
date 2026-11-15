@@ -15,10 +15,11 @@ use crate::{
     session_store::{MAX_MESSAGE_BYTES, SessionEvent, SessionStatus, SessionView},
     skills::builtin_skills,
     tools::{
-        AgentConfigPatch, ConfigAction, DEFAULT_SECURITY_SCAN_TIMEOUT_SECONDS, MAX_COMMAND_BYTES,
-        McpAction, SecurityAction, SecurityProfile, SkillAction, SkillIndexEntry, ToolCall,
-        apply_edit, clip_strings, effort, expand_template, json_span, parse_call, shell_quote,
-        system_prompt, truncate_bytes, truncate_text,
+        AgentConfigPatch, ConfigAction, DEFAULT_SECURITY_SCAN_TIMEOUT_SECONDS,
+        DEFAULT_SPECIALIST_TIMEOUT_SECONDS, MAX_COMMAND_BYTES, McpAction, SecurityAction,
+        SecurityProfile, SkillAction, SkillIndexEntry, SpecialistAction, ToolCall, apply_edit,
+        clip_strings, effort, expand_template, json_span, parse_call, shell_quote, system_prompt,
+        truncate_bytes, truncate_text,
     },
 };
 use anyhow::{Context, Result, anyhow, bail, ensure};
@@ -1531,6 +1532,43 @@ impl Inner {
                 }
                 let command = format!(
                     "/usr/bin/python3 -I /opt/box/bin/security-scan {}",
+                    shell_quote(&payload.to_string())
+                );
+                self.shell(owner, id, command, None, Some(timeout + 30))
+                    .await
+            }
+            ToolCall::Specialist {
+                action,
+                agent,
+                operation,
+                workflow,
+                path,
+                parameters,
+                allow_project_code,
+                allow_network,
+                allow_mutation,
+                timeout_seconds,
+            } => {
+                let timeout = timeout_seconds.unwrap_or(DEFAULT_SPECIALIST_TIMEOUT_SECONDS);
+                let mut payload = json!({"action": action, "timeout_seconds": timeout});
+                if let Some(value) = agent {
+                    payload["agent"] = json!(value);
+                }
+                if let Some(value) = operation {
+                    payload["operation"] = json!(value);
+                }
+                if let Some(value) = workflow {
+                    payload["workflow"] = json!(value);
+                }
+                if matches!(action, SpecialistAction::Run | SpecialistAction::Workflow) {
+                    payload["path"] = json!(path.as_deref().unwrap_or("."));
+                    payload["parameters"] = json!(parameters.unwrap_or_default());
+                    payload["allow_project_code"] = json!(allow_project_code.unwrap_or(false));
+                    payload["allow_network"] = json!(allow_network.unwrap_or(false));
+                    payload["allow_mutation"] = json!(allow_mutation.unwrap_or(false));
+                }
+                let command = format!(
+                    "/usr/bin/python3 -I /opt/box/bin/specialist {}",
                     shell_quote(&payload.to_string())
                 );
                 self.shell(owner, id, command, None, Some(timeout + 30))

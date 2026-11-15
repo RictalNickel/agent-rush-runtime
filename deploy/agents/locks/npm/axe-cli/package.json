@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-axe-cli",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@axe-core/cli": "4.14.0"
+  }
+}

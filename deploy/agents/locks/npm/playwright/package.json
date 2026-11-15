@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-playwright",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}

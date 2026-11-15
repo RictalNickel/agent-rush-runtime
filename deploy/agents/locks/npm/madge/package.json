@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-madge",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "madge": "8.0.0"
+  }
+}

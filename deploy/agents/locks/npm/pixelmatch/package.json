@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-pixelmatch",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "pixelmatch": "8.0.0"
+  }
+}

@@ -1,0 +1,623 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "scope": "Host installations from reviewed locks; version/help readiness only, not Docker qualification",
+  "platform": "linux/amd64",
+  "python": "3.12.14",
+  "node": "24.22.3",
+  "catalog_sha256": "c7cc7eb46496571591892f82f09594f513e64329bef0c73ca18244f06b1c4596",
+  "install_lock_sha256": "4543b98d111f673c5bf075eb77028c47cfe0b57cad2277f575bb0496022ca0bf",
+  "count": 87,
+  "passed": 87,
+  "tools": [
+    {
+      "id": "actionlint",
+      "locked_version": "v1.7.12",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "androguard",
+      "locked_version": "4.1.4",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "autocannon",
+      "locked_version": "9.0.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "babel",
+      "locked_version": "2.18.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "backstopjs",
+      "locked_version": "6.3.25",
+      "availability": "optional",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "bandit",
+      "locked_version": "1.9.4",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "buf",
+      "locked_version": "1.75.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "check-jsonschema",
+      "locked_version": "0.39.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "checkov",
+      "locked_version": "3.4.5",
+      "availability": "optional",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "codespell",
+      "locked_version": "2.4.3",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "conftest",
+      "locked_version": "v0.71.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "cookiecutter",
+      "locked_version": "2.7.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "copier",
+      "locked_version": "9.19.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "coverage",
+      "locked_version": "7.17.3",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "csvkit",
+      "locked_version": "2.2.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "dependency-cruiser",
+      "locked_version": "18.7.2",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "detect-secrets",
+      "locked_version": "1.5.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "dlt",
+      "locked_version": "1.32.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "doc8",
+      "locked_version": "2.0.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "duckdb",
+      "locked_version": "2.0.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "eslint",
+      "locked_version": "10.15.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "formatjs",
+      "locked_version": "6.19.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "frictionless",
+      "locked_version": "5.21.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "gitleaks",
+      "locked_version": "v8.30.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "graphql-inspector",
+      "locked_version": "7.0.4",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "grpcurl",
+      "locked_version": "v1.9.4",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "grype",
+      "locked_version": "v0.121.3",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "hadolint",
+      "locked_version": "v2.15.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "helm",
+      "locked_version": "v4.3.2",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "html-validate",
+      "locked_version": "11.21.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "httpie",
+      "locked_version": "3.2.4",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "i18next",
+      "locked_version": "1.88.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "jscpd",
+      "locked_version": "5.4.3",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "k6",
+      "locked_version": "v2.4.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "kubeconform",
+      "locked_version": "v0.8.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "kustomize",
+      "locked_version": "kustomize/v5.8.3",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "lighthouse",
+      "locked_version": "13.6.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "lighthouse-ci",
+      "locked_version": "0.16.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "lingui",
+      "locked_version": "6.12.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "linkinator",
+      "locked_version": "8.1.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "lizard",
+      "locked_version": "1.26.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "locust",
+      "locked_version": "2.47.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "lychee",
+      "locked_version": "lychee-v0.24.2",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "madge",
+      "locked_version": "8.0.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "markdownlint",
+      "locked_version": "0.24.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "memray",
+      "locked_version": "1.20.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "mermaid-cli",
+      "locked_version": "12.2.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "mkdocs",
+      "locked_version": "1.6.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "mypy",
+      "locked_version": "2.4.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "nox",
+      "locked_version": "2026.10.20",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "oasdiff",
+      "locked_version": "v1.38.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "odiff",
+      "locked_version": "4.5.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "opentofu",
+      "locked_version": "v1.13.9",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "pa11y",
+      "locked_version": "10.0.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "pa11y-ci",
+      "locked_version": "5.0.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "pip-audit",
+      "locked_version": "2.10.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "pixelmatch",
+      "locked_version": "8.0.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 64
+    },
+    {
+      "id": "playwright",
+      "locked_version": "1.64.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "prettier",
+      "locked_version": "3.10.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "promptfoo",
+      "locked_version": "0.125.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "pyinstrument",
+      "locked_version": "5.1.3",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "pytest",
+      "locked_version": "9.2.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "radon",
+      "locked_version": "6.0.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "redocly",
+      "locked_version": "2.78.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "reuse",
+      "locked_version": "6.3.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "robotframework",
+      "locked_version": "7.5.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 251
+    },
+    {
+      "id": "ruff",
+      "locked_version": "0.17.5",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "sacrebleu",
+      "locked_version": "2.6.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "schemathesis",
+      "locked_version": "4.33.4",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "semgrep",
+      "locked_version": "1.185.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "sharp-cli",
+      "locked_version": "6.1.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "spectral",
+      "locked_version": "6.17.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "sphinx",
+      "locked_version": "9.1.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "sqlfluff",
+      "locked_version": "4.5.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "syft",
+      "locked_version": "v1.57.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "tflint",
+      "locked_version": "v0.66.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "tox",
+      "locked_version": "4.67.13",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "trafilatura",
+      "locked_version": "2.3.1",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "translate-toolkit",
+      "locked_version": "3.20.6",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "trivy",
+      "locked_version": "v0.76.2",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "typescript",
+      "locked_version": "7.0.2",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "uv",
+      "locked_version": "0.13.8",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "vale",
+      "locked_version": "v3.27.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "vegeta",
+      "locked_version": "v12.13.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "vitest",
+      "locked_version": "5.1.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "yamllint",
+      "locked_version": "1.38.0",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    },
+    {
+      "id": "yq",
+      "locked_version": "4.4.5",
+      "availability": "image",
+      "passed": true,
+      "probe_exit_code": 0
+    }
+  ]
+}

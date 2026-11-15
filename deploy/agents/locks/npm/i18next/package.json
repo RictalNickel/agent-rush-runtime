@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-i18next",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "i18next-cli": "1.88.0"
+  }
+}

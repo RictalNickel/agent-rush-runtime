@@ -1,0 +1,27 @@
+# OpenBB V5; provider namespaces, no legacy V4 shared routers or desktop extras.
+# Versions verified from official OpenBB V5 release and package metadata.
+openbb-core[pandas]==2.0.1
+openbb-bls==2.0.0
+openbb-cboe==2.0.0
+openbb-cftc==2.0.0
+openbb-deribit==2.0.0
+openbb-ecb==2.0.0
+openbb-us-eia==2.0.0
+openbb-famafrench==2.0.0
+openbb-federal-reserve==2.0.0
+openbb-finra==2.0.0
+openbb-fred==2.0.0
+openbb-government-us==2.0.0
+openbb-imf==3.0.0
+openbb-jodi==2.0.0
+openbb-nasdaq==2.0.0
+openbb-oecd==2.0.0
+openbb-sec==2.0.0
+openbb-tmx==2.0.0
+openbb-news==2.0.0
+openbb-econometrics==2.0.0
+openbb-quantitative==2.0.0
+openbb-technical==2.0.1
+openbb-charting==4.0.0
+httpx>=0.28.1,<1
+jsonschema>=4.23,<5

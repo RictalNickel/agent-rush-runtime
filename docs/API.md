@@ -56,6 +56,8 @@ All times are Unix milliseconds.
 | --- | --- | --- |
 | `GET /v1/status` | | provider, worker reachability, whether sessions and voice are available, MCP server names, `models` (as `GET /v1/models`), limits |
 | `GET /v1/models` | | `{provider, default, per_session, models: [{id, input_usd_per_million, output_usd_per_million, default}]}` |
+| `GET /v1/specialists` | | Catalog of specialist IDs, descriptions, image families, skills and resource guidance; works without a worker. |
+| `GET /v1/specialists/{id}` | | Profile, embedded skill, workflows, tool metadata and allowed typed operations; 404 for unknown IDs. |
 | `GET /v1/usage` | | `{total, by_model, sessions}`: your spend, tokens and model calls (see [Models and usage](#models-and-usage)) |
 | `POST /v1/keys` (operator login) | `{name?}` | 201 `{id, name, prefix, created_at, key}` (the key is shown once) |
 | `GET /v1/keys` | | `{keys: [{id, name, prefix, created_at, last_used_at, revoked}]}` |
@@ -197,6 +199,8 @@ curl -s -H "authorization: Bearer $AR_KEY" -o workspace.tar.gz $HOST/v1/sessions
 ### Agent config
 
 The agent can edit its own config, and so can you. A config has `system_addendum`, `disabled_tools`, `custom_tools` (`{name, description, command_template}`), `mcp_servers` and `reasoning_effort` (`low`, `medium` or `high`). Every change is a new version, and any version can be restored. `mcp_servers` may only name servers the operator configured (`mcp_servers_available`).
+
+The optional `specialist` field accepts a catalog ID from `GET /v1/specialists` or `null`. It adds that profile's guidance to future prompts; it does not switch worker images or grant tools, accounts or permissions. The chat picker instead focuses only its new session's first message. See [SPECIALIST_AGENTS.md](SPECIALIST_AGENTS.md) for native action schemas, images and reports. Preserve existing config fields when sending a full replacement through this endpoint.
 
 ```sh
 curl -s -X PUT -H "authorization: Bearer $AR_KEY" -H 'content-type: application/json' \

@@ -1,0 +1,31 @@
+#!/usr/bin/python3 -I
+"""Deterministic local specialist analyses, with no arbitrary Python execution."""
+
+import json
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agents"))
+from boxoro_agents import __version__
+from boxoro_agents.builtins import run_analysis
+
+
+def main():
+    if sys.argv[1:] == ["--version"]:
+        print("boxoro-analysis " + __version__)
+        return 0
+    try:
+        if len(sys.argv) < 2:
+            raise ValueError("expected a registered analysis command")
+        result = run_analysis(sys.argv[1], sys.argv[2:], workspace=Path(os.environ.get("BOXORO_WORKSPACE", "/workspace")))
+        print(json.dumps(result, ensure_ascii=True, allow_nan=False))
+        return {"pass": 0, "fail": 1, "incomplete": 2}[result["gate"]]
+    except (ValueError, OSError, RecursionError) as error:
+        message = str(error) if isinstance(error, ValueError) else "Analysis input is unavailable or exceeds supported nesting."
+        print(json.dumps({"schema_version": 1, "gate": "incomplete", "error": message}))
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

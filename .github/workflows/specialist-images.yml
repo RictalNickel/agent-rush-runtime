@@ -1,0 +1,52 @@
+name: Qualify specialist images
+on:
+  workflow_dispatch:
+    inputs:
+      family:
+        description: Image family to build and exercise locally (does not publish)
+        required: true
+        default: core
+        type: choice
+        options:
+          - core
+          - python
+          - browser
+          - platform
+          - data
+          - documents
+          - mobile
+          - finance
+          - suite
+          - full
+          - finance-service
+      workspace_base:
+        description: Reviewed registry/repository@sha256 digest; empty builds the workspace base
+        required: false
+        type: string
+permissions:
+  contents: read
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      FAMILY: ${{ inputs.family }}
+      WORKSPACE_BASE: ${{ inputs.workspace_base }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Build and smoke test the selected image
+        shell: bash
+        run: |
+          args=(--tag "boxoro-specialists:qa-$FAMILY" --metadata specialist-image-build.json)
+          if [[ -n $WORKSPACE_BASE ]]; then args+=(--base "$WORKSPACE_BASE"); fi
+          if [[ $FAMILY == full ]]; then
+            bash scripts/build-full-agent-image.sh "${args[@]}"
+          else
+            bash scripts/build-specialist-image.sh --target "$FAMILY" "${args[@]}"
+          fi
+          cat specialist-image-build.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Record disk use
+        if: always()
+        run: docker system df
+# Manual only: the suite is large and can require a runner with more disk/memory
+# than the default hosted runner. This job does not certify gVisor or host egress.

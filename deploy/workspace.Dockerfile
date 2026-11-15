@@ -44,6 +44,14 @@ COPY box-tools/README.md /opt/box/README.md
 COPY box-tools/security-scan /opt/box/bin/security-scan
 COPY security/boxoro_security /opt/box/security/boxoro_security
 COPY security/rules /opt/box/security/rules
+COPY box-tools/specialist box-tools/specialist-analysis box-tools/finance /opt/box/bin/
+COPY agents/boxoro_agents /opt/box/agents/boxoro_agents
+COPY agents/catalog.json /opt/box/agents/catalog.json
+COPY finance/boxoro_finance /opt/finance/boxoro_finance
+COPY finance/cli.py /opt/finance/cli.py
+RUN install -d /opt/box/agents/bin \
+ && ln -s /opt/box/bin/specialist-analysis /opt/box/agents/bin/boxoro-analysis \
+ && ln -s /opt/box/bin/finance /opt/box/agents/bin/finance
 # The base helper reports missing scanner coverage honestly. Install the optional
 # deploy/security.Dockerfile image for the pinned scanner suite.
 RUN chmod 0755 /opt/box/bin/*

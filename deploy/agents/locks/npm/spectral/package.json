@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-spectral",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@stoplight/spectral-cli": "6.17.1"
+  }
+}

@@ -103,3 +103,13 @@ The updated base workspace includes the helper and rules. The optional security 
 Scan summaries include a `gate` (`pass`, `fail` or `incomplete`) and report paths under `/workspace/.security/reports/`. A successful helper process can still report findings or incomplete coverage: inspect `gate`, not only the exit code. Requests default to offline operation and a 540-second budget; scanner offline options do not replace the worker's network controls.
 
 The native tool uses the existing agent/session flow, with no new REST route or public MCP tool. See the [security stack guide](../../docs/SECURITY_STACK.md) for the full request contract, profiles and image setup, [scanner research](../../docs/SECURITY_STACK_RESEARCH.md) for coverage limits, and [optional control-side intelligence](../../docs/SECURITY_INTELLIGENCE.md) for enrichment whose credentials stay outside the box.
+
+## specialist and specialist-analysis
+
+`specialist` accepts one strict JSON argument for the registered catalog's `list`, `describe`, `doctor`, `run` or `workflow` action. The native tool invokes `/usr/bin/python3 -I /opt/box/bin/specialist` with a safely quoted request. It uses fixed executables/argv, bounded typed parameters, explicit effect declarations, deadlines, process-group cleanup and private `.specialists/reports` evidence. Missing tools and incomplete coverage remain explicit.
+
+`specialist-analysis` supplies the built-in inventory, strict JSON, CSV, locale, retrieval, privacy-pattern, knowledge-corpus and agent-scaffold operations. It is linked as `boxoro-analysis` in the registered tool directory. The base workspace includes these helpers and the catalog; the [specialist image families](../../docs/SPECIALIST_AGENTS.md) install the additional CLI packages. [SPECIALIST_RUNTIME.md](../../docs/SPECIALIST_RUNTIME.md) documents the full boundary and result contract.
+
+## finance
+
+`finance` runs the immutable `/opt/finance/cli.py` with isolated Python imports and `/workspace` as its input root. Baseline CSV/JSON calculations use the standard library; the finance and suite images add the locked numerical environment for statistical models, optimization and QuantLib. The separately authenticated OpenBB service belongs on the control side. See [FINANCE_AGENT.md](../../docs/FINANCE_AGENT.md).

@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "scope": "Offline Finance OpenBB metadata and query efficiency; no live provider calls, paid data, trading, or Docker qualification.",
+  "baseline_commit": "c40250453c66fe320d64e40acda782cbff2a5c85",
+  "candidate": "Working tree runtime files identified by SHA-256 below; final revision moves exact schema validation into the fresh worker before SDK import.",
+  "candidate_file_sha256": {
+    "deploy/finance/boxoro_finance/openbb_bridge.py": "573fc6557862f7cbca53d6f7efccf72a79eccd25258beed4fae276efe3e5d0b9",
+    "deploy/finance/boxoro_finance/service.py": "b1cfe22a5edbcb7dbf5a413c42534ffeffa7a25b78edfc63c0a872c7eb7bcf56",
+    "qa/test_finance_catalog_cache.py": "88910ebca9d4e987935f9f322e9a238d4741e5948ca28b9d2c4aeb9fcdc139ac",
+    "qa/test_finance_sdk.py": "b3baebe742d0eeebb0c4c1d6bf20407578ed1e4043e1f0576a8e780758f84550"
+  },
+  "environment": {
+    "python": "3.12.14",
+    "architecture": "x86_64",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+    "packages": {
+      "openbb-core": "2.0.1",
+      "fastapi": "0.163.0",
+      "httpx": "0.28.1",
+      "jsonschema": "4.26.0"
+    },
+    "lock": "deploy/finance/requirements.lock",
+    "lock_sha256": "97b35efcdc6dd1846feccef9096f436a953628cf3cd774cbb220dcf069ebad9e",
+    "installation_sha256": "65a3a421fd5284bf1e6218f21ad340e875a889729b041811969ead2d5c3e8531",
+    "installation_fingerprint_scope": "Sorted installed distribution names, versions, and wheel RECORD contents; unchanged across candidate refinements.",
+    "providers": 17,
+    "approved_commands": 1138,
+    "approved_namespaces": 23,
+    "provider_credentials_supplied": false,
+    "provider_network_allowed": false,
+    "temporary_root": "/workspace/scratch/8e5bc6612c2b/.tmp",
+    "threads": {
+      "OPENBLAS_NUM_THREADS": 1,
+      "OMP_NUM_THREADS": 1
+    }
+  },
+  "request": {
+    "tool": "openbb_query",
+    "arguments": {
+      "command": "quantitative.summary",
+      "parameters": {},
+      "allow_network": false,
+      "body": {
+        "target": "close",
+        "data": [
+          {
+            "close": 1
+          },
+          {
+            "close": 2
+          },
+          {
+            "close": 3
+          },
+          {
+            "close": 4
+          }
+        ]
+      }
+    },
+    "verified_result": {
+      "count": 4,
+      "mean": 2.5,
+      "sample_variance": 1.6666666666666667,
+      "metadata_route": "/quantitative/summary",
+      "schema_and_installation_fingerprints_match_discovery": true
+    }
+  },
+  "authenticated_http": {
+    "method": "POST /mcp on a real authenticated loopback HTTP server; a fresh private service state for each baseline/candidate run. Warm discovery follows that run's cold status. Query uses a fresh child after discovery.",
+    "unit": "seconds",
+    "samples_per_operation_per_run": 1,
+    "before": {
+      "cold_status": 39.863002957998106,
+      "fresh_offline_query": 38.48306476399739
+    },
+    "initial_cache_revision": {
+      "cold_status": 39.629342436001025,
+      "warm_status": 0.0018132209988834802,
+      "warm_catalog": 0.0009345079997729044,
+      "warm_describe": 0.0014767649990972131,
+      "fresh_offline_query": 26.79816023300009
+    },
+    "final_revision": {
+      "cold_status": 37.527720498001145,
+      "warm_status": 0.0016148119975696318,
+      "warm_catalog": 0.0020486950015765615,
+      "warm_describe": 0.0016496339994773734,
+      "fresh_offline_query": 27.80169620900051
+    },
+    "fresh_query_latency_reduction_fraction_final": 0.2775602364443118,
+    "source_revision_note": "Initial cache measurements preceded the final validation-boundary refinement. Final revision was rerun through qa/test_finance_sdk.py against the source hashes above. Package manifest fingerprint did not change.",
+    "not_measured": "A single cold query with no preceding discovery; that path shares one deadline across bootstrap and query rather than receiving separate budgets."
+  },
+  "executor_only": {
+    "method": "Call run_isolated (baseline) or CatalogExecutor (initial cache revision) directly; includes process startup, IPC, and shutdown but excludes HTTP/MCP encoding. Do not compare these microsecond metadata figures to authenticated HTTP timings.",
+    "unit": "seconds",
+    "before": {
+      "cold_status": 37.190179542001715,
+      "fresh_offline_query": 37.07915910199881
+    },
+    "initial_cache_revision": {
+      "cold_status": 35.58371562100001,
+      "warm_status": 0.00017642600141698495,
+      "warm_catalog": 0.0001290340005652979,
+      "warm_describe": 1.735600017127581e-05,
+      "fresh_offline_query": 28.07634484099981
+    },
+    "workers_started_initial_revision": {
+      "cold_status": 1,
+      "warm_status": 0,
+      "warm_catalog": 0,
+      "warm_describe": 0,
+      "fresh_offline_query": 1
+    }
+  },
+  "memory": {
+    "unit": "KiB",
+    "query_worker_method": "Read each child's /proc/<pid>/status VmHWM every 20 ms until completion; both baseline and candidate query figures use this same method.",
+    "before_query_worker_peak_rss": 1110816,
+    "initial_cache_query_worker_peak_rss": 887428,
+    "initial_cache_bootstrap_worker_peak_rss": 1110360,
+    "query_worker_peak_reduction_fraction_initial": 0.20110261285397402,
+    "parent_method": "resource.getrusage(RUSAGE_SELF).ru_maxrss; peak, not retained-cache-only allocation.",
+    "before_parent_peak_rss": 19456,
+    "initial_cache_parent_peak_rss": 64624,
+    "source_revision_note": "Candidate memory measurements are from the initial cache implementation, before exact schema validation moved exclusively into the child. Final HTTP correctness/timing was rerun, but memory was not resampled after that refinement.",
+    "baseline_resample_executor_seconds": 37.26701422500264,
+    "tradeoff": "Discovery retains metadata in the server. The one-time bootstrap still needs the full SDK/schema memory peak. No provider responses, credentials, or SDK objects are cached."
+  },
+  "baseline_stage_profile": {
+    "unit": "seconds",
+    "sdk_import": 20.300438471000234,
+    "openapi_generation": 9.916687829001603,
+    "catalog_expansion": 1.3901783239998622,
+    "validated_offline_dispatch": 0.10567508399981307,
+    "schema_bytes": 8441834,
+    "compiled_catalog_bytes": 6652638,
+    "note": "Separate process instrumentation of the baseline stages; not an authenticated end-to-end latency measurement."
+  },
+  "bounds_and_invalidation": {
+    "public_tools_unchanged": [
+      "openbb_status",
+      "openbb_catalog",
+      "openbb_describe",
+      "openbb_query"
+    ],
+    "tool_request_bytes": 524288,
+    "query_output_bytes": 2097152,
+    "mcp_response_bytes": 4194304,
+    "private_bootstrap_output_bytes": 16777216,
+    "private_query_contract_bytes": 524288,
+    "default_total_request_deadline_seconds": 90,
+    "cache_lifetime": "One service instance; restart on immutable package deployment; no persistent schema file is accepted.",
+    "cold_concurrency": "One bootstrap under a deadline-aware lock; failed bootstrap is retryable and not cached.",
+    "query_isolation": "Fresh resource-bounded child each time. Exact schema validation and package-fingerprint verification precede SDK import.",
+    "credential_boundary": "Bootstrap gets no provider credentials or MCP token and disables network access. Query workers receive only supported provider credential names in a clean environment.",
+    "stale_installation": "Fresh query checks installed distribution/RECORD fingerprint; mismatch returns catalog_stale and invalidates cached metadata for retry."
+  },
+  "verification": [
+    {
+      "command": "TMPDIR=/workspace/scratch/8e5bc6612c2b/.tmp OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /workspace/scratch/8e5bc6612c2b/finance-openbb-env/bin/python -m unittest discover -s qa -p 'test_finance*.py' -q",
+      "tests": 64,
+      "passed": 62,
+      "skipped": 2,
+      "skip_reasons": [
+        "QuantLib is optional in the OpenBB environment; covered in the advanced environment below.",
+        "Installed SDK test is opt-in; enabled and run separately below."
+      ],
+      "exit_code": 0,
+      "seconds": 6.942
+    },
+    {
+      "command": "TMPDIR=/workspace/scratch/8e5bc6612c2b/.tmp OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /workspace/scratch/8e5bc6612c2b/finance-advanced-env/bin/python -m unittest qa.test_finance_advanced -v",
+      "tests": 6,
+      "passed": 6,
+      "skipped": 0,
+      "exit_code": 0,
+      "seconds": 2.127,
+      "backends": [
+        "statsmodels",
+        "SciPy",
+        "QuantLib"
+      ]
+    },
+    {
+      "command": "TMPDIR=/workspace/scratch/8e5bc6612c2b/.tmp BOXORO_TEST_OPENBB=1 BOXORO_BENCH_OPENBB=1 /workspace/scratch/8e5bc6612c2b/finance-openbb-env/bin/python -m unittest qa.test_finance_sdk -v",
+      "tests": 1,
+      "passed": 1,
+      "skipped": 0,
+      "exit_code": 0,
+      "seconds": 65.574,
+      "revision": "final"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "limitations": [
+    "Individual development-host measurements, not medians, service-level objectives, or production capacity guarantees. OS file caches were not deliberately flushed.",
+    "No live provider reachability, entitlement, quota, freshness, or paid-data outcome was tested.",
+    "All installed providers still import for a fresh data query. Namespace restriction narrows access but does not selectively unload provider packages.",
+    "Existing upstream provider disk caches are separate from this schema-only service cache; no new financial-result cache was introduced.",
+    "In-place edits to installed package source are unsupported; deploy immutable packages and restart the service.",
+    "Cold first queries consume one total deadline for discovery plus query execution. Run openbb_status after deployment to check installed readiness before a provider read."
+  ]
+}

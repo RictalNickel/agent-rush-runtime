@@ -86,7 +86,7 @@ pub fn parse_skill_md(text: &str) -> Result<(String, String, String)> {
 
 /// Skills every owner sees until they save one with the same name.
 pub fn builtin_skills() -> Vec<Skill> {
-    [
+    let mut skills: Vec<Skill> = [
         (
             "web-research",
             "Research a question on the web and answer with cited sources.",
@@ -115,7 +115,9 @@ pub fn builtin_skills() -> Vec<Skill> {
         body: body.into(),
         updated_at: 0,
     })
-    .collect()
+    .collect();
+    skills.extend(crate::specialists::skills());
+    skills
 }
 
 impl Ledger {

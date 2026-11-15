@@ -1040,6 +1040,49 @@ async fn security_scan_dispatches_one_quoted_json_argument_with_bounded_box_time
 }
 
 #[tokio::test]
+async fn specialist_dispatches_fixed_helper_and_preserves_effect_declarations() {
+    let h = harness(
+        vec![
+            json!({"tool":"specialist","action":"doctor","agent":"testforge","operation":"pytest-test","timeout_seconds":20}),
+            json!({"tool":"specialist","action":"run","agent":"testforge","operation":"pytest-test",
+            "path":"it's here; $(id)","allow_project_code":true,"allow_mutation":true,"timeout_seconds":40}),
+            reply("Checked"),
+        ],
+        SessionLimits::default(),
+    );
+    h.run("Run specialist checks").await;
+    let requests = h.boxes.exec_requests.lock().unwrap();
+    assert_eq!(requests.len(), 2);
+    assert!(
+        requests[0]
+            .command
+            .starts_with("/usr/bin/python3 -I /opt/box/bin/specialist '")
+    );
+    assert_eq!(requests[0].timeout_seconds, Some(50));
+    assert!(requests[0].command.contains(r#""operation":"pytest-test""#));
+    assert!(!requests[0].command.contains("allow_project_code"));
+    assert!(requests[1].command.contains(r#""allow_network":false"#));
+    assert!(requests[1].command.contains(r#""allow_project_code":true"#));
+    assert!(requests[1].command.contains(r#"it'\''s here; $(id)"#));
+    assert_eq!(requests[1].timeout_seconds, Some(70));
+}
+
+#[tokio::test]
+async fn disabled_specialist_is_rejected_before_box_allocation() {
+    let h = harness(
+        vec![
+            json!({"tool":"agent_config","action":"update","config":{"disabled_tools":["specialist"]}}),
+            json!({"tool":"specialist","action":"list"}),
+            reply("Disabled"),
+        ],
+        SessionLimits::default(),
+    );
+    let id = h.run("Disable specialist execution").await;
+    assert_eq!(h.results(&id)[1]["ok"], false);
+    assert_eq!(h.boxes.creates.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
 async fn security_scan_can_be_disabled_without_allocating_a_box() {
     let h = harness(
         vec![

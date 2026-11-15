@@ -20,6 +20,7 @@ pub const BUILTIN_TOOLS: &[&str] = &[
     "web_fetch",
     "convert_file",
     "security_scan",
+    "specialist",
     "skill",
     "agent_config",
     "mcp",
@@ -56,6 +57,9 @@ impl CustomTool {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AgentConfig {
+    /// Built-in specialist guidance; not an execution permission or image selector.
+    #[serde(default)]
+    pub specialist: Option<String>,
     #[serde(default)]
     pub system_addendum: String,
     #[serde(default)]
@@ -112,6 +116,12 @@ impl AgentConfig {
         builtin_tools: &[&str],
         allowed_mcp: Option<&[String]>,
     ) -> Result<()> {
+        if let Some(specialist) = &self.specialist {
+            ensure!(
+                crate::specialists::known(specialist),
+                "unknown specialist {specialist:?}"
+            );
+        }
         ensure!(
             self.system_addendum.len() <= MAX_ADDENDUM_BYTES,
             "system_addendum exceeds 8 KiB"

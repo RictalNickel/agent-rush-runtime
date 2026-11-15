@@ -1,0 +1,11 @@
+{
+  "name": "boxoro-tool-vitest",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "vitest": "5.1.0"
+  },
+  "allowScripts": {
+    "fsevents@2.3.3": false
+  }
+}

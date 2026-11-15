@@ -33,6 +33,8 @@ Other clients that take a remote HTTP server work the same way: give them the UR
 
 | Tool | Arguments | What it does |
 | --- | --- | --- |
+| `list_specialists` | | Lists the built-in specialist catalog; no worker is required. |
+| `describe_specialist` | `agent` | Gets one profile's instructions, tool metadata, workflows and typed operations. |
 | `start_session` | `title?`, `message?`, `model?` | Creates a session with its own workspace. A `message` starts the agent working. `model` is an ID from `list_models`; the default otherwise. |
 | `send_message` | `session_id`, `text` | Sends a message. If the agent is busy, it gets the message before its next step (an interjection). |
 | `wait_for_reply` | `session_id`, `timeout_seconds?` (default 120, max 300), `after_seq?` | Waits until the turn ends, then returns the status, the agent's reply and a short summary of what it did. |
@@ -64,7 +66,11 @@ Use `start_session` or `send_message` to ask the agent to load `security-audit`,
 
 The security workspace image provides the pinned scanners. Reports distinguish completed checks from missing tools, stale databases and other incomplete coverage. See [SECURITY_STACK.md](SECURITY_STACK.md) for the workflow and profiles and [SECURITY_STACK_RESEARCH.md](SECURITY_STACK_RESEARCH.md) for scanner choices. The [optional intelligence MCP bridge](SECURITY_INTELLIGENCE.md) is a separate operator-registered control-side service for narrow identifier lookups; it is not required for local scanning.
 
-## Errors
+## Specialized tasks through a session
+
+Call `list_specialists`, then `describe_specialist` for the intended profile. Start a session with an instruction to load its `specialist-<id>` skill, run the native `specialist doctor`, and execute the authorized task. The specialist runner executes inside that session's existing worker; discovery does not imply tools are installed. Results and files use `wait_for_reply`, `get_events` and `read_file` as usual. The [specialist guide](SPECIALIST_AGENTS.md) documents image selection and actual readiness, and [Finance Lab](FINANCE_AGENT.md) documents its separately registered OpenBB MCP.
+
+## Error handling
 
 - **Tool failures** come back as a normal result with `isError: true` and a text message. Examples are a session that is not found, a closed session, or a workspace error. A session that belongs to another key's owner is reported as "Session not found", exactly like one that does not exist.
 - **Per-owner caps** are tool failures too:

@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-prism",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@stoplight/prism-cli": "5.16.0"
+  }
+}

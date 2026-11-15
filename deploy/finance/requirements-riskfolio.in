@@ -1,0 +1,5 @@
+# Optional RESTRICTED-LICENSE profile; not included in default images.
+# Riskfolio itself is BSD-3-Clause. Its mandatory vectorbt dependency carries
+# Apache-2.0 with Commons Clause; review the redistribution/service restrictions.
+-r requirements-advanced.in
+riskfolio-lib==7.4.1

@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-linkinator",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "linkinator": "8.1.0"
+  }
+}

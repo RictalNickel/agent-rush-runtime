@@ -14,6 +14,12 @@ jobs:
       - run: cargo test --locked
       - name: Security helper unit tests
         run: python3 -m unittest discover -s qa -p 'test_security_*.py' -v
+      - name: Specialist and finance helper tests
+        run: |
+          python3 -m venv /tmp/boxoro-test-env
+          /tmp/boxoro-test-env/bin/pip install --require-hashes --only-binary=:all: -r qa/requirements.lock
+          /tmp/boxoro-test-env/bin/python -m unittest discover -s qa -p 'test_agents_*.py' -v
+          /tmp/boxoro-test-env/bin/python -m unittest discover -s qa -p 'test_finance*.py' -v
       - run: cargo clippy --locked --all-targets -- -D warnings
 # Explicit dispatch keeps this private build from starting paid CI machines on every push.
 # This suite excludes the six explicitly ignored host-qualification tests; it cannot certify a worker.

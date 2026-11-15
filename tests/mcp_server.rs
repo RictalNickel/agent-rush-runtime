@@ -11,6 +11,24 @@ use serde_json::{Value, json};
 
 const WAIT: std::time::Duration = std::time::Duration::from_secs(10);
 
+#[tokio::test]
+async fn mcp_exposes_specialist_discovery() {
+    let a = app(vec![]);
+    let key = a.key("alice");
+    let (error, index) = tool(&a, &key, "list_specialists", json!({})).await;
+    assert!(!error);
+    assert_eq!(index["agents"].as_array().unwrap().len(), 21);
+    let (error, profile) = tool(
+        &a,
+        &key,
+        "describe_specialist",
+        json!({"agent":"testforge"}),
+    )
+    .await;
+    assert!(!error);
+    assert_eq!(profile["id"], "testforge");
+}
+
 async fn rpc(a: &App, key: Option<&str>, message: Value) -> (StatusCode, Value) {
     let mut builder = Request::post("/mcp")
         .header("content-type", "application/json")
@@ -123,6 +141,8 @@ async fn initialize_list_start_send_and_wait_for_reply() {
     assert_eq!(
         names,
         [
+            "list_specialists",
+            "describe_specialist",
             "start_session",
             "send_message",
             "wait_for_reply",

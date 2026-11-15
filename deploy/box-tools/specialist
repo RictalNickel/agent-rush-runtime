@@ -1,0 +1,42 @@
+#!/usr/bin/python3 -I
+"""Run a registered specialist action from one strict JSON argument."""
+
+import json
+import signal
+import sys
+from pathlib import Path
+
+agents_home = Path(__file__).resolve().parents[1] / "agents"
+sys.path.insert(0, str(agents_home))
+from boxoro_agents.runner import parse_json, run_request
+
+
+class Cancelled(Exception):
+    pass
+
+
+def cancelled(_signum, _frame):
+    raise Cancelled("Specialist request was cancelled.")
+
+
+def main():
+    for sig in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+        signal.signal(sig, cancelled)
+    if len(sys.argv) == 2 and sys.argv[1] == "--help":
+        print('specialist \'{"action":"list"}\'\nActions: list, describe, doctor, run, workflow. See docs/SPECIALIST_AGENTS.md.')
+        return 0
+    try:
+        if len(sys.argv) != 2:
+            raise ValueError("expected one JSON argument")
+        result = run_request(parse_json(sys.argv[1]), catalog_path=agents_home / "catalog.json")
+        print(json.dumps(result, ensure_ascii=True, allow_nan=False))
+        # Transport success is distinct from findings/incomplete coverage.
+        return 0
+    except (ValueError, OSError, Cancelled) as error:
+        message = str(error) if isinstance(error, (ValueError, Cancelled)) else "Specialist catalog, workspace or report storage is unavailable."
+        print(json.dumps({"schema_version": 1, "gate": "incomplete", "error": message}, ensure_ascii=True))
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

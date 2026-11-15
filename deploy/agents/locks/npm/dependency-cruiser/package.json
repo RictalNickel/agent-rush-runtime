@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-dependency-cruiser",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "dependency-cruiser": "18.7.2"
+  }
+}
