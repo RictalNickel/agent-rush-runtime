@@ -1,0 +1,11 @@
+{
+  "name": "boxoro-tool-appium",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "appium": "3.9.1"
+  },
+  "allowScripts": {
+    "appium@3.9.1": true
+  }
+}

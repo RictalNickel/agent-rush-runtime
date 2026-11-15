@@ -1,0 +1,499 @@
+{
+  "schema_version": 1,
+  "agents": {
+    "finance-lab": {
+      "name": "Finance Lab",
+      "description": "Financial and economic research across all installed permitted OpenBB V5 data commands, portfolio risk, valuation, options, bonds, cash flows and quantitative models.",
+      "family": "finance",
+      "skill": "# Finance Lab\n\nUse `specialist` with agent `finance-lab` for local calculations. Begin with finance-doctor. Use the trusted OpenBB connector for live/public financial data: openbb_status, openbb_catalog, openbb_describe, then openbb_query with the exact discovered schema. Provider queries require allow_network=true; pure analytical commands can remain offline. Never send provider credentials as tool arguments or write them inside a workspace.\n\nRecord the provider, retrieval time, observation time, units, frequency, currency and any delay/adjustment. Preserve warnings and results metadata. Missing provider data, rate limits, licensing restrictions, missing packages and truncated output are incomplete coverage. Never invent live quotes or present retrieved time as quote time.\n\nLocal files are CSV or JSON. For structured operands use finance-request and a JSON document with operation, parameters and optional data/input. Price data must be positive and dates unique; align series explicitly. Rates/returns are decimal fractions. Distinguish total-return prices from unadjusted prices, arithmetic returns from log returns, annual risk-free rates from per-period rates, and monthly percent Fama-French factors from decimal returns.\n\nUse finance-risk/portfolio/correlation for historical research, finance-valuation for explicit DCF assumptions, finance-options for European Black-Scholes-Merton research, finance-bonds for regular coupon-date valuation, and finance-cashflow for equal-period NPV/IRR. Forecasts and allocations require held-out validation; backtests lag signals and include specified turnover costs but are not execution-quality estimates. No trade/order, brokerage credential, transaction or money-movement tools are available.\n\nSee docs/FINANCE_AGENT.md and docs/OPENBB_PROVIDERS.md for exact contracts, source terms and installation. Optional Riskfolio's vectorbt dependency has Commons Clause restrictions and is excluded from default images.\n",
+      "tools": [
+        "finance"
+      ],
+      "workflows": {
+        "readiness": [
+          "finance-doctor"
+        ]
+      },
+      "connectors": [
+        "boxoro-finance-openbb"
+      ],
+      "resources": {
+        "memory_mb": 4096,
+        "disk_mb": 8192
+      },
+      "limitations": [
+        "OpenBB runs in a separate trusted control-side service; provider entitlements and availability differ.",
+        "Calculations are research outputs; data quality, units, assumptions and model risk require review.",
+        "No brokerage/order execution or money movement.",
+        "Forecast, factor and allocation adapters need the advanced image."
+      ]
+    }
+  },
+  "tools": {
+    "finance": {
+      "name": "Boxoro Finance Lab",
+      "description": "Fixed local financial analysis operations; deterministic standard-library baseline and optional SciPy/statsmodels/QuantLib research environment.",
+      "homepage": "https://github.com/RictalNickel/agent-rush-runtime",
+      "sources": [
+        "https://docs.openbb.co/odp/python/",
+        "https://docs.openbb.co/odp/python/extensions/providers",
+        "https://docs.scipy.org/doc/scipy/reference/optimize.html",
+        "https://www.statsmodels.org/stable/index.html",
+        "https://www.quantlib.org/"
+      ],
+      "license": "MIT (Boxoro code); numerical-package licenses are recorded in finance dependency notices. Optional Riskfolio/vectorbt profile is restricted.",
+      "family": "finance",
+      "install": {
+        "kind": "builtin",
+        "package": "boxoro-finance",
+        "version": "1.0.0",
+        "executable": "finance"
+      },
+      "probe": [
+        "--version"
+      ],
+      "availability": "image"
+    }
+  },
+  "operations": {
+    "finance-doctor": {
+      "tool": "finance",
+      "description": "Report local analytics and optional numerical-package availability.",
+      "argv": [
+        "doctor"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-request": {
+      "tool": "finance",
+      "description": "Run a fixed named analysis from a strict JSON request document.",
+      "argv": [
+        "--request-file",
+        "{path}"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 180,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-returns": {
+      "tool": "finance",
+      "description": "Compute simple returns from ordered positive prices.",
+      "argv": [
+        "returns",
+        "--input",
+        "{path}",
+        "--column",
+        "{column}",
+        "--frequency",
+        "{frequency}",
+        "--input-kind",
+        "{input_kind}"
+      ],
+      "parameters": {
+        "column": {
+          "type": "string",
+          "default": "close",
+          "maxLength": 128
+        },
+        "frequency": {
+          "type": "integer",
+          "default": 252,
+          "minimum": 1,
+          "maximum": 36600
+        },
+        "input_kind": {
+          "type": "string",
+          "enum": [
+            "prices",
+            "returns"
+          ],
+          "default": "prices"
+        }
+      },
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-risk": {
+      "tool": "finance",
+      "description": "Compute compounded return, annualized volatility, Sharpe, Sortino, drawdown, historical VaR and expected shortfall.",
+      "argv": [
+        "risk",
+        "--input",
+        "{path}",
+        "--column",
+        "{column}",
+        "--frequency",
+        "{frequency}",
+        "--input-kind",
+        "{input_kind}"
+      ],
+      "parameters": {
+        "column": {
+          "type": "string",
+          "default": "close",
+          "maxLength": 128
+        },
+        "frequency": {
+          "type": "integer",
+          "default": 252,
+          "minimum": 1,
+          "maximum": 36600
+        },
+        "input_kind": {
+          "type": "string",
+          "enum": [
+            "prices",
+            "returns"
+          ],
+          "default": "prices"
+        }
+      },
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-portfolio": {
+      "tool": "finance",
+      "description": "Evaluate aligned long-only constant-weight portfolio risk; weights in input JSON.",
+      "argv": [
+        "portfolio",
+        "--input",
+        "{path}"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-correlation": {
+      "tool": "finance",
+      "description": "Compute aligned numeric-column covariance and Pearson correlation.",
+      "argv": [
+        "correlation",
+        "--input",
+        "{path}"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-valuation": {
+      "tool": "finance",
+      "description": "Discount annual cash-flow projections and Gordon terminal value.",
+      "argv": [
+        "valuation",
+        "--input",
+        "{path}"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-options": {
+      "tool": "finance",
+      "description": "Price European options and Greeks; invert a market price to implied volatility.",
+      "argv": [
+        "options",
+        "--input",
+        "{path}"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-bonds": {
+      "tool": "finance",
+      "description": "Price regular fixed-coupon bonds, duration, convexity and DV01.",
+      "argv": [
+        "bonds",
+        "--input",
+        "{path}"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-cashflow": {
+      "tool": "finance",
+      "description": "Compute equal-period NPV and a bracketed IRR with multiple-root warnings.",
+      "argv": [
+        "cashflow",
+        "--input",
+        "{path}"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-factor": {
+      "tool": "finance",
+      "description": "Fit factor OLS with robust errors and confidence intervals; optional statsmodels required.",
+      "argv": [
+        "factor",
+        "--input",
+        "{path}"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-monte-carlo": {
+      "tool": "finance",
+      "description": "Simulate a seeded geometric Brownian terminal-price distribution.",
+      "argv": [
+        "monte-carlo",
+        "--input",
+        "{path}"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-backtest": {
+      "tool": "finance",
+      "description": "Backtest long/cash moving-average crossover with prior-bar signal and turnover costs.",
+      "argv": [
+        "backtest",
+        "--input",
+        "{path}",
+        "--column",
+        "{column}",
+        "--frequency",
+        "{frequency}",
+        "--fast",
+        "{fast}",
+        "--slow",
+        "{slow}",
+        "--cost-bps",
+        "{cost_bps}"
+      ],
+      "parameters": {
+        "column": {
+          "type": "string",
+          "default": "close",
+          "maxLength": 128
+        },
+        "frequency": {
+          "type": "integer",
+          "default": 252,
+          "minimum": 1,
+          "maximum": 36600
+        },
+        "fast": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 20
+        },
+        "slow": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 2000,
+          "default": 50
+        },
+        "cost_bps": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 10
+        }
+      },
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-forecast": {
+      "tool": "finance",
+      "description": "Fit bounded ARIMA and model-conditional intervals; optional statsmodels required.",
+      "argv": [
+        "forecast",
+        "--input",
+        "{path}",
+        "--column",
+        "{column}",
+        "--horizon",
+        "{horizon}"
+      ],
+      "parameters": {
+        "column": {
+          "type": "string",
+          "default": "close",
+          "maxLength": 128
+        },
+        "horizon": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 252,
+          "default": 10
+        }
+      },
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 180,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-optimize": {
+      "tool": "finance",
+      "description": "Solve constrained long-only min-variance, max-Sharpe or risk-parity allocation; optional SciPy required.",
+      "argv": [
+        "optimize",
+        "--input",
+        "{path}",
+        "--objective",
+        "{objective}",
+        "--input-kind",
+        "{input_kind}",
+        "--frequency",
+        "{frequency}",
+        "--max-weight",
+        "{max_weight}"
+      ],
+      "parameters": {
+        "objective": {
+          "type": "string",
+          "enum": [
+            "min-variance",
+            "max-sharpe",
+            "risk-parity"
+          ],
+          "default": "min-variance"
+        },
+        "input_kind": {
+          "type": "string",
+          "enum": [
+            "prices",
+            "returns"
+          ],
+          "default": "prices"
+        },
+        "frequency": {
+          "type": "integer",
+          "default": 252,
+          "minimum": 1,
+          "maximum": 36600
+        },
+        "max_weight": {
+          "type": "number",
+          "minimum": 0.01,
+          "maximum": 1,
+          "default": 1
+        }
+      },
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 180,
+      "notes": "Research analysis; decimals for rates/returns. Exit 3 means incomplete or missing backend. Input CSV/JSON is data only; no project code, network or brokerage actions."
+    },
+    "finance-quantlib-bond": {
+      "tool": "finance",
+      "description": "Calendar-aware fixed-rate bond clean/dirty price, accrual, duration, convexity and scheduled cash flows using QuantLib.",
+      "argv": [
+        "quantlib-bond",
+        "--input",
+        "{path}"
+      ],
+      "parameters": {},
+      "effects": [],
+      "success_codes": [
+        0
+      ],
+      "finding_codes": [],
+      "timeout_seconds": 120,
+      "notes": "Requires optional advanced image QuantLib1.44. Strict JSON input with issue/maturity/valuation dates, coupon/yield rates and optional calendar/day-count assumptions; no trading."
+    }
+  },
+  "connectors": {
+    "boxoro-finance-openbb": {
+      "name": "Boxoro Finance OpenBB",
+      "vendor": "Boxoro / OpenBB",
+      "url": "http://127.0.0.1:8768/mcp",
+      "transport": "streamable-http",
+      "status": "self-hosted",
+      "auth": "Bearer token from control-side FINANCE_OPENBB_TOKEN_FILE or FINANCE_OPENBB_TOKEN; provider credentials only in trusted service environment.",
+      "allowed_tools_notes": "Four fixed read-only tools: openbb_status, openbb_catalog, openbb_describe, openbb_query. GET commands from approved installed provider namespaces; POST only econometrics, quantitative and technical. No generic CLI, skill installation, user/system routes or trading.",
+      "agents": [
+        "finance-lab"
+      ],
+      "sources": [
+        "https://docs.openbb.co/odp/python/concepts/architecture",
+        "https://docs.openbb.co/odp/python/extensions/interface/openbb-mcp",
+        "https://modelcontextprotocol.io/specification/2025-06-18/basic/transports"
+      ],
+      "limitations": [
+        "Example requires deployment of the included service; this catalog does not establish an active connection.",
+        "Provider keys, terms, rate limits and delayed-data restrictions remain source-specific.",
+        "Caller-supplied URLs require an operator allowlist; streaming and file-upload endpoints are excluded."
+      ]
+    }
+  }
+}

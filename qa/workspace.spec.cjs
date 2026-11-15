@@ -31,8 +31,8 @@ async function signIn(page){
 // page has to fall back to polling /events. `throttleImages` refuses the first request for
 // each screenshot with 429, the way the server does past its per-session limit. `models` is
 // the model list /v1/status reports (none by default).
-async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false,models}={}){
-  const st={sessions:[],events:new Map(),csrf:[],deletes:[],purges:[],created:[],archives:0,models,streams:0,polls:0,speak:0,transcribe:0,cancelled:0,images:{inFlight:0,maxInFlight:0,requests:{}}};
+async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false,models,specialistFailures=0}={}){
+  const st={sessions:[],events:new Map(),csrf:[],deletes:[],purges:[],created:[],archives:0,models,streams:0,polls:0,specialistRequests:0,speak:0,transcribe:0,cancelled:0,images:{inFlight:0,maxInFlight:0,requests:{}}};
   const emit=(id,kind,payload)=>{const log=st.events.get(id);const event={session_id:id,seq:log.length+1,kind,payload,at:Date.now()};log.push(event);st.sessions.find(s=>s.id===id).last_seq=event.seq;return event;};
   const status=(id,value,reason)=>{st.sessions.find(s=>s.id===id).status=value;emit(id,'status',reason?{status:value,reason}:{status:value});};
   st.emit=emit;st.status=status;
@@ -65,10 +65,14 @@ async function fakeApi(page,{voice=false,sse=true,seed=[],throttleImages=false,m
     const match=/^\/v1\/sessions\/([^/]+)(\/.*)?$/.exec(path);
     const id=match&&decodeURIComponent(match[1]),sub=match?.[2]||'';
     if(path==='/v1/status')return route.fulfill({json:{provider:'vultr',worker_connected:true,sessions_available:true,voice_available:voice,mcp_servers:[],...(st.models?{models:st.models}:{})}});
+    if(path==='/v1/specialists'){
+      if(st.specialistRequests++<specialistFailures)return route.fulfill({status:503,json:{error:'temporarily unavailable'}});
+      return route.fulfill({json:{agents:Object.entries(require('../deploy/agents/catalog.json').agents).map(([id,a])=>({id,name:a.name,description:a.description}))}});
+    }
     if(path==='/v1/sessions'&&method==='GET')return route.fulfill({json:{sessions:st.sessions}});
     if(path==='/v1/sessions'&&method==='POST'){
       const body=req.postDataJSON();st.created.push(body);const {message}=body;
-      const s=create(`s${st.sessions.length+1}`,message.slice(0,80),body.model||st.models?.default);
+      const s=create(`s${st.sessions.length+1}`,body.title||message.slice(0,80),body.model||st.models?.default);
       emit(s.id,'user',{text:message});firstTurn(s.id);
       return route.fulfill({status:201,json:{session:{...s},sent:{interjection:false,seq:1}}});
     }
@@ -189,7 +193,7 @@ test('session chat: send, tool rows, screenshot, interjection, stop, reply, file
   await expect(item.locator('.dot')).toHaveClass(/running/);
   await expect(page.locator('#session-state')).toHaveText('Working');
   await expect(page.locator('#working')).toBeVisible();
-  await page.screenshot({path:'/tmp/agent-rush-qa/session-steps.png'});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/session-steps.png')});
 
   // Sending while it works is an interjection; the send button stays enabled.
   await expect(page.getByRole('button',{name:'Send'})).toBeEnabled();
@@ -233,7 +237,7 @@ test('session chat: send, tool rows, screenshot, interjection, stop, reply, file
   const replyDownload=page.waitForEvent('download');
   await attached.click();
   expect((await replyDownload).suggestedFilename()).toBe('report.pdf');
-  await page.screenshot({path:'/tmp/agent-rush-qa/session-desktop.png'});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/session-desktop.png')});
 
   // The files panel lists the workspace and downloads a file.
   await page.getByRole('button',{name:'Files',exact:true}).click();
@@ -249,7 +253,7 @@ test('session chat: send, tool rows, screenshot, interjection, stop, reply, file
   const download=page.waitForEvent('download');
   await link.click();
   expect((await download).suggestedFilename()).toBe('report.pdf');
-  await page.screenshot({path:'/tmp/agent-rush-qa/session-files.png'});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/session-files.png')});
   await page.getByRole('button',{name:'Close files'}).click();
 
   expect(api.streams).toBeGreaterThan(0);
@@ -297,7 +301,7 @@ test('mobile at 390 px: no overflow, drawer works, polling fallback when SSE fai
   await expect(page.getByRole('heading',{level:1})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await expect(page.locator('.composer')).toBeInViewport();
-  await page.screenshot({path:'/tmp/agent-rush-qa/mobile-signed-out.png'});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/mobile-signed-out.png')});
   const errors=watchErrors(page,['502','text/event-stream']);
   const long='x'.repeat(300);
   const api=await fakeApi(page,{sse:false,seed:[{id:'s9',title:'A session with a very long title that must not widen the page at all',status:'running',events:[
@@ -333,7 +337,7 @@ test('mobile at 390 px: no overflow, drawer works, polling fallback when SSE fai
   await expect(page.locator('#log .msg.interjection .tag')).toHaveText('Sent while working');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await expect(page.locator('.composer')).toBeInViewport();
-  await page.screenshot({path:'/tmp/agent-rush-qa/mobile-session.png'});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/mobile-session.png')});
   await page.getByRole('button',{name:'Files',exact:true}).click();
   await expect(page.locator('#files-dialog').getByRole('link',{name:'report.pdf'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
@@ -432,7 +436,7 @@ test('deleting sessions: confirm dialog, the open session returns to the welcome
   // Delete removes it for good; it was open, so the chat returns to the welcome.
   await remove.click();
   await expect(dialog).toBeVisible();
-  await page.screenshot({path:'/tmp/agent-rush-qa/session-delete.png'});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/session-delete.png')});
   await confirm.click();
   await expect(dialog).toBeHidden();
   await expect(rows).toHaveCount(3);
@@ -480,7 +484,7 @@ test('mobile at 390 px: the delete button always shows and the dialog fits',asyn
   expect(sheet.x).toBeGreaterThanOrEqual(0);
   expect(sheet.x+sheet.width).toBeLessThanOrEqual(390);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-  await page.screenshot({path:'/tmp/agent-rush-qa/mobile-session-delete.png'});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/mobile-session-delete.png')});
   await dialog.getByRole('button',{name:'Delete',exact:true}).click();
   await expect(page.locator('#session-list .session')).toHaveCount(3);
   expect(api.deletes).toEqual(['keep']);
@@ -493,6 +497,74 @@ const MODELS={provider:'vultr',default:'glm-5.3-flash',per_session:true,models:[
   {id:'glm-5.3-flash',input_usd_per_million:0.1,output_usd_per_million:0.35,default:true},
   {id:'glm-5.3',input_usd_per_million:0.75,output_usd_per_million:3,default:false}]};
 
+test('specialists: choose a session focus and preserve the user task and title',async({page})=>{
+  const errors=watchErrors(page);
+  const api=await fakeApi(page);
+  await page.goto('/');
+  await expect(page.locator('#specialist-pick')).toBeHidden();
+  await signIn(page);
+  const picker=page.getByLabel('Specialist',{exact:true});
+  await expect(picker).toBeVisible();
+  await expect(picker.locator('option')).toHaveCount(22);
+  await picker.selectOption('finance-lab');
+  await expect(page.locator('#specialist-description')).toContainText(/financial|finance|OpenBB/i);
+  await expect(page.locator('#toast')).not.toBeVisible({timeout:7000});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/desktop-specialist-picker.png')});
+  await page.getByLabel('Message the agent').fill('Analyze the portfolio in holdings.csv.');
+  await page.getByLabel('Message the agent').press('Enter');
+  await expect(picker).toBeHidden();
+  expect(api.created.at(-1).message).toContain('specialist-finance-lab');
+  expect(api.created.at(-1).message).toContain('doctor');
+  expect(api.created.at(-1).message).toContain('Analyze the portfolio in holdings.csv.');
+  expect(api.created.at(-1).title).toBe('Analyze the portfolio in holdings.csv.');
+  await expect(page.locator('#session-title')).toHaveText('Analyze the portfolio in holdings.csv.');
+  expect(errors).toEqual([]);
+});
+
+test('specialists: mobile picker fits and general purpose leaves the task unchanged',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  const errors=watchErrors(page);
+  const api=await fakeApi(page,{models:MODELS});
+  await page.goto('/');await signIn(page);
+  const picker=page.getByLabel('Specialist',{exact:true});
+  await expect(picker).toHaveValue('');
+  await picker.selectOption('testforge');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  const box=await picker.boundingBox();
+  expect(box.x+box.width).toBeLessThanOrEqual(390);
+  await expect(page.locator('#toast')).not.toBeVisible({timeout:7000});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/mobile-specialist-picker.png')});
+  await picker.selectOption('');
+  await page.getByLabel('Message the agent').fill('Use the general agent.');
+  await page.getByLabel('Message the agent').press('Enter');
+  await expect(page.getByLabel('Message the agent')).toHaveValue('');
+  expect(api.created.at(-1).message).toBe('Use the general agent.');
+  expect(api.created.at(-1)).not.toHaveProperty('title');
+  expect(errors).toEqual([]);
+});
+
+test('specialists: discovery recovers after a transient service error',async({page})=>{
+  const errors=watchErrors(page,['503 (Service Unavailable)']);
+  const api=await fakeApi(page,{specialistFailures:1});
+  await page.goto('/');await signIn(page);
+  await expect(page.getByLabel('Specialist',{exact:true})).toBeVisible({timeout:12000});
+  expect(api.specialistRequests).toBe(2);
+  expect(errors).toEqual([]);
+});
+
+test('specialists: Unicode titles remain valid for the session API',async({page})=>{
+  const errors=watchErrors(page);
+  const api=await fakeApi(page);
+  await page.goto('/');await signIn(page);
+  await page.getByLabel('Specialist',{exact:true}).selectOption('finance-lab');
+  const task='😀'.repeat(41);
+  await page.getByLabel('Message the agent').fill(task);
+  await page.getByLabel('Message the agent').press('Enter');
+  await expect(page.getByLabel('Message the agent')).toHaveValue('');
+  expect(api.created.at(-1).title).toBe(task);
+  expect(errors).toEqual([]);
+});
+
 test('models and downloads: pick a model for a new session, see it on the session, download its files',async({page})=>{
   const errors=watchErrors(page);
   const api=await fakeApi(page,{models:MODELS});
@@ -503,7 +575,7 @@ test('models and downloads: pick a model for a new session, see it on the sessio
   await expect(picker).toBeVisible();
   await expect(picker).toHaveValue('glm-5.3-flash');
   await expect(picker.locator('option')).toHaveText(['glm-5.3-flash ($0.10 in, $0.35 out per M tokens)','glm-5.3 ($0.75 in, $3.00 out per M tokens)']);
-  await page.screenshot({path:'/tmp/agent-rush-qa/desktop-model-picker.png'});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/desktop-model-picker.png')});
   await picker.selectOption('glm-5.3');
   const prompt=page.getByLabel('Message the agent');
   await prompt.fill('Benchmark this task.');
@@ -513,7 +585,7 @@ test('models and downloads: pick a model for a new session, see it on the sessio
   // The session shows its model, and the picker steps aside while it is open.
   await expect(page.locator('#session-model')).toHaveText('glm-5.3');
   await expect(picker).toBeHidden();
-  await page.screenshot({path:'/tmp/agent-rush-qa/desktop-session-model.png'});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/desktop-session-model.png')});
 
   // Download files saves the whole workspace as one tarball.
   const saved=page.waitForEvent('download');
@@ -554,7 +626,7 @@ test('mobile at 390 px: the session header with its model and download button fi
   const box=await button.boundingBox();
   expect(box.x+box.width).toBeLessThanOrEqual(390);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-  await page.screenshot({path:'/tmp/agent-rush-qa/mobile-session-model.png'});
+  await page.screenshot({path:require('node:path').join(require('node:os').tmpdir(),'agent-rush-qa/mobile-session-model.png')});
   expect(api.created.at(-1).model).toBe('glm-5.3');
   expect(errors).toEqual([]);
 });

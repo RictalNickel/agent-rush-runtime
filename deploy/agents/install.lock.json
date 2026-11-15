@@ -1,0 +1,1502 @@
+{
+  "generated_at": "2026-11-15T06:48:19.613651+00:00",
+  "platform": "linux/amd64",
+  "python": "3.12",
+  "resolution": "uv Python wheel locks; npm integrity locks; verified release artifacts",
+  "schema_version": 1,
+  "tools": {
+    "actionlint": {
+      "archive": "tar",
+      "executable": "actionlint",
+      "kind": "binary",
+      "member": "actionlint",
+      "package": "rhysd/actionlint",
+      "release_url": "https://github.com/rhysd/actionlint/releases/tag/v1.7.12",
+      "sha256": "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8",
+      "size": 2353908,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz",
+      "version": "v1.7.12"
+    },
+    "adb": {
+      "executable": "adb",
+      "kind": "apt",
+      "package": "adb",
+      "path": "/usr/bin/adb",
+      "version": "Ubuntu noble repositories"
+    },
+    "age": {
+      "executable": "age",
+      "kind": "apt",
+      "package": "age",
+      "path": "/usr/bin/age",
+      "version": "Ubuntu noble repositories"
+    },
+    "androguard": {
+      "executable": "androguard",
+      "kind": "python",
+      "library": false,
+      "package": "androguard",
+      "requirements": "locks/python/androguard.lock",
+      "requirements_sha256": "a238cd326764467c1f88ac3015d7e7ecb1745bd0f7bbdeb6400ef4d7f2641b6c",
+      "version": "4.1.4"
+    },
+    "apktool": {
+      "executable": "apktool",
+      "kind": "apt",
+      "package": "apktool",
+      "path": "/usr/bin/apktool",
+      "version": "Ubuntu noble repositories"
+    },
+    "appium": {
+      "executable": "appium",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": true,
+      "package": "appium",
+      "package_json": "locks/npm/appium/package.json",
+      "package_json_sha256": "6c8c4a7b153071f3073cb87e25bbce9c3ba1d69b6dd2b8958ec6cea2ebc10098",
+      "package_lock": "locks/npm/appium/package-lock.json",
+      "package_lock_sha256": "5644c3962be6144f2bae895c3d2aa657f015666e13e01af2ee35ac4af17956bb",
+      "version": "3.9.1"
+    },
+    "autocannon": {
+      "executable": "autocannon",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "autocannon",
+      "package_json": "locks/npm/autocannon/package.json",
+      "package_json_sha256": "51869be0a14a49596edee8348122dd811371ef2080fced07b244ac811fb77d46",
+      "package_lock": "locks/npm/autocannon/package-lock.json",
+      "package_lock_sha256": "798c4a7f2e490fee08ad0fe5d7536058a4003bb98421f8ef159fee54da2760a3",
+      "version": "9.0.0"
+    },
+    "axe-cli": {
+      "executable": "axe",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@axe-core/cli",
+      "package_json": "locks/npm/axe-cli/package.json",
+      "package_json_sha256": "686fba217ab205152698ff0c60790fd2e428df85bee27e2cd833030d6b557d0f",
+      "package_lock": "locks/npm/axe-cli/package-lock.json",
+      "package_lock_sha256": "571fc3947b3dc9b12250234b89c7393c8c607a731ceecfe68be63e6efce35184",
+      "version": "4.14.0"
+    },
+    "babel": {
+      "executable": "pybabel",
+      "kind": "python",
+      "library": false,
+      "package": "Babel",
+      "requirements": "locks/python/babel.lock",
+      "requirements_sha256": "b04c8f164d6aff0203793783c8e83ed0b287d2cc8c71dcc244d8541e73d28349",
+      "version": "2.18.0"
+    },
+    "backstopjs": {
+      "executable": "backstop",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "backstopjs",
+      "package_json": "locks/npm/backstopjs/package.json",
+      "package_json_sha256": "584eba95c4607921d37f0da8b7ff5c31ed67c27d9698f694571e85cab1ab5688",
+      "package_lock": "locks/npm/backstopjs/package-lock.json",
+      "package_lock_sha256": "3e82ec1887f9a4c458c2cf5abe4e6819e65db57f177ac3ffa4a8f51033dab2de",
+      "version": "6.3.25"
+    },
+    "bandit": {
+      "executable": "bandit",
+      "kind": "python",
+      "library": false,
+      "package": "bandit",
+      "requirements": "locks/python/bandit.lock",
+      "requirements_sha256": "80ecbc9e26decc1d8eef3985f03fd2a7fc41c39c40bdcffdf8820bbc2b25917b",
+      "version": "1.9.4"
+    },
+    "borg": {
+      "executable": "borg",
+      "kind": "apt",
+      "package": "borgbackup",
+      "path": "/usr/bin/borg",
+      "version": "Ubuntu noble repositories"
+    },
+    "boxoro-analysis": {
+      "executable": "specialist-analysis",
+      "kind": "builtin",
+      "package": "boxoro",
+      "path": "/opt/box/bin/specialist-analysis",
+      "version": "1"
+    },
+    "buf": {
+      "executable": "buf",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": true,
+      "package": "@bufbuild/buf",
+      "package_json": "locks/npm/buf/package.json",
+      "package_json_sha256": "348484fa5e16ba398eef33fa40a68264f97f7cef3f03bf3249cc8e30ed7fbfa5",
+      "package_lock": "locks/npm/buf/package-lock.json",
+      "package_lock_sha256": "88be061813eec39dc23ec86ed27c0da650ced213642798c9c11a61371e34e5b6",
+      "version": "1.75.0"
+    },
+    "check-jsonschema": {
+      "executable": "check-jsonschema",
+      "kind": "python",
+      "library": false,
+      "package": "check-jsonschema",
+      "requirements": "locks/python/check-jsonschema.lock",
+      "requirements_sha256": "62f9b17d16f1548b5043d53da60343f64dd25e1d45c6faab2b0613eb8d08b873",
+      "version": "0.39.0"
+    },
+    "checkov": {
+      "executable": "checkov",
+      "kind": "python",
+      "library": false,
+      "package": "checkov",
+      "requirements": "locks/python/checkov.lock",
+      "requirements_sha256": "081f4dbafd78eb43fff6117bc3e3950fade66d1a13b27d8c42b96cac43f54542",
+      "version": "3.4.5"
+    },
+    "cloc": {
+      "executable": "cloc",
+      "kind": "apt",
+      "package": "cloc",
+      "path": "/usr/bin/cloc",
+      "version": "Ubuntu noble repositories"
+    },
+    "codespell": {
+      "executable": "codespell",
+      "kind": "python",
+      "library": false,
+      "package": "codespell",
+      "requirements": "locks/python/codespell.lock",
+      "requirements_sha256": "99b06b6799646664be958c71f84f74069eae3ba5a176fd11511161ad85e22a70",
+      "version": "2.4.3"
+    },
+    "conftest": {
+      "archive": "tar",
+      "executable": "conftest",
+      "kind": "binary",
+      "member": "conftest",
+      "package": "open-policy-agent/conftest",
+      "release_url": "https://github.com/open-policy-agent/conftest/releases/tag/v0.71.1",
+      "sha256": "c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985",
+      "size": 22868063,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/open-policy-agent/conftest/releases/download/v0.71.1/conftest_0.71.1_Linux_x86_64.tar.gz",
+      "version": "v0.71.1"
+    },
+    "cookiecutter": {
+      "executable": "cookiecutter",
+      "kind": "python",
+      "library": false,
+      "package": "cookiecutter",
+      "requirements": "locks/python/cookiecutter.lock",
+      "requirements_sha256": "5f03f9771c80bc592c05d2592378be326c061252b99aac2c92c8e1323ac6d42b",
+      "version": "2.7.1"
+    },
+    "copier": {
+      "executable": "copier",
+      "kind": "python",
+      "library": false,
+      "package": "copier",
+      "requirements": "locks/python/copier.lock",
+      "requirements_sha256": "f10c959aaf62b57b9e68a38fe7a66deea425101f67cb2c173c037f7d3d8e50a1",
+      "version": "9.19.1"
+    },
+    "cosign": {
+      "archive": "raw",
+      "executable": "cosign",
+      "kind": "binary",
+      "member": null,
+      "package": "sigstore/cosign",
+      "release_url": "https://github.com/sigstore/cosign/releases/tag/v3.1.4",
+      "sha256": "424e2c97d0b45fd7a6b608a87f090f35633f4c23ece5f092d48bba11aaf4bbfa",
+      "size": 145688404,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/sigstore/cosign/releases/download/v3.1.4/cosign-linux-amd64",
+      "version": "v3.1.4"
+    },
+    "coverage": {
+      "executable": "coverage",
+      "kind": "python",
+      "library": false,
+      "package": "coverage",
+      "requirements": "locks/python/coverage.lock",
+      "requirements_sha256": "a1dec6c2f7f987b0a05d1c68f2491d68269ad96b57631225a1717fafa89cb71c",
+      "version": "7.17.3"
+    },
+    "csvkit": {
+      "executable": "csvstat",
+      "kind": "python",
+      "library": false,
+      "package": "csvkit",
+      "requirements": "locks/python/csvkit.lock",
+      "requirements_sha256": "4f1285be3241101bbabf01b0edf7bc9f7aa92e45902512ec846aa1c845b5bee2",
+      "version": "2.2.0"
+    },
+    "curl": {
+      "executable": "curl",
+      "kind": "apt",
+      "package": "curl",
+      "path": "/usr/bin/curl",
+      "version": "Ubuntu noble repositories"
+    },
+    "dbmate": {
+      "archive": "raw",
+      "executable": "dbmate",
+      "kind": "binary",
+      "member": null,
+      "package": "amacneil/dbmate",
+      "release_url": "https://github.com/amacneil/dbmate/releases/tag/v2.38.1",
+      "sha256": "3e2c62735e0e63f3e5e4de6a3fa5c8a29ac9a34dcb8631a08d9589ab943ad9bd",
+      "size": 34372280,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/amacneil/dbmate/releases/download/v2.38.1/dbmate-linux-amd64",
+      "version": "v2.38.1"
+    },
+    "dbt-core": {
+      "executable": "dbt",
+      "kind": "python",
+      "library": false,
+      "package": "dbt-core",
+      "requirements": "locks/python/dbt-core.lock",
+      "requirements_sha256": "1f7c420780f80a0faa239cb137181ec54fcac2c923556a8c62a46d05991887be",
+      "version": "1.12.0"
+    },
+    "deepeval": {
+      "executable": "deepeval",
+      "kind": "python",
+      "library": false,
+      "package": "deepeval",
+      "requirements": "locks/python/deepeval.lock",
+      "requirements_sha256": "6eac7a484bb9f396dc2966c4e3f1ac9e79a34c510fd2587b2b66f7df5da85d25",
+      "version": "4.3.4"
+    },
+    "dependency-cruiser": {
+      "executable": "depcruise",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "dependency-cruiser",
+      "package_json": "locks/npm/dependency-cruiser/package.json",
+      "package_json_sha256": "04d407db077c7be5322a79b1d377612a70f4f693d9b73c055e031004d228332f",
+      "package_lock": "locks/npm/dependency-cruiser/package-lock.json",
+      "package_lock_sha256": "7118d55c198b6044cabb826d7c5a42601d0f209ef02bca8f0b5799f895ce54f3",
+      "version": "18.7.2"
+    },
+    "detect-secrets": {
+      "executable": "detect-secrets-hook",
+      "kind": "python",
+      "library": false,
+      "package": "detect-secrets",
+      "requirements": "locks/python/detect-secrets.lock",
+      "requirements_sha256": "199067df5ef117b3045eccd4de445b29f6f0e171a4bcd29622ffd1e594b235c4",
+      "version": "1.5.0"
+    },
+    "dig": {
+      "executable": "dig",
+      "kind": "apt",
+      "package": "dnsutils",
+      "path": "/usr/bin/dig",
+      "version": "Ubuntu noble repositories"
+    },
+    "dlt": {
+      "executable": "dlt",
+      "kind": "python",
+      "library": false,
+      "package": "dlt[cli]",
+      "requirements": "locks/python/dlt.lock",
+      "requirements_sha256": "092eeb7c6fcb86e88cebc80857b469c1a7a649b61fba29da3cbbc71d2b72a9e7",
+      "version": "1.32.0"
+    },
+    "doc8": {
+      "executable": "doc8",
+      "kind": "python",
+      "library": false,
+      "package": "doc8",
+      "requirements": "locks/python/doc8.lock",
+      "requirements_sha256": "f32d2b967ba400eede796172767cfd12ef4e54a2d7924ee2a6f4e0ef8fd9eee2",
+      "version": "2.0.0"
+    },
+    "duckdb": {
+      "executable": "duckdb",
+      "kind": "python",
+      "library": false,
+      "package": "duckdb-cli",
+      "requirements": "locks/python/duckdb.lock",
+      "requirements_sha256": "e9c5373b09725f03456f1a75569d0a6b4acfb361acd5d0f579b9f65f7787e2dc",
+      "version": "2.0.0"
+    },
+    "eslint": {
+      "executable": "eslint",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "eslint",
+      "package_json": "locks/npm/eslint/package.json",
+      "package_json_sha256": "df175d118768f3713d85ed29cf1a146e6f156e943eae5042ab18cd19c9739259",
+      "package_lock": "locks/npm/eslint/package-lock.json",
+      "package_lock_sha256": "1212d24036dad8ecabaea1daf0ad638b7a9dd500fcec97a76537f586c918f6d6",
+      "version": "10.15.0"
+    },
+    "eslint-jsx-a11y": {
+      "executable": "",
+      "kind": "npm",
+      "library": true,
+      "lifecycle_scripts": false,
+      "package": "eslint-plugin-jsx-a11y",
+      "package_json": "locks/npm/eslint-jsx-a11y/package.json",
+      "package_json_sha256": "074e1484e2013040f97dc8d51e5515555eb3d5efceebad7269ac2c5046c27180",
+      "package_lock": "locks/npm/eslint-jsx-a11y/package-lock.json",
+      "package_lock_sha256": "3f58d018214e90b4647508ef25b29727103c0ffeb6b358287487f0dcf33a8ae5",
+      "version": "6.10.2"
+    },
+    "finance": {
+      "executable": "finance",
+      "kind": "builtin",
+      "package": "boxoro-finance",
+      "path": "/opt/box/bin/finance",
+      "version": "1.0.0"
+    },
+    "formatjs": {
+      "executable": "formatjs",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@formatjs/cli",
+      "package_json": "locks/npm/formatjs/package.json",
+      "package_json_sha256": "b676095645342ff2bcfdba1d3dc50c5e7a17985e5fcf2f8b172297c8b499b662",
+      "package_lock": "locks/npm/formatjs/package-lock.json",
+      "package_lock_sha256": "d34d6448a07a627aac7fbf5fd434b15a2269b9154d546d13f4612e9be0991c35",
+      "version": "6.19.0"
+    },
+    "frictionless": {
+      "executable": "frictionless",
+      "kind": "python",
+      "library": false,
+      "package": "frictionless",
+      "requirements": "locks/python/frictionless.lock",
+      "requirements_sha256": "fdb1df029ee5b9f0e3695f2823a3ebb98bbd17d31055e9b782e4a54b1cab1aaf",
+      "version": "5.21.0"
+    },
+    "garak": {
+      "executable": "garak",
+      "kind": "python",
+      "library": false,
+      "package": "garak",
+      "requirements": "locks/python/garak.lock",
+      "requirements_sha256": "3b7b993ec8ff3380a4f4614e7e401d523a35e73a238b842f70751ab8ad59b9f5",
+      "version": "0.9.0.11.post1"
+    },
+    "gettext": {
+      "executable": "msgfmt",
+      "kind": "apt",
+      "package": "gettext",
+      "path": "/usr/bin/msgfmt",
+      "version": "Ubuntu noble repositories"
+    },
+    "git": {
+      "executable": "git",
+      "kind": "apt",
+      "package": "git",
+      "path": "/usr/bin/git",
+      "version": "Ubuntu noble repositories"
+    },
+    "gitleaks": {
+      "archive": "tar",
+      "executable": "gitleaks",
+      "kind": "binary",
+      "member": "gitleaks",
+      "package": "gitleaks/gitleaks",
+      "release_url": "https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1",
+      "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+      "size": 8230402,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
+      "version": "v8.30.1"
+    },
+    "gpg": {
+      "executable": "gpg",
+      "kind": "apt",
+      "package": "gnupg",
+      "path": "/usr/bin/gpg",
+      "version": "Ubuntu noble repositories"
+    },
+    "graphql-inspector": {
+      "executable": "graphql-inspector",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@graphql-inspector/cli",
+      "package_json": "locks/npm/graphql-inspector/package.json",
+      "package_json_sha256": "923889d421f81cf22b07171018e4e6ae02f5993a449bfe6eba24b27c3ebba156",
+      "package_lock": "locks/npm/graphql-inspector/package-lock.json",
+      "package_lock_sha256": "63054b5b985b1382dc9090242d19793fe8983f57e2c44c10bb6895d97c078a92",
+      "version": "7.0.4"
+    },
+    "graphviz": {
+      "executable": "dot",
+      "kind": "apt",
+      "package": "graphviz",
+      "path": "/usr/bin/dot",
+      "version": "Ubuntu noble repositories"
+    },
+    "grpcurl": {
+      "archive": "tar",
+      "executable": "grpcurl",
+      "kind": "binary",
+      "member": "grpcurl",
+      "package": "fullstorydev/grpcurl",
+      "release_url": "https://github.com/fullstorydev/grpcurl/releases/tag/v1.9.4",
+      "sha256": "97e13d58d2733a0e62cd2571d1d5f0c02823f0d25282f08bddedf1ad9c5d1736",
+      "size": 9968722,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/fullstorydev/grpcurl/releases/download/v1.9.4/grpcurl_1.9.4_linux_x86_64.tar.gz",
+      "version": "v1.9.4"
+    },
+    "grype": {
+      "archive": "tar",
+      "executable": "grype",
+      "kind": "binary",
+      "member": "grype",
+      "package": "anchore/grype",
+      "release_url": "https://github.com/anchore/grype/releases/tag/v0.121.3",
+      "sha256": "e9da18cc1429e786722e32161288103600efffd8e483c90761f90485bd1bec85",
+      "size": 32643999,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/anchore/grype/releases/download/v0.121.3/grype_0.121.3_linux_amd64.tar.gz",
+      "version": "v0.121.3"
+    },
+    "hadolint": {
+      "archive": "raw",
+      "executable": "hadolint",
+      "kind": "binary",
+      "member": null,
+      "package": "hadolint/hadolint",
+      "release_url": "https://github.com/hadolint/hadolint/releases/tag/v2.15.1",
+      "sha256": "c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507",
+      "size": 55661096,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/hadolint/hadolint/releases/download/v2.15.1/hadolint-linux-x86_64",
+      "version": "v2.15.1"
+    },
+    "helm": {
+      "archive": "tar",
+      "executable": "helm",
+      "kind": "binary",
+      "member": "linux-amd64/helm",
+      "package": "helm/helm",
+      "release_url": "https://github.com/helm/helm/releases/tag/v4.3.2",
+      "sha256": "d1c0278d46beab79582d7e50f5b3dc206944ba8e577cde618513fd07daa53983",
+      "size": 20371780,
+      "upstream_digest_verified": false,
+      "url": "https://get.helm.sh/helm-v4.3.2-linux-amd64.tar.gz",
+      "version": "v4.3.2"
+    },
+    "html-tidy": {
+      "executable": "tidy",
+      "kind": "apt",
+      "package": "tidy",
+      "path": "/usr/bin/tidy",
+      "version": "Ubuntu noble repositories"
+    },
+    "html-validate": {
+      "executable": "html-validate",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "html-validate",
+      "package_json": "locks/npm/html-validate/package.json",
+      "package_json_sha256": "3f18de88548e64b718fddfb914837c232b6315d6f6be9d27c182e20cffb2e90f",
+      "package_lock": "locks/npm/html-validate/package-lock.json",
+      "package_lock_sha256": "47a549b1e77d9fbc53e9b3f47ac992518eeea2702171bc1831f125b7444cfb19",
+      "version": "11.21.1"
+    },
+    "httpie": {
+      "executable": "http",
+      "kind": "python",
+      "library": false,
+      "package": "httpie",
+      "requirements": "locks/python/httpie.lock",
+      "requirements_sha256": "af8d97b4a70805f0f50541083741006a70eb2cfd29131dfd34d835c90a0b781c",
+      "version": "3.2.4"
+    },
+    "hyperfine": {
+      "executable": "hyperfine",
+      "kind": "apt",
+      "package": "hyperfine",
+      "path": "/usr/bin/hyperfine",
+      "version": "Ubuntu noble repositories"
+    },
+    "hypothesis": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "hypothesis",
+      "requirements": "locks/python/hypothesis.lock",
+      "requirements_sha256": "42f660d39f61293719f9533bdd3c5c4b3e554f68cd588039a490a354ea7fdc81",
+      "version": "6.170.15"
+    },
+    "i18next": {
+      "executable": "i18next-cli",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "i18next-cli",
+      "package_json": "locks/npm/i18next/package.json",
+      "package_json_sha256": "8377aaaef713f482cdd1108420b492bd87d5c304d558ddef6ca859c895339685",
+      "package_lock": "locks/npm/i18next/package-lock.json",
+      "package_lock_sha256": "44771bafe16d191b769f98efc8616f541eb9a686761de0267d0964d427f6c2ea",
+      "version": "1.88.0"
+    },
+    "imagemagick": {
+      "executable": "compare",
+      "kind": "apt",
+      "package": "imagemagick",
+      "path": "/usr/bin/compare",
+      "version": "Ubuntu noble repositories"
+    },
+    "jq": {
+      "executable": "jq",
+      "kind": "apt",
+      "package": "jq",
+      "path": "/usr/bin/jq",
+      "version": "Ubuntu noble repositories"
+    },
+    "jscpd": {
+      "executable": "jscpd",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "jscpd",
+      "package_json": "locks/npm/jscpd/package.json",
+      "package_json_sha256": "21210254458d7ec7c75302d856dc6c1123780e85106f8f3db65ab65891af4628",
+      "package_lock": "locks/npm/jscpd/package-lock.json",
+      "package_lock_sha256": "812b2b885d843b502033d7f726b8c93e6090f7ee286c4dc477616eef1907b098",
+      "version": "5.4.3"
+    },
+    "k6": {
+      "archive": "tar",
+      "executable": "k6",
+      "kind": "binary",
+      "member": "k6-v2.4.0-linux-amd64/k6",
+      "package": "grafana/k6",
+      "release_url": "https://github.com/grafana/k6/releases/tag/v2.4.0",
+      "sha256": "5a5ecf23529ccf93135bc7e5b0c1cd5126ecf5f2672e22eed1556a0ab74abb87",
+      "size": 31274392,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/grafana/k6/releases/download/v2.4.0/k6-v2.4.0-linux-amd64.tar.gz",
+      "version": "v2.4.0"
+    },
+    "kubeconform": {
+      "archive": "tar",
+      "executable": "kubeconform",
+      "kind": "binary",
+      "member": "kubeconform",
+      "package": "yannh/kubeconform",
+      "release_url": "https://github.com/yannh/kubeconform/releases/tag/v0.8.0",
+      "sha256": "9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883",
+      "size": 7534236,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz",
+      "version": "v0.8.0"
+    },
+    "kustomize": {
+      "archive": "tar",
+      "executable": "kustomize",
+      "kind": "binary",
+      "member": "kustomize",
+      "package": "kubernetes-sigs/kustomize",
+      "release_url": "https://github.com/kubernetes-sigs/kustomize/releases/tag/kustomize/v5.8.3",
+      "sha256": "cb9e31198d3f63b44848bd0afc4c8efc56e6cfef9c93a4a39a211940e6decd61",
+      "size": 5059714,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v5.8.3/kustomize_v5.8.3_linux_amd64.tar.gz",
+      "version": "kustomize/v5.8.3"
+    },
+    "lighthouse": {
+      "executable": "lighthouse",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "lighthouse",
+      "package_json": "locks/npm/lighthouse/package.json",
+      "package_json_sha256": "8a765be1404df5ca53b34bc7a1612b3b43bb465ead5c781228d4299751b1ec3d",
+      "package_lock": "locks/npm/lighthouse/package-lock.json",
+      "package_lock_sha256": "bf1ea48524eeccf8816b4e1b2498a4874cf3f960c628cf978ee6d319fa8452c3",
+      "version": "13.6.0"
+    },
+    "lighthouse-ci": {
+      "executable": "lhci",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@lhci/cli",
+      "package_json": "locks/npm/lighthouse-ci/package.json",
+      "package_json_sha256": "52349408bd06ec2a3258f476072a4978406046567b0260697efb84b93ce98665",
+      "package_lock": "locks/npm/lighthouse-ci/package-lock.json",
+      "package_lock_sha256": "2424e238a4bf1acbf505d6b89e3adb8e871b4b065a24a28e6524a96122b815ab",
+      "version": "0.16.1"
+    },
+    "lingui": {
+      "executable": "lingui",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@lingui/cli",
+      "package_json": "locks/npm/lingui/package.json",
+      "package_json_sha256": "9e425272dcb937354f7336ead2d8d13bc06cbb2a49a18c84b44a93cf23e05d50",
+      "package_lock": "locks/npm/lingui/package-lock.json",
+      "package_lock_sha256": "1557e9a72da1a6e171d9ce9d6d0b3497e2e39111bc9fae4d554840b3990dc964",
+      "version": "6.12.0"
+    },
+    "linkinator": {
+      "executable": "linkinator",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "linkinator",
+      "package_json": "locks/npm/linkinator/package.json",
+      "package_json_sha256": "f20f34f498d0d4a128ca29a7fa06c8f24e8a39b756d1e5459dc0dc30106d8829",
+      "package_lock": "locks/npm/linkinator/package-lock.json",
+      "package_lock_sha256": "fae2bea59013a6538aaf8fc21fb5b76a0502faddb6e33fc6cfbb6aa8031ffcb4",
+      "version": "8.1.0"
+    },
+    "lizard": {
+      "executable": "lizard",
+      "kind": "python",
+      "library": false,
+      "package": "lizard",
+      "requirements": "locks/python/lizard.lock",
+      "requirements_sha256": "ee21958c146c60176b568835e45b8dbc7229785abeaba1d9636fa4d554d1cf69",
+      "version": "1.26.0"
+    },
+    "lm-eval": {
+      "allow_source": true,
+      "build_requirements": "locks/python/lm-eval-build.lock",
+      "build_requirements_sha256": "6e7910c87ddfeaefcae794df890eeeb6be8ad963297bf693b09fba962a24ce6f",
+      "executable": "lm_eval",
+      "kind": "python",
+      "library": false,
+      "package": "lm-eval",
+      "requirements": "locks/python/lm-eval.lock",
+      "requirements_sha256": "cd65c9546a56046fc5fedcff6f4b7f38ceb57f9afdea0ed9151662e3346ec9ae",
+      "version": "0.4.13"
+    },
+    "locust": {
+      "executable": "locust",
+      "kind": "python",
+      "library": false,
+      "package": "locust",
+      "requirements": "locks/python/locust.lock",
+      "requirements_sha256": "9b5a73e2767a653eeeba6b1ffbd211a8901de8434960b4537bd924d4dfcf6bb5",
+      "version": "2.47.0"
+    },
+    "lychee": {
+      "archive": "tar",
+      "executable": "lychee",
+      "kind": "binary",
+      "member": "lychee-x86_64-unknown-linux-musl/lychee",
+      "package": "lycheeverse/lychee",
+      "release_url": "https://github.com/lycheeverse/lychee/releases/tag/lychee-v0.24.2",
+      "sha256": "73657a111819a30c47c08352896796f23d64e4eb2b3ed39b6d32149241566fc5",
+      "size": 7705781,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/lychee-x86_64-unknown-linux-musl.tar.gz",
+      "version": "lychee-v0.24.2"
+    },
+    "madge": {
+      "executable": "madge",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "madge",
+      "package_json": "locks/npm/madge/package.json",
+      "package_json_sha256": "f3cb3757e35498af4f1164e6f1cff8a771a80eda5fc577ca998a585db2717444",
+      "package_lock": "locks/npm/madge/package-lock.json",
+      "package_lock_sha256": "b3398a2346bcf3dd74cad6207da73d1bd68b293bea94acad572c6d30f6dcf58e",
+      "version": "8.0.0"
+    },
+    "markdownlint": {
+      "executable": "markdownlint-cli2",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "markdownlint-cli2",
+      "package_json": "locks/npm/markdownlint/package.json",
+      "package_json_sha256": "bbde70bfc745c409fbf71d2bea9aa50d222cee9ac963b80c6dc60eec92312691",
+      "package_lock": "locks/npm/markdownlint/package-lock.json",
+      "package_lock_sha256": "756037f01225287ff21899f5e6ad0bb5f7807e5b7da99ec2789c96286788b4fd",
+      "version": "0.24.1"
+    },
+    "mcp-inspector": {
+      "executable": "mcp-inspector",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@modelcontextprotocol/inspector",
+      "package_json": "locks/npm/mcp-inspector/package.json",
+      "package_json_sha256": "a5c968a4241c4485e8275867bc24c6bf35a5ab59be3550c5ba99c4d65a28fd30",
+      "package_lock": "locks/npm/mcp-inspector/package-lock.json",
+      "package_lock_sha256": "ae173e3a18163bbc7a195e75b57525aa179a792de932dde0cecad623218080d8",
+      "version": "2.15.0"
+    },
+    "memray": {
+      "executable": "memray",
+      "kind": "python",
+      "library": false,
+      "package": "memray",
+      "requirements": "locks/python/memray.lock",
+      "requirements_sha256": "f72f81d25cc5f86fd6dbe1dc0d3f6278e173463f48d436532e4a6c2f23dcefe6",
+      "version": "1.20.0"
+    },
+    "mermaid-cli": {
+      "executable": "mmdc",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@mermaid-js/mermaid-cli",
+      "package_json": "locks/npm/mermaid-cli/package.json",
+      "package_json_sha256": "22ec43e2023a8ed6d7e0bb10e0abd23045f52724972084b7352efbd9aea68a14",
+      "package_lock": "locks/npm/mermaid-cli/package-lock.json",
+      "package_lock_sha256": "acee4755cc2e9992ab06f9b24aaf8ee528b48cd22805912747d3fc3176bdf29c",
+      "version": "12.2.0"
+    },
+    "miller": {
+      "executable": "mlr",
+      "kind": "apt",
+      "package": "miller",
+      "path": "/usr/bin/mlr",
+      "version": "Ubuntu noble repositories"
+    },
+    "mkdocs": {
+      "executable": "mkdocs",
+      "kind": "python",
+      "library": false,
+      "package": "mkdocs",
+      "requirements": "locks/python/mkdocs.lock",
+      "requirements_sha256": "d17dfa96fbb668137d2f1d5f59e6e0d3e7d43c9e8c44964bbbfdcc48483e9a08",
+      "version": "1.6.1"
+    },
+    "mycli": {
+      "executable": "mycli",
+      "kind": "python",
+      "library": false,
+      "package": "mycli",
+      "requirements": "locks/python/mycli.lock",
+      "requirements_sha256": "4c1350aabb76a54018ecdf4d5aae030efcafc1798e098c747871c79e33ad38ea",
+      "version": "2.31.0"
+    },
+    "mypy": {
+      "executable": "mypy",
+      "kind": "python",
+      "library": false,
+      "package": "mypy",
+      "requirements": "locks/python/mypy.lock",
+      "requirements_sha256": "8916210b11d55e6f010a94deab617ce696f8c9395c0cfc9ee99723ff371835d2",
+      "version": "2.4.1"
+    },
+    "newman": {
+      "executable": "newman",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "newman",
+      "package_json": "locks/npm/newman/package.json",
+      "package_json_sha256": "a4c2bdc0500e073821e38cedd5e6c302c20583d8e044a606455972477524112c",
+      "package_lock": "locks/npm/newman/package-lock.json",
+      "package_lock_sha256": "992ac6b33655c2ba7d6efe4aba140761f714d7b55ad92e4332b63d2f8fe2ccbf",
+      "version": "6.2.3"
+    },
+    "nox": {
+      "executable": "nox",
+      "kind": "python",
+      "library": false,
+      "package": "nox",
+      "requirements": "locks/python/nox.lock",
+      "requirements_sha256": "6585770684c168757f4b40b834352963523035465c47d22d791c452f57aabf3d",
+      "version": "2026.10.20"
+    },
+    "oasdiff": {
+      "archive": "tar",
+      "executable": "oasdiff",
+      "kind": "binary",
+      "member": "oasdiff",
+      "package": "oasdiff/oasdiff",
+      "release_url": "https://github.com/oasdiff/oasdiff/releases/tag/v1.38.0",
+      "sha256": "613037fd6a1d3362a1b742d6d86c338c0eb5ab3511f4942ce3948e78720ea2da",
+      "size": 7056295,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/oasdiff/oasdiff/releases/download/v1.38.0/oasdiff_1.38.0_linux_amd64.tar.gz",
+      "version": "v1.38.0"
+    },
+    "odiff": {
+      "executable": "odiff",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": true,
+      "package": "odiff-bin",
+      "package_json": "locks/npm/odiff/package.json",
+      "package_json_sha256": "69a383e86ef890a139fe8432f264597cedced1585a0b5a4416df898bea914a91",
+      "package_lock": "locks/npm/odiff/package-lock.json",
+      "package_lock_sha256": "43386f8e8b96cbe378b5be596af260bc910d1d8feeaf63f4ff88934f10f5e39e",
+      "version": "4.5.0"
+    },
+    "openapi-generator": {
+      "executable": "openapi-generator-cli",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@openapitools/openapi-generator-cli",
+      "package_json": "locks/npm/openapi-generator/package.json",
+      "package_json_sha256": "548d6ca7a89397e148f949799078603988f1de25c31e76b4ec6999a442efd482",
+      "package_lock": "locks/npm/openapi-generator/package-lock.json",
+      "package_lock_sha256": "2dcc209b9f1cb482783301d01c96e535685cd623f61e9319ba5102623fcaaa78",
+      "version": "2.42.2"
+    },
+    "openssl": {
+      "executable": "openssl",
+      "kind": "apt",
+      "package": "openssl",
+      "path": "/usr/bin/openssl",
+      "version": "Ubuntu noble repositories"
+    },
+    "opentofu": {
+      "archive": "zip",
+      "executable": "tofu",
+      "kind": "binary",
+      "member": "tofu",
+      "package": "opentofu/opentofu",
+      "release_url": "https://github.com/opentofu/opentofu/releases/tag/v1.13.9",
+      "sha256": "bc44eb6b06446ba83bd4072114891987f590f66cca712737a7f1147c50c539ce",
+      "size": 35126894,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_amd64.zip",
+      "version": "v1.13.9"
+    },
+    "pa11y": {
+      "executable": "pa11y",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "pa11y",
+      "package_json": "locks/npm/pa11y/package.json",
+      "package_json_sha256": "7b3db840ca8571614fffbef6c0e26db8a1c4169402ebe90b037dab446869afb8",
+      "package_lock": "locks/npm/pa11y/package-lock.json",
+      "package_lock_sha256": "1f9e0e026e0bb97972e73e61ea62202569fc2a26fbaf8481deea8f2aad9d4a09",
+      "version": "10.0.0"
+    },
+    "pa11y-ci": {
+      "executable": "pa11y-ci",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "pa11y-ci",
+      "package_json": "locks/npm/pa11y-ci/package.json",
+      "package_json_sha256": "6ab87392ce0bdc34728e7407f2cddfef7c6409e8d60d1cc88f8457fca0307673",
+      "package_lock": "locks/npm/pa11y-ci/package-lock.json",
+      "package_lock_sha256": "0062f0a46aaab3f0c226fb7ca551bd9182b05341909a129f33d20f733acceb24",
+      "version": "5.0.0"
+    },
+    "pandas": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "pandas",
+      "requirements": "locks/python/pandas.lock",
+      "requirements_sha256": "7270f4c3c4a2e6409b5111ec686e4acb4211ac147554f5b64c16bada04f2f1cc",
+      "version": "3.1.1"
+    },
+    "pandera": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "pandera",
+      "requirements": "locks/python/pandera.lock",
+      "requirements_sha256": "6819fd0dbb8caa248aa60968acb506649104b72069e843ae6328e4e7fddd9c20",
+      "version": "0.36.0"
+    },
+    "pandoc": {
+      "executable": "pandoc",
+      "kind": "apt",
+      "package": "pandoc",
+      "path": "/usr/bin/pandoc",
+      "version": "Ubuntu noble repositories"
+    },
+    "pdfinfo": {
+      "executable": "pdfinfo",
+      "kind": "apt",
+      "package": "poppler-utils",
+      "path": "/usr/bin/pdfinfo",
+      "version": "Ubuntu noble repositories"
+    },
+    "pg-dump": {
+      "executable": "pg_dump",
+      "kind": "apt",
+      "package": "postgresql-client",
+      "path": "/usr/bin/pg_dump",
+      "version": "Ubuntu noble repositories"
+    },
+    "pg-restore": {
+      "executable": "pg_restore",
+      "kind": "apt",
+      "package": "postgresql-client",
+      "path": "/usr/bin/pg_restore",
+      "version": "Ubuntu noble repositories"
+    },
+    "pgcli": {
+      "executable": "pgcli",
+      "kind": "python",
+      "library": false,
+      "package": "pgcli",
+      "requirements": "locks/python/pgcli.lock",
+      "requirements_sha256": "f8c474b1c3f3e8e86899ef08c9398f0a16f5606412f16da972ef736304960db3",
+      "version": "4.7.1"
+    },
+    "pillow": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "Pillow",
+      "requirements": "locks/python/pillow.lock",
+      "requirements_sha256": "a56a1d5d330786a25af0aca317004496781160ebec77d736029db1d06f4d4801",
+      "version": "13.0.0"
+    },
+    "pip-audit": {
+      "executable": "pip-audit",
+      "kind": "python",
+      "library": false,
+      "package": "pip-audit",
+      "requirements": "locks/python/pip-audit.lock",
+      "requirements_sha256": "ecacc09bfd35db8909fbfd940243b4c2e40fd993c716861d8ef8e802d1e96727",
+      "version": "2.10.1"
+    },
+    "pixelmatch": {
+      "executable": "pixelmatch",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "pixelmatch",
+      "package_json": "locks/npm/pixelmatch/package.json",
+      "package_json_sha256": "9a244bc5fec5cb2e20103a88ddee5832be686bdef0aab95055de06636274e415",
+      "package_lock": "locks/npm/pixelmatch/package-lock.json",
+      "package_lock_sha256": "9c8fe8edb815467c95ee61408b3d0b0f14cf621bd786164d9665178c77554b38",
+      "version": "8.0.0"
+    },
+    "playwright": {
+      "executable": "playwright",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@playwright/test",
+      "package_json": "locks/npm/playwright/package.json",
+      "package_json_sha256": "a25f3733ae9f20fe20cd8524c20edf38b78b325d95f72f55ed59dcd2e973dcaa",
+      "package_lock": "locks/npm/playwright/package-lock.json",
+      "package_lock_sha256": "ce582810b8353945025f9cacad70cbd7d8f0354db84652780cc5811147c4acda",
+      "version": "1.64.1"
+    },
+    "polars": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "polars",
+      "requirements": "locks/python/polars.lock",
+      "requirements_sha256": "51c8f64cd02df79ea6ae536620a83fc90d67250dd6e75b03d09cfbc42f7b6256",
+      "version": "2.1.0"
+    },
+    "polib": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "polib",
+      "requirements": "locks/python/polib.lock",
+      "requirements_sha256": "97a8ff81672296124e7d0cbc2fa5ed61d9dd80f155e51d30d147dc267d1a1b56",
+      "version": "1.2.0"
+    },
+    "presidio-analyzer": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "presidio-analyzer",
+      "requirements": "locks/python/presidio-analyzer.lock",
+      "requirements_sha256": "0442baf6614e402faa74280662e08f4ad2f1ea80932e53fea6afdb3361124237",
+      "version": "2.2.366"
+    },
+    "presidio-anonymizer": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "presidio-anonymizer",
+      "requirements": "locks/python/presidio-anonymizer.lock",
+      "requirements_sha256": "58611f0a8d6dda310b19c454ee94c5d9d5a397b7e9bb13fc2263cdac71b9db64",
+      "version": "2.2.366"
+    },
+    "prettier": {
+      "executable": "prettier",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "prettier",
+      "package_json": "locks/npm/prettier/package.json",
+      "package_json_sha256": "fc463a1351fdf64584413732ede69d1e7813be27abd170495b5ae93489a8b4b8",
+      "package_lock": "locks/npm/prettier/package-lock.json",
+      "package_lock_sha256": "0a769743389acd82c1bf1662a047f4901bb6424ebc3aed2b3fd67400e23b892a",
+      "version": "3.10.1"
+    },
+    "prism": {
+      "executable": "prism",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@stoplight/prism-cli",
+      "package_json": "locks/npm/prism/package.json",
+      "package_json_sha256": "e3e186000b99ad32bd0e618acc5eda6f242c5dae8ffe7116b17493a11ec09172",
+      "package_lock": "locks/npm/prism/package-lock.json",
+      "package_lock_sha256": "bd8308e0dddd5be26d7fff454550f442f85e814cc499344676999653ee1a7644",
+      "version": "5.16.0"
+    },
+    "promptfoo": {
+      "executable": "promptfoo",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": true,
+      "package": "promptfoo",
+      "package_json": "locks/npm/promptfoo/package.json",
+      "package_json_sha256": "b694fc782457cf210c0b60a864101881a67713356b0fe2ce13d5e54737c69824",
+      "package_lock": "locks/npm/promptfoo/package-lock.json",
+      "package_lock_sha256": "8ac71e377cdedc40a619f08eee3472b01a116ce7eed753010c22e6c515e94995",
+      "version": "0.125.1"
+    },
+    "promtool": {
+      "executable": "promtool",
+      "kind": "apt",
+      "package": "prometheus",
+      "path": "/usr/bin/promtool",
+      "version": "Ubuntu noble repositories"
+    },
+    "psql": {
+      "executable": "psql",
+      "kind": "apt",
+      "package": "postgresql-client",
+      "path": "/usr/bin/psql",
+      "version": "Ubuntu noble repositories"
+    },
+    "pyinstrument": {
+      "executable": "pyinstrument",
+      "kind": "python",
+      "library": false,
+      "package": "pyinstrument",
+      "requirements": "locks/python/pyinstrument.lock",
+      "requirements_sha256": "287bf66b8bc0d7bb07ff2764ecfe509a2e1f2e02e67829942571ea78741ce39b",
+      "version": "5.1.3"
+    },
+    "pypdf": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "pypdf",
+      "requirements": "locks/python/pypdf.lock",
+      "requirements_sha256": "8277a8dfbb0853089c4e56d1053a6de07a002bb05cb90b01dfa0d0c5495e7404",
+      "version": "7.1.0"
+    },
+    "pytest": {
+      "executable": "pytest",
+      "kind": "python",
+      "library": false,
+      "package": "pytest",
+      "requirements": "locks/python/pytest.lock",
+      "requirements_sha256": "08480c8f48c98860b2fc0173eeac8c57689dbf949b3964f2ebf0392a4783d3aa",
+      "version": "9.2.0"
+    },
+    "python-docx": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "python-docx",
+      "requirements": "locks/python/python-docx.lock",
+      "requirements_sha256": "5d8d9c9e2ce14f7504a8994eb3c9c2f5370c45cafed0c6ffb5af5aba603258e8",
+      "version": "1.2.0"
+    },
+    "qpdf": {
+      "executable": "qpdf",
+      "kind": "apt",
+      "package": "qpdf",
+      "path": "/usr/bin/qpdf",
+      "version": "Ubuntu noble repositories"
+    },
+    "radon": {
+      "executable": "radon",
+      "kind": "python",
+      "library": false,
+      "package": "radon",
+      "requirements": "locks/python/radon.lock",
+      "requirements_sha256": "523871d5260c5bad797069fa3c46edca9b506d5d5a8dc39a507aca5f982c57c6",
+      "version": "6.0.1"
+    },
+    "ragas": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "ragas",
+      "requirements": "locks/python/ragas.lock",
+      "requirements_sha256": "88c45fc2ab62428c7ca0178f8c39cffd8e7ea2b686cb32178fd074fe799fa0de",
+      "version": "0.4.4"
+    },
+    "rclone": {
+      "executable": "rclone",
+      "kind": "apt",
+      "package": "rclone",
+      "path": "/usr/bin/rclone",
+      "version": "Ubuntu noble repositories"
+    },
+    "redocly": {
+      "executable": "redocly",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@redocly/cli",
+      "package_json": "locks/npm/redocly/package.json",
+      "package_json_sha256": "d74d8d96f8f60dfeb6cf441946863cb5855cac683fe8969a42213968d09a188a",
+      "package_lock": "locks/npm/redocly/package-lock.json",
+      "package_lock_sha256": "108718fc035aa8b0a41a5bc63f112bdb156eb868a92ccab43ea268d6deb30a3e",
+      "version": "2.78.0"
+    },
+    "restic": {
+      "executable": "restic",
+      "kind": "apt",
+      "package": "restic",
+      "path": "/usr/bin/restic",
+      "version": "Ubuntu noble repositories"
+    },
+    "reuse": {
+      "executable": "reuse",
+      "kind": "python",
+      "library": false,
+      "package": "reuse",
+      "requirements": "locks/python/reuse.lock",
+      "requirements_sha256": "449be596de6f509ed4022b24eddd98e1b847f73dc5869c3c5c0374a3b58b0639",
+      "version": "6.3.0"
+    },
+    "ripgrep": {
+      "executable": "rg",
+      "kind": "apt",
+      "package": "ripgrep",
+      "path": "/usr/bin/rg",
+      "version": "Ubuntu noble repositories"
+    },
+    "robotframework": {
+      "executable": "robot",
+      "kind": "python",
+      "library": false,
+      "package": "robotframework",
+      "requirements": "locks/python/robotframework.lock",
+      "requirements_sha256": "0b09b93a57d0bb6b4bd7e4c6747a9d91891e0f06a8bb3edc51af1827e9fc8696",
+      "version": "7.5.1"
+    },
+    "rouge-score": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "rouge-score",
+      "requirements": "locks/python/rouge-score.lock",
+      "requirements_sha256": "720adbcdf093c75d3b8bd067b3f1b5e3049a0bec7088bdf6e39952a007dc4876",
+      "version": "0.0.4"
+    },
+    "rsync": {
+      "executable": "rsync",
+      "kind": "apt",
+      "package": "rsync",
+      "path": "/usr/bin/rsync",
+      "version": "Ubuntu noble repositories"
+    },
+    "ruff": {
+      "executable": "ruff",
+      "kind": "python",
+      "library": false,
+      "package": "ruff",
+      "requirements": "locks/python/ruff.lock",
+      "requirements_sha256": "d87ed7b2ac5c271ed65811ed8e0522d531229c5c1a2528881b4e1dfe13d580b8",
+      "version": "0.17.5"
+    },
+    "sacrebleu": {
+      "executable": "sacrebleu",
+      "kind": "python",
+      "library": false,
+      "package": "sacrebleu",
+      "requirements": "locks/python/sacrebleu.lock",
+      "requirements_sha256": "d7354dd78dcafbeec215c3eea60ae31229440dddce148ab59f6b4dad4fe16a42",
+      "version": "2.6.0"
+    },
+    "scalene": {
+      "executable": "scalene",
+      "kind": "python",
+      "library": false,
+      "package": "scalene",
+      "requirements": "locks/python/scalene.lock",
+      "requirements_sha256": "bdb1b74d67772ee00539de76b2941f135d92d5566804f15be8753a9847677ddd",
+      "version": "2.4.0"
+    },
+    "schemathesis": {
+      "executable": "schemathesis",
+      "kind": "python",
+      "library": false,
+      "package": "schemathesis",
+      "requirements": "locks/python/schemathesis.lock",
+      "requirements_sha256": "9fcf1b13016de86fe01f940825fb206ba44ad758a3262c9e3ea4a8602c448328",
+      "version": "4.33.4"
+    },
+    "semgrep": {
+      "executable": "semgrep",
+      "kind": "python",
+      "library": false,
+      "package": "semgrep",
+      "requirements": "locks/python/semgrep.lock",
+      "requirements_sha256": "2e14d965ff7fb84d592818450a422fdf5129d3a55325b4a5c9f192399f089d2f",
+      "version": "1.185.0"
+    },
+    "sharp-cli": {
+      "executable": "sharp",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": true,
+      "package": "sharp-cli",
+      "package_json": "locks/npm/sharp-cli/package.json",
+      "package_json_sha256": "2da9ecfa9ecc6a51e7316344f4bc1943c73a35037eb78e41f4c9ec313995cf38",
+      "package_lock": "locks/npm/sharp-cli/package-lock.json",
+      "package_lock_sha256": "ee6e9a99563e96a231ac25f78caec596b4ed061c7c49772095a4eda112bc7e48",
+      "version": "6.1.0"
+    },
+    "shellcheck": {
+      "executable": "shellcheck",
+      "kind": "apt",
+      "package": "shellcheck",
+      "path": "/usr/bin/shellcheck",
+      "version": "Ubuntu noble repositories"
+    },
+    "spectral": {
+      "executable": "spectral",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "@stoplight/spectral-cli",
+      "package_json": "locks/npm/spectral/package.json",
+      "package_json_sha256": "9df9922be8bfd923b71f54820e59248f2e887514508481cdaf5bf23e9fe7acb7",
+      "package_lock": "locks/npm/spectral/package-lock.json",
+      "package_lock_sha256": "9f98b5622d104727213d4df5d1cf591e1f2d15e0e50b5ae1cedacce285cd2bc6",
+      "version": "6.17.1"
+    },
+    "sphinx": {
+      "executable": "sphinx-build",
+      "kind": "python",
+      "library": false,
+      "package": "sphinx",
+      "requirements": "locks/python/sphinx.lock",
+      "requirements_sha256": "cc62bd04045f33af97df42878f7737398cc39368f29baed7283cb641e05dff31",
+      "version": "9.1.1"
+    },
+    "sqlfluff": {
+      "executable": "sqlfluff",
+      "kind": "python",
+      "library": false,
+      "package": "sqlfluff",
+      "requirements": "locks/python/sqlfluff.lock",
+      "requirements_sha256": "6586c004aee3558b5a331149e50256c94e000dda7a13cd82fcbb3ea1a0b5006b",
+      "version": "4.5.0"
+    },
+    "sqlglot": {
+      "executable": "",
+      "kind": "python",
+      "library": true,
+      "package": "sqlglot",
+      "requirements": "locks/python/sqlglot.lock",
+      "requirements_sha256": "008b9e6957f0b52fd4a63eea6c851d23fb22fc76950122b61c51e029cc25b35a",
+      "version": "30.31.0"
+    },
+    "sqlite": {
+      "executable": "sqlite3",
+      "kind": "apt",
+      "package": "sqlite3",
+      "path": "/usr/bin/sqlite3",
+      "version": "Ubuntu noble repositories"
+    },
+    "syft": {
+      "archive": "tar",
+      "executable": "syft",
+      "kind": "binary",
+      "member": "syft",
+      "package": "anchore/syft",
+      "release_url": "https://github.com/anchore/syft/releases/tag/v1.57.1",
+      "sha256": "bf52519eb57f675d47c07d43213cb6dff6449f3d6d1147ff6701ed91f44eef0c",
+      "size": 31432061,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/anchore/syft/releases/download/v1.57.1/syft_1.57.1_linux_amd64.tar.gz",
+      "version": "v1.57.1"
+    },
+    "tar": {
+      "executable": "tar",
+      "kind": "apt",
+      "package": "tar",
+      "path": "/usr/bin/tar",
+      "version": "Ubuntu noble repositories"
+    },
+    "tesseract": {
+      "executable": "tesseract",
+      "kind": "apt",
+      "package": "tesseract-ocr",
+      "path": "/usr/bin/tesseract",
+      "version": "Ubuntu noble repositories"
+    },
+    "tflint": {
+      "archive": "zip",
+      "executable": "tflint",
+      "kind": "binary",
+      "member": "tflint",
+      "package": "terraform-linters/tflint",
+      "release_url": "https://github.com/terraform-linters/tflint/releases/tag/v0.66.0",
+      "sha256": "22be11cadc25cd02401e94c0ccc91aa63467debb8485c2a755d98f4c0a9d1e2e",
+      "size": 17918510,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/terraform-linters/tflint/releases/download/v0.66.0/tflint_linux_amd64.zip",
+      "version": "v0.66.0"
+    },
+    "tox": {
+      "executable": "tox",
+      "kind": "python",
+      "library": false,
+      "package": "tox",
+      "requirements": "locks/python/tox.lock",
+      "requirements_sha256": "7ba04c32351656e065efd701284cc062c2a90d063e25971136f8bbf00c8f0231",
+      "version": "4.67.13"
+    },
+    "trafilatura": {
+      "executable": "trafilatura",
+      "kind": "python",
+      "library": false,
+      "package": "trafilatura",
+      "requirements": "locks/python/trafilatura.lock",
+      "requirements_sha256": "e885f69f359055a05e5b732f0f6fe53cf76e48fa935ef4527671dc5842c8ce5a",
+      "version": "2.3.1"
+    },
+    "translate-toolkit": {
+      "executable": "pocount",
+      "kind": "python",
+      "library": false,
+      "package": "translate-toolkit",
+      "requirements": "locks/python/translate-toolkit.lock",
+      "requirements_sha256": "869fb329a37d1fd2bce91c7af21ddca178f0229f6890c6ebfb288eda3132e8a9",
+      "version": "3.20.6"
+    },
+    "trivy": {
+      "archive": "tar",
+      "executable": "trivy",
+      "kind": "binary",
+      "member": "trivy",
+      "package": "aquasecurity/trivy",
+      "release_url": "https://github.com/aquasecurity/trivy/releases/tag/v0.76.2",
+      "sha256": "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf",
+      "size": 52714130,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz",
+      "version": "v0.76.2"
+    },
+    "trufflehog": {
+      "archive": "tar",
+      "executable": "trufflehog",
+      "kind": "binary",
+      "member": "trufflehog",
+      "package": "trufflesecurity/trufflehog",
+      "release_url": "https://github.com/trufflesecurity/trufflehog/releases/tag/v3.99.9",
+      "sha256": "12050095c8063bf4d34f9f6cbce6ba9fa8d0deea9d503d0570364feba093658e",
+      "size": 36283707,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.9/trufflehog_3.99.9_linux_amd64.tar.gz",
+      "version": "v3.99.9"
+    },
+    "typescript": {
+      "executable": "tsc",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": false,
+      "package": "typescript",
+      "package_json": "locks/npm/typescript/package.json",
+      "package_json_sha256": "26452b4220c22f3b3353d6a7d7016cbd272a39245343e677dd5ff25b1ca6963b",
+      "package_lock": "locks/npm/typescript/package-lock.json",
+      "package_lock_sha256": "34f422e7e9f4b9ad00e746d6128e21698f2546020981c72e95a81beefa5953f7",
+      "version": "7.0.2"
+    },
+    "uv": {
+      "executable": "uv",
+      "kind": "python",
+      "library": false,
+      "package": "uv",
+      "requirements": "locks/python/uv.lock",
+      "requirements_sha256": "e86bdce341257981f76ab038a109d815ed59ee721f420ad001de54108db0ea17",
+      "version": "0.13.8"
+    },
+    "vale": {
+      "archive": "tar",
+      "executable": "vale",
+      "kind": "binary",
+      "member": "vale",
+      "package": "errata-ai/vale",
+      "release_url": "https://github.com/vale-cli/vale/releases/tag/v3.27.0",
+      "sha256": "c80d62f6bce87b81843ac5b512a26e63213927b957adba0a64fc594570da2000",
+      "size": 10709096,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/vale-cli/vale/releases/download/v3.27.0/vale_3.27.0_Linux_64-bit.tar.gz",
+      "version": "v3.27.0"
+    },
+    "vegeta": {
+      "archive": "tar",
+      "executable": "vegeta",
+      "kind": "binary",
+      "member": "vegeta",
+      "package": "tsenart/vegeta",
+      "release_url": "https://github.com/tsenart/vegeta/releases/tag/v12.13.0",
+      "sha256": "e8759ce45c14e18374bdccd3ba6068197bc3a9f9b7e484db3837f701b9d12e61",
+      "size": 4309032,
+      "upstream_digest_verified": true,
+      "url": "https://github.com/tsenart/vegeta/releases/download/v12.13.0/vegeta_12.13.0_linux_amd64.tar.gz",
+      "version": "v12.13.0"
+    },
+    "vitest": {
+      "executable": "vitest",
+      "kind": "npm",
+      "library": false,
+      "lifecycle_scripts": true,
+      "package": "vitest",
+      "package_json": "locks/npm/vitest/package.json",
+      "package_json_sha256": "0977645b128b40396605c35a1829795f7b90f70b190a20caefbdb25c58203cce",
+      "package_lock": "locks/npm/vitest/package-lock.json",
+      "package_lock_sha256": "4e98794bbee86deab4e042346f2ca95f92f64bdcf506cc68a42a91d95d74c78a",
+      "version": "5.1.0"
+    },
+    "yamllint": {
+      "executable": "yamllint",
+      "kind": "python",
+      "library": false,
+      "package": "yamllint",
+      "requirements": "locks/python/yamllint.lock",
+      "requirements_sha256": "5c403b1afb058e6ffb6a3c00a66bb3888c0ea2fb9a0795a20b4ec5ec6e0e647e",
+      "version": "1.38.0"
+    },
+    "yq": {
+      "executable": "yq",
+      "kind": "python",
+      "library": false,
+      "package": "yq",
+      "requirements": "locks/python/yq.lock",
+      "requirements_sha256": "e42520444e88c3d408378218d5caae66a4519de002fbc4bf78764858c1ea880e",
+      "version": "4.4.5"
+    },
+    "zstd": {
+      "executable": "zstd",
+      "kind": "apt",
+      "package": "zstd",
+      "path": "/usr/bin/zstd",
+      "version": "Ubuntu noble repositories"
+    }
+  }
+}

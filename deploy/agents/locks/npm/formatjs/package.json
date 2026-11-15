@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-formatjs",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@formatjs/cli": "6.19.0"
+  }
+}

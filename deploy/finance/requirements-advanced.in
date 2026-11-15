@@ -1,0 +1,15 @@
+# Install into a separate optional local analytical environment.
+# The basic finance calculations themselves require Python's standard library.
+numpy>=1.26,<3
+pandas>=2.2.2,<4
+scipy>=1.13,<2
+statsmodels>=0.14.5,<0.15
+arch>=7.2,<9
+cvxpy>=1.7.2,<2
+QuantLib==1.44
+duckdb>=1.4,<2
+polars>=1.30,<2
+pyarrow>=20,<24
+openpyxl>=3.1.5,<4
+matplotlib>=3.9.2,<4
+plotly>=6,<7

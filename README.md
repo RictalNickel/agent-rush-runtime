@@ -179,9 +179,15 @@ This uses the existing REST session messages or MCP `start_session` / `send_mess
 
 ## Extend the agent
 
-- **Skills.** Owner-scoped skills in the `SKILL.md` format: a name, a description and a body of up to 64 KiB, up to 200 per owner. Four built-in skills (`web-research`, `app-testing`, `file-conversion`, `security-audit`) are always available. Manage yours with `/v1/skills`, or let the agent save them.
+### Specialist agents
+
+Boxoro includes 21 specialist profiles for testing, APIs, performance, releases, infrastructure, operations, databases, accessibility, AI evaluation, architecture, data, documents, visual QA, privacy, localization, recovery, site health, mobile, knowledge review, agent engineering and finance. Choose one in the chat's new-session composer, discover it through `/v1/specialists` or MCP `list_specialists`, or load its `specialist-<id>` skill.
+
+The native `specialist` tool provides actual worker readiness, fixed typed operations and workflows with private report artifacts. The tool catalog includes installation locks, image families, sources, licenses and explicit prerequisites. Finance Lab adds local quantitative analysis and a separate authenticated OpenBB service that discovers the installed provider and analytics schemas. See the [complete operating guide](docs/SPECIALIST_AGENTS.md), [agent directory](docs/agents/README.md), [research](docs/AGENT_TOOL_RESEARCH.md), [Finance Lab](docs/FINANCE_AGENT.md) and [validation record](docs/SPECIALIST_VALIDATION.md).
+
+- **Skills.** Owner-scoped skills in the `SKILL.md` format: a name, a description and a body of up to 64 KiB, up to 200 per owner. The four general built-ins (`web-research`, `app-testing`, `file-conversion`, `security-audit`) and 21 specialist skills are always available. Manage yours with `/v1/skills`, or let the agent save them.
 - **Custom tools.** Define up to 20 tools as bash command templates with `{{arg}}` placeholders. Each value is shell-quoted before the command runs in the box. Custom tools cannot reuse built-in names.
-- **Agent config.** `system_addendum` (up to 8 KiB), `disabled_tools`, `custom_tools`, `mcp_servers` (only servers the operator allows) and `reasoning_effort` (`low`, `medium` or `high`). Every change is a new version, and any version can be restored. See [API.md](docs/API.md#endpoints).
+- **Agent config.** `system_addendum` (up to 8 KiB), `disabled_tools`, `custom_tools`, `mcp_servers` (only servers the operator allows), `reasoning_effort` (`low`, `medium` or `high`) and an optional `specialist` profile ID. Every change is a new version, and any version can be restored. See [API.md](docs/API.md#endpoints).
 - **Remote MCP servers.** The operator lists servers in a JSON file named by `AR_MCP_SERVERS_FILE`: a name, a streamable HTTP URL, optional headers and an optional `allowed_tools` list. Headers hold credentials, which stay on the control VM. Up to 32 servers. MCP stdio servers are not run on the control VM.
 
 ## Optional features

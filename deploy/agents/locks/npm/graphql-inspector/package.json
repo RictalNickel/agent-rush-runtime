@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-graphql-inspector",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@graphql-inspector/cli": "7.0.4"
+  }
+}

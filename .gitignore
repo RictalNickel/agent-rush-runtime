@@ -18,3 +18,6 @@ playwright-report/
 /target/
 /security-image-build.json
 /.security/
+/.specialists/
+/specialist-image-build.json
+/full-agent-image-build.json

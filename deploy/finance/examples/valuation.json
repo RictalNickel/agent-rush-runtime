@@ -1,0 +1,10 @@
+{
+  "operation": "valuation",
+  "parameters": {
+    "cash_flows": [100, 110],
+    "discount_rate": 0.1,
+    "terminal_growth": 0.02,
+    "net_debt": 100,
+    "shares": 10
+  }
+}

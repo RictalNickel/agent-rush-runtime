@@ -1,0 +1,35 @@
+{
+  "reviewed_at": "2026-11-15",
+  "profile": "finance-openbb",
+  "findings": [
+    {
+      "package": "diskcache",
+      "version": "5.6.3",
+      "id": "CVE-2025-69872",
+      "aliases": ["GHSA-w8v5-vhqr-4h9v", "PYSEC-2026-2447"],
+      "status": "affected-unpatched",
+      "patched_release": null,
+      "prerequisite": "An attacker can write a cache directory that the application later reads using pickle deserialization.",
+      "usage": "Current OpenBB provider cache helpers, including ECB, CFTC, Federal Reserve, FRED, SEC, TMX and USDA.",
+      "mitigations": [
+        "Separate trusted service, with no agent workspace mounted.",
+        "Private owned state root and cache/temp/data/export directories; managed directory symlinks rejected.",
+        "Fresh workers with umask 0077, private HOME/cache/temp paths and fixed installed modules.",
+        "No caller-controlled cache destination or cache restore endpoint."
+      ],
+      "residual_risk": "Filesystem isolation is required. Same-identity processes, host compromise or importing an untrusted cache can still enable malicious deserialization. No upstream patch is present.",
+      "operator_requirements": [
+        "Keep cache state inaccessible to agent boxes and unrelated services.",
+        "Never import caches from untrusted origins; discard state if ownership is uncertain.",
+        "Set a filesystem or volume quota; per-request controls do not cap lifetime cache growth.",
+        "Recheck releases and advisory applicability during dependency updates."
+      ],
+      "sources": [
+        "https://github.com/advisories/GHSA-w8v5-vhqr-4h9v",
+        "https://osv.dev/vulnerability/PYSEC-2026-2447",
+        "https://github.com/grantjenks/python-diskcache/issues/357",
+        "https://pypi.org/project/diskcache/"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "boxoro-tool-buf",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@bufbuild/buf": "1.75.0"
+  },
+  "allowScripts": {
+    "@bufbuild/buf@1.75.0": true
+  }
+}

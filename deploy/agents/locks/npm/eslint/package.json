@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-eslint",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "eslint": "10.15.0"
+  }
+}

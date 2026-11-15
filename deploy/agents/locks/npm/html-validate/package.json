@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-html-validate",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "html-validate": "11.21.1"
+  }
+}

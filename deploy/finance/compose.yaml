@@ -1,0 +1,35 @@
+# Control-host service only. See docs/FINANCE_AGENT.md for credential provisioning.
+# Set FINANCE_OPENBB_IMAGE to an actual built/published image identity.
+services:
+  finance-openbb:
+    image: ${FINANCE_OPENBB_IMAGE:?Set an immutable finance-service image identity}
+    user: "1000:1000"
+    read_only: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 4g
+    cpus: 2
+    ports:
+      - "127.0.0.1:8768:8768"
+    environment:
+      FINANCE_OPENBB_BIND: 0.0.0.0
+      FINANCE_OPENBB_STATE_DIR: /var/lib/boxoro-finance
+      FINANCE_OPENBB_TOKEN_FILE: /run/secrets/finance-token
+      FINANCE_OPENBB_MAX_CONCURRENCY: "2"
+      FRED_API_KEY: ${FRED_API_KEY:-}
+      EIA_API_KEY: ${EIA_API_KEY:-}
+      BLS_API_KEY: ${BLS_API_KEY:-}
+      CFTC_APP_TOKEN: ${CFTC_APP_TOKEN:-}
+      CONGRESS_GOV_API_KEY: ${CONGRESS_GOV_API_KEY:-}
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,mode=1777,size=512m
+    volumes:
+      - ${FINANCE_OPENBB_TOKEN_FILE:?Set the owned private token-file path}:/run/secrets/finance-token:ro
+      - ${FINANCE_OPENBB_STATE_DIR:?Set the owned private provider-state directory}:/var/lib/boxoro-finance
+# The bound token/state must be owned by uid1000 and private (token0600,state0700).
+# Configure provider credentials in a private control-host Compose --env-file.
+# The service refreshes its state config with empty credential fields at startup.
+# Never mount an
+# agent workspace, Docker socket, cloud credentials directory or broker token here.

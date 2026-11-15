@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-openapi-generator",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@openapitools/openapi-generator-cli": "2.42.2"
+  }
+}

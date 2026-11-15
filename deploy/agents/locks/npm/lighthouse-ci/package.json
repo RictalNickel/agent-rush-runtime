@@ -1,0 +1,11 @@
+{
+  "name": "boxoro-tool-lighthouse-ci",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@lhci/cli": "0.16.1"
+  },
+  "overrides": {
+    "basic-ftp": "6.2.6"
+  }
+}

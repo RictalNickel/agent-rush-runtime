@@ -267,6 +267,8 @@ pre {
   border: 1px solid var(--rule); border-radius: 8px; padding: 4px 8px;
 }
 .model-pick select:focus-visible { border-color: var(--amber-dim); }
+.specialist-pick .composer-note { margin-top: 5px; max-width: min(var(--column), 620px); }
+.specialist-pick select { max-width: min(100%, 310px); }
 
 /* Toast: a manual popover, so it shows above open dialogs. */
 #toast {

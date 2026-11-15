@@ -46,6 +46,8 @@ pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/v1/status", get(status))
         .route("/v1/models", get(list_models))
+        .route("/v1/specialists", get(list_specialists))
+        .route("/v1/specialists/{id}", get(describe_specialist))
         .route("/v1/usage", get(usage))
         .route("/v1/keys", get(list_keys).post(create_key))
         .route("/v1/keys/{id}", delete(revoke_key))
@@ -81,6 +83,19 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/v1/voice/transcribe", post(transcribe))
         .route("/v1/voice/speak", post(speak))
         .layer(DefaultBodyLimit::max(JSON_BODY_LIMIT))
+}
+
+async fn list_specialists(Owner(_owner): Owner) -> Json<Value> {
+    Json(crate::specialists::index())
+}
+
+async fn describe_specialist(
+    Owner(_owner): Owner,
+    Path(id): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    crate::specialists::describe(&id)
+        .map(Json)
+        .ok_or_else(|| ApiError(StatusCode::NOT_FOUND, "specialist not found".into()))
 }
 
 // Extractors and error mapping shared with the MCP server.

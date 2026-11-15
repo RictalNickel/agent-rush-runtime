@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-autocannon",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "autocannon": "9.0.0"
+  }
+}

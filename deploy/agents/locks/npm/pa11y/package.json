@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-pa11y",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "pa11y": "10.0.0"
+  }
+}

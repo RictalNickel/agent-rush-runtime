@@ -1,0 +1,9 @@
+{
+  "version": "24.22.3",
+  "platform": "linux/amd64",
+  "url": "https://nodejs.org/dist/v24.22.3/node-v24.22.3-linux-x64.tar.xz",
+  "sha256": "4f2b175a6d53a5c617a80dba2676238a0688cef28c6da4eba35c7d844e66fcfb",
+  "size": 32064292,
+  "archive": "tar",
+  "prefix": "node-v24.22.3-linux-x64"
+}

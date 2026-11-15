@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-mcp-inspector",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@modelcontextprotocol/inspector": "2.15.0"
+  }
+}

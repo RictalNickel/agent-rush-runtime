@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-backstopjs",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "backstopjs": "6.3.25"
+  }
+}

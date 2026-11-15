@@ -1,0 +1,8 @@
+{
+  "name": "boxoro-tool-redocly",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@redocly/cli": "2.78.0"
+  }
+}

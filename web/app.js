@@ -5,7 +5,7 @@ const ui = {
   csrf: null, status: null, v1: null, sessions: [], current: null,
   lastSeq: 0, replayUntil: 0, source: null, sseErrors: 0, poll: null, pollBusy: false,
   pending: [], urls: [], speak: false, audio: null, recorder: null, sending: false,
-  filesPath: '.', refreshing: false, models: null,
+  filesPath: '.', refreshing: false, models: null, specialists: [], specialistsLoaded: false,
   // Sessions deleted here: a list refresh already in flight must not bring them back.
   deleted: new Set(),
 };
@@ -44,11 +44,11 @@ const ICONS = {
 };
 const TOOL_ICON = {
   bash: 'terminal', read_file: 'file', write_file: 'edit', edit_file: 'edit', list_files: 'folder', grep: 'search', glob: 'folder',
-  browser: 'globe', web_search: 'search', web_fetch: 'globe', convert_file: 'convert', skill: 'book', mcp: 'plug', agent_config: 'gear',
+  browser: 'globe', web_search: 'search', web_fetch: 'globe', convert_file: 'convert', skill: 'book', mcp: 'plug', agent_config: 'gear', specialist: 'tool', security_scan: 'alert',
 };
 
 const enc = encodeURIComponent;
-const clip = (s, n) => { const t = String(s ?? ''); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
+const clip = (s, n) => { const t = String(s ?? ''); const points = Array.from(t); return points.length > n ? `${points.slice(0, n - 1).join('')}…` : t; };
 const oneLine = s => String(s ?? '').replace(/\s+/g, ' ').trim();
 const host = url => { try { return new URL(url).host || url; } catch { return url || 'a page'; } };
 const baseName = path => String(path).split('/').filter(Boolean).pop() || 'file';
@@ -191,6 +191,7 @@ function updateSession() {
   if (!signedIn) {
     stopLive();
     ui.v1 = null; ui.models = null; ui.sessions = []; ui.current = null;
+    ui.specialists = []; ui.specialistsLoaded = false;
     revokeUrls();
     $('#log').replaceChildren();
   }
@@ -228,6 +229,7 @@ function updateChrome() {
   $('#archive-button').hidden = !s || s.status === 'closed';
   // The picker chooses the model of the next new session.
   $('#model-pick').hidden = !signedIn || !canPickModel() || Boolean(s && s.status !== 'closed');
+  $('#specialist-pick').hidden = !signedIn || !ui.specialists.length || Boolean(s && s.status !== 'closed');
   $('#stop-button').hidden = !running;
   $('#working').hidden = !running;
   updateReadiness();
@@ -251,6 +253,20 @@ function renderModels() {
     textContent: `${m.id} (${usd(m.input_usd_per_million)} in, ${usd(m.output_usd_per_million)} out per M tokens)`,
   })));
   select.value = models.some(m => m.id === chosen) ? chosen : ui.models?.default || '';
+}
+
+function renderSpecialists() {
+  const select = $('#specialist-select');
+  const chosen = select.value;
+  select.replaceChildren(el('option', {value: '', textContent: 'General purpose'}),
+    ...ui.specialists.map(agent => el('option', {value: agent.id, textContent: agent.name})));
+  select.value = ui.specialists.some(agent => agent.id === chosen) ? chosen : '';
+  describeSpecialist();
+}
+
+function describeSpecialist() {
+  const selected = ui.specialists.find(agent => agent.id === $('#specialist-select').value);
+  $('#specialist-description').textContent = selected?.description || 'Choose a focus for your next task, or use the general agent.';
 }
 
 // Session drawer.
@@ -574,6 +590,12 @@ function describe(tool, call) {
     case 'mcp':
       if (c.action === 'call') return both('Calling', 'Called', `${c.server} ${c.name || ''}`);
       return both('Listing', 'Listed', `tools on ${c.server}`);
+    case 'specialist':
+      if (c.action === 'list') return both('Listing', 'Listed', 'specialists');
+      if (c.action === 'doctor') return both('Checking', 'Checked', `tools for ${c.agent}`);
+      if (c.action === 'describe') return both('Loading', 'Loaded', `the ${c.agent} specialist`);
+      return both('Running', 'Ran', `${c.agent}: ${c.operation || c.workflow || c.action}`);
+    case 'security_scan': return both('Checking', 'Checked', `security: ${c.profile || c.action || 'readiness'}`);
     case null: case undefined: case '':
       return ['Reading the tool call', 'Sent a tool call that could not be read'];
     default: return both('Running', 'Ran', `the ${tool} tool`);
@@ -809,6 +831,11 @@ async function send() {
     if (!ui.current || ui.current.status === 'closed') {
       const body = { message: text };
       if (!$('#model-pick').hidden && $('#model-select').value) body.model = $('#model-select').value;
+      const specialist = !$('#specialist-pick').hidden && ui.specialists.find(agent => agent.id === $('#specialist-select').value);
+      if (specialist) {
+        body.title = clip(text, 80);
+        body.message = `Use the specialist-${specialist.id} skill for this session. Load its instructions and use the specialist describe and doctor actions for ${specialist.id} before choosing operations. Check actual tool availability and report any missing prerequisites.\n\nTask:\n${text}`;
+      }
       const created = await api('/v1/sessions', { method: 'POST', body: JSON.stringify(body) });
       upsertSession(created.session);
       openSession(created.session, { fresh: true });
@@ -973,6 +1000,11 @@ async function loadSessions() {
   if (!ui.csrf) return;
   // Voice and session availability rarely change: re-read them only until sessions work.
   if (!ui.v1?.sessions_available) { ui.v1 = await api('/v1/status'); ui.models = ui.v1.models || null; updateVoice(); renderModels(); }
+  if (!ui.specialistsLoaded) {
+    try { ui.specialists = (await api('/v1/specialists')).agents || []; ui.specialistsLoaded = true; }
+    catch (_) { ui.specialists = []; }
+    renderSpecialists();
+  }
   if (!ui.v1.sessions_available) { ui.sessions = []; renderSessions(); updateChrome(); return; }
   const { sessions } = await api('/v1/sessions');
   // Events are the authority for the open session's status.
@@ -1005,6 +1037,7 @@ function openLogin() {
 }
 
 $('#task-form').addEventListener('submit', event => { event.preventDefault(); send(); });
+$('#specialist-select').addEventListener('change', describeSpecialist);
 $('#prompt').addEventListener('input', resize);
 $('#prompt').addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); send(); }

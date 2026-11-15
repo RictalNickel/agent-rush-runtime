@@ -255,6 +255,18 @@ fn tool_definitions() -> Value {
     };
     json!([
         tool(
+            "list_specialists",
+            "List Boxoro's built-in specialist profiles, skills and image families. Metadata does not establish worker readiness; ask the session to run specialist doctor.",
+            json!({}),
+            &[]
+        ),
+        tool(
+            "describe_specialist",
+            "Get one specialist's tool inventory, fixed operations, workflows, skill and prerequisites.",
+            json!({"agent":{"type":"string"}}),
+            &["agent"]
+        ),
+        tool(
             "start_session",
             "Create an agent session with its own persistent Linux workspace. Optionally send the first message, which starts the agent working; then call wait_for_reply.",
             json!({"title": {"type": "string"}, "message": {"type": "string", "description": "First message for the agent."}, "model": {"type": "string", "description": "A model ID from list_models; the default model otherwise."}}),
@@ -348,6 +360,8 @@ fn tool_definitions() -> Value {
 }
 
 const TOOL_NAMES: &[&str] = &[
+    "list_specialists",
+    "describe_specialist",
     "start_session",
     "send_message",
     "wait_for_reply",
@@ -370,6 +384,13 @@ async fn call_tool(s: &AppState, owner: &str, name: &str, args: Args<'_>) -> Too
         return Err(ToolError::Params(format!("Unknown tool: {name}")));
     }
     match name {
+        "list_specialists" => return Ok(json_text(&crate::specialists::index())),
+        "describe_specialist" => {
+            let id = args.str("agent")?;
+            let profile = crate::specialists::describe(id)
+                .ok_or_else(|| ToolError::Failed("specialist not found".into()))?;
+            return Ok(json_text(&profile));
+        }
         "manage_skills" => return manage_skills(s, owner, &args),
         "list_models" => return Ok(json_text(&models_report(&catalog(s)))),
         "get_usage" => {
